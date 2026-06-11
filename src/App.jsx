@@ -561,7 +561,7 @@ export default function App() {
                 }}
                 title="데이터 초기화"
               >
-                🔄 초기화
+                초기화
               </button>
             </div>
           </div>

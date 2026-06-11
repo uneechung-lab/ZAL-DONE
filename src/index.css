@@ -326,18 +326,17 @@ button, input, select, textarea {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 19px;
-  font-weight: 800;
-  color: #64748b;
   padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition);
+  color: var(--accent-purple);
+  transition: color var(--transition), transform var(--transition);
 }
 
 .nav-arrow-text:hover {
-  color: var(--accent-blue);
+  color: var(--accent-purple-light);
+  transform: scale(1.1);
 }
 
 .current-date-text {
@@ -680,25 +679,23 @@ button, input, select, textarea {
   position: absolute;
   right: 20px;
   bottom: 20px;
-  background: linear-gradient(135deg, #6366f1, #4f8ef7);
+  background: transparent;
   border: none;
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 20px;
+  color: var(--accent-purple);
+  font-size: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: var(--shadow-lg);
   z-index: 99;
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: color var(--transition), transform var(--transition);
 }
 
 .ai-toggle-floating-btn:hover {
-  transform: scale(1.08) rotate(5deg);
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+  color: var(--accent-purple-light);
+  transform: scale(1.1);
 }
 
 /* ===========================
@@ -747,16 +744,20 @@ button, input, select, textarea {
 .close-drawer-btn {
   background: transparent;
   border: none;
-  font-size: 16px;
   cursor: pointer;
-  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--accent-purple);
+  font-size: 22px;
+  width: 32px;
+  height: 32px;
+  transition: color var(--transition), transform var(--transition);
 }
 
 .close-drawer-btn:hover {
-  color: var(--text-primary);
+  color: var(--accent-purple-light);
+  transform: scale(1.1);
 }
 
 .chat-messages {

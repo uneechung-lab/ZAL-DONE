@@ -581,24 +581,27 @@ export default function App() {
                           className="time-grid-cell"
                           onClick={() => openAddModal(member, h)}
                         >
-                          {currentEvent && (
-                            <div 
-                              className={`schedule-block ${currentEvent.color} ${currentEvent.status === 'requested' ? 'status-requested' : ''}`}
-                              style={{ 
-                                width: `calc(${(currentEvent.endHour - currentEvent.startHour) * 2 * 100}% - 8px)`,
-                                top: `${topOffset}px`,
-                                height: '26px',
-                                bottom: 'auto'
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDetailModal(currentEvent);
-                              }}
-                              title={`${currentEvent.title} (클릭시 상세 보기)`}
-                            >
-                              {currentEvent.status === 'requested' && '⏳ '}{currentEvent.title}
-                            </div>
-                          )}
+                          {currentEvent && (() => {
+                            const isRequested = currentEvent.status === 'requested' || (!currentEvent.status && currentEvent.memberId !== 'sh');
+                            return (
+                              <div 
+                                className={`schedule-block ${currentEvent.color} ${isRequested ? 'status-requested' : ''}`}
+                                style={{ 
+                                  width: `calc(${(currentEvent.endHour - currentEvent.startHour) * 2 * 100}% - 8px)`,
+                                  top: `${topOffset}px`,
+                                  height: '26px',
+                                  bottom: 'auto'
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDetailModal(currentEvent);
+                                }}
+                                title={`${currentEvent.title} (클릭시 상세 보기)`}
+                              >
+                                {isRequested && '⏳ '}{currentEvent.title}
+                              </div>
+                            );
+                          })()}
                         </td>
                       );
                     })}
@@ -650,7 +653,7 @@ export default function App() {
           <div className="modal-content" style={{ width: '380px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-title">📅 일정 상세 및 수정</div>
             
-            {selectedDetailEvent.status === 'requested' && (
+            {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (
               <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
                 <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>⚡ 요청 대기 중인 일정입니다</span>
                 <div style={{ display: 'flex', gap: '6px' }}>

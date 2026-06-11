@@ -235,9 +235,46 @@ export default function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
+  const [editTitle, setEditTitle] = useState('');
+  const [editMemberId, setEditMemberId] = useState('');
+  const [editStartHour, setEditStartHour] = useState(9);
+  const [editEndHour, setEditEndHour] = useState(11);
+  const [editDescription, setEditDescription] = useState('');
+
   const openDetailModal = (event) => {
     setSelectedDetailEvent(event);
+    setEditTitle(event.title);
+    setEditMemberId(event.memberId);
+    setEditStartHour(event.startHour);
+    setEditEndHour(event.endHour);
+    setEditDescription(event.description || '');
     setIsDetailModalOpen(true);
+  };
+
+  const saveEventEdits = () => {
+    if (!editTitle.trim()) return;
+    setSchedules(prev => prev.map(s => {
+      if (s.id === selectedDetailEvent.id) {
+        return {
+          ...s,
+          title: editTitle.trim(),
+          memberId: editMemberId,
+          startHour: parseFloat(editStartHour),
+          endHour: parseFloat(editEndHour),
+          description: editDescription.trim(),
+        };
+      }
+      return s;
+    }));
+    setIsDetailModalOpen(false);
+  };
+
+  const getEndHourOptions = () => {
+    const options = [];
+    for (let h = parseFloat(editStartHour) + 0.5; h <= 19.5; h += 0.5) {
+      options.push(h);
+    }
+    return options;
   };
 
   const bottomRef = useRef(null);
@@ -580,19 +617,79 @@ export default function App() {
       {/* ──── SCHEDULE DETAIL MODAL ─────────────────── */}
       {isDetailModalOpen && selectedDetailEvent && (
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">📅 일정 상세 정보</div>
-            <div className="modal-detail-body" style={{ margin: '10px 0', fontSize: '15px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
-              <div>
-                <strong>일정명:</strong> {selectedDetailEvent.title}
+          <div className="modal-content" style={{ width: '380px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-title">📅 일정 상세 및 수정</div>
+            
+            <div className="modal-detail-body" style={{ margin: '12px 0', fontSize: '15px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>일정명</label>
+                <input 
+                  type="text" 
+                  className="modal-input" 
+                  value={editTitle} 
+                  onChange={(e) => setEditTitle(e.target.value)} 
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}
+                />
               </div>
-              <div>
-                <strong>담당자:</strong> {TEAM.find(m => m.id === selectedDetailEvent.memberId)?.name || '지정되지 않음'}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>담당자</label>
+                <select 
+                  value={editMemberId} 
+                  onChange={(e) => setEditMemberId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff' }}
+                >
+                  {TEAM.map(m => (
+                    <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
+                  ))}
+                </select>
               </div>
-              <div>
-                <strong>시간:</strong> {formatHour(selectedDetailEvent.startHour)} ~ {formatHour(selectedDetailEvent.endHour)}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>시작 시간</label>
+                  <select 
+                    value={editStartHour} 
+                    onChange={(e) => {
+                      const newStart = parseFloat(e.target.value);
+                      setEditStartHour(newStart);
+                      if (editEndHour <= newStart) {
+                        setEditEndHour(newStart + 1);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff' }}
+                  >
+                    {hourSlots.map(h => (
+                      <option key={h} value={h}>{formatHour(h)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>종료 시간</label>
+                  <select 
+                    value={editEndHour} 
+                    onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff' }}
+                  >
+                    {getEndHourOptions().map(h => (
+                      <option key={h} value={h}>{formatHour(h)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                <textarea 
+                  placeholder="회의 안건, 준비물 등 상세 내용을 입력하세요" 
+                  value={editDescription} 
+                  onChange={(e) => setEditDescription(e.target.value)} 
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '60px', fontFamily: 'inherit' }}
+                />
               </div>
             </div>
+
             <div className="modal-actions" style={{ marginTop: '10px' }}>
               <button className="modal-btn" onClick={() => setIsDetailModalOpen(false)}>닫기</button>
               <button 
@@ -607,6 +704,7 @@ export default function App() {
               >
                 삭제
               </button>
+              <button className="modal-btn primary" onClick={saveEventEdits}>저장</button>
             </div>
           </div>
         </div>

@@ -262,6 +262,7 @@ function parseMessageToSchedules(text, selectedDate) {
     ) {
       isAll = true;
     } else {
+      let targetMember = null;
       for (const member of TEAM) {
         const roleKeyword = member.role.split(' ')[0];
         if (
@@ -272,8 +273,19 @@ function parseMessageToSchedules(text, selectedDate) {
           res.title.includes(member.avatar) ||
           res.title.includes(roleKeyword)
         ) {
-          memberId = member.id;
+          targetMember = member;
           break;
+        }
+      }
+
+      if (targetMember && targetMember.id !== 'sh') {
+        const isRequestIndicator = res.line.includes('요청') || res.line.includes('부탁') || res.line.includes('의뢰') || res.line.includes('검토') || res.line.includes('확인') || res.line.includes('전달');
+        const isMyActionIndicator = res.line.includes('회신') || res.line.includes('작성') || res.line.includes('송부') || res.line.includes('제출') || res.line.includes('준비') || res.line.includes('보내');
+        
+        if (isRequestIndicator || !isMyActionIndicator) {
+          memberId = targetMember.id;
+        } else {
+          memberId = 'sh';
         }
       }
     }

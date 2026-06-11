@@ -514,6 +514,28 @@ export default function App() {
     }
   }, [user]);
 
+  // Helper to translate Appwrite Auth error messages to Korean
+  const getKoreanErrorMessage = (msg) => {
+    if (!msg) return '';
+    const lower = msg.toLowerCase();
+    if (lower.includes('password') && lower.includes('between 8 and 256')) {
+      return '비밀번호는 최소 8자 이상이어야 합니다.';
+    }
+    if (lower.includes('user_already_exists') || lower.includes('already exists')) {
+      return '이미 가입된 이메일 주소입니다.';
+    }
+    if (lower.includes('invalid credentials') || lower.includes('user_invalid_credentials')) {
+      return '이메일 또는 비밀번호가 올바르지 않습니다.';
+    }
+    if (lower.includes('email') && lower.includes('invalid')) {
+      return '유효하지 않은 이메일 주소 형식입니다.';
+    }
+    if (lower.includes('failed to fetch') || lower.includes('network error')) {
+      return '서버와 연결할 수 없습니다. 네트워크 연결 상태를 확인하거나 CORS 설정을 확인해 주세요.';
+    }
+    return msg; // Fallback to raw message if translation is unavailable
+  };
+
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -530,7 +552,7 @@ export default function App() {
         setUser(currentUser);
       }
     } catch (err) {
-      setAuthError(err.message || '회원가입에 실패했습니다.');
+      setAuthError(getKoreanErrorMessage(err.message) || '회원가입에 실패했습니다.');
     } finally {
       setAuthLoading(false);
     }
@@ -550,7 +572,7 @@ export default function App() {
       const currentUser = await appwriteService.getCurrentUser();
       setUser(currentUser);
     } catch (err) {
-      setAuthError(err.message || '로그인에 실패했습니다.');
+      setAuthError(getKoreanErrorMessage(err.message) || '로그인에 실패했습니다.');
     } finally {
       setAuthLoading(false);
     }

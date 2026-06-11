@@ -98,6 +98,22 @@ function parseMessageToSchedules(text, selectedDate) {
       date = selectedDate + 2;
     }
 
+    const clean = (str) => {
+      return str
+        .replace(/까지/g, '')
+        .replace(/부터/g, '')
+        .replace(/에/g, '')
+        .replace(/오늘/g, '')
+        .replace(/내일/g, '')
+        .replace(/모레/g, '')
+        .replace(/모두에게/g, '')
+        .replace(/전체에게/g, '')
+        .replace(/전원에게/g, '')
+        .replace(/모두/g, '')
+        .replace(/전체/g, '')
+        .trim();
+    };
+
     if ((match = rangeRegex.exec(temp)) !== null) {
       const h1 = parseInt(match[2]);
       const h2 = parseInt(match[4]);
@@ -105,13 +121,7 @@ function parseMessageToSchedules(text, selectedDate) {
         const startHour = normalizeHour(h1, match[1]);
         const endHour = normalizeHour(h2, match[3] || match[1]);
         
-        let title = temp.replace(match[0], '')
-          .replace(/까지/g, '')
-          .replace(/부터/g, '')
-          .replace(/에/g, '')
-          .replace(/오늘/g, '')
-          .replace(/내일/g, '')
-          .trim();
+        let title = clean(temp.replace(match[0], ''));
         title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
         
         if (!title) title = '새로운 일정';
@@ -128,13 +138,7 @@ function parseMessageToSchedules(text, selectedDate) {
         const startHour = normalizeHour(h, match[1]);
         const endHour = Math.min(startHour + 1, 19);
         
-        let title = temp.replace(match[0], '')
-          .replace(/까지/g, '')
-          .replace(/부터/g, '')
-          .replace(/에/g, '')
-          .replace(/오늘/g, '')
-          .replace(/내일/g, '')
-          .trim();
+        let title = clean(temp.replace(match[0], ''));
         title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
         
         if (!title) title = '새로운 일정';
@@ -154,7 +158,7 @@ function parseMessageToSchedules(text, selectedDate) {
         endHour = 18;
       }
 
-      let title = temp.replace(/오늘/g, '').replace(/내일/g, '').trim();
+      let title = clean(temp);
       if (title.length > 20) title = title.substring(0, 20) + '...';
 
       results.push({ title, startHour, endHour, line, date });
@@ -163,21 +167,33 @@ function parseMessageToSchedules(text, selectedDate) {
 
   results.forEach(res => {
     let memberId = 'sh';
-    for (const member of TEAM) {
-      const roleKeyword = member.role.split(' ')[0];
-      if (
-        res.line.includes(member.name) || 
-        res.line.includes(member.avatar) || 
-        res.line.includes(roleKeyword) ||
-        res.title.includes(member.name) || 
-        res.title.includes(member.avatar) ||
-        res.title.includes(roleKeyword)
-      ) {
-        memberId = member.id;
-        break;
+    let isAll = false;
+    if (
+      res.line.includes('모두에게') || 
+      res.line.includes('전체에게') || 
+      res.line.includes('전원에게') || 
+      res.line.includes('모두') || 
+      res.line.includes('전체')
+    ) {
+      isAll = true;
+    } else {
+      for (const member of TEAM) {
+        const roleKeyword = member.role.split(' ')[0];
+        if (
+          res.line.includes(member.name) || 
+          res.line.includes(member.avatar) || 
+          res.line.includes(roleKeyword) ||
+          res.title.includes(member.name) || 
+          res.title.includes(member.avatar) ||
+          res.title.includes(roleKeyword)
+        ) {
+          memberId = member.id;
+          break;
+        }
       }
     }
     res.memberId = memberId;
+    res.isAll = isAll;
   });
 
   return results;
@@ -354,21 +370,39 @@ export default function App() {
 
       parsedList.forEach((parsed, index) => {
         const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
-        const assignedMember = TEAM.find(m => m.id === parsed.memberId) || ME;
-        const isSelf = assignedMember.id === 'sh';
+        
+        let assignedMemberIds;
+        let assignedMemberId;
+        let isSelf;
+        let displayAssigneeName;
+
+        if (parsed.isAll) {
+          assignedMemberIds = TEAM.map(m => m.id);
+          assignedMemberId = 'sh';
+          isSelf = false;
+          displayAssigneeName = '전체 인원';
+        } else {
+          const assignedMember = TEAM.find(m => m.id === parsed.memberId) || ME;
+          assignedMemberIds = [assignedMember.id];
+          assignedMemberId = assignedMember.id;
+          isSelf = assignedMember.id === 'sh';
+          displayAssigneeName = assignedMember.name;
+        }
+
         const newSchedule = {
           id: `s_${Date.now()}_${index}`,
-          memberId: assignedMember.id,
-          memberIds: [assignedMember.id],
+          memberId: assignedMemberId,
+          memberIds: assignedMemberIds,
           title: parsed.title,
           startHour: parsed.startHour,
           endHour: parsed.endHour,
           color: randomColor,
           status: isSelf ? 'accepted' : 'requested',
           date: parsed.date,
+          requesterId: 'sh',
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n📅 날짜: 2026.06.${parsed.date < 10 ? '0' : ''}${parsed.date}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${displayAssigneeName}${isSelf ? '' : ' (요청됨)'}\n📅 날짜: 2026.06.${parsed.date < 10 ? '0' : ''}${parsed.date}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);
@@ -418,6 +452,8 @@ export default function App() {
       endHour: Math.min(modalStartHour + 2, 19.5),
       color: randomColor,
       status: isSelf ? 'accepted' : 'requested',
+      date: selectedDate,
+      requesterId: 'sh',
     };
 
     setSchedules(prev => [...prev, newSchedule]);
@@ -622,7 +658,7 @@ export default function App() {
                           onClick={() => openAddModal(member, h)}
                         >
                           {currentEvent && (() => {
-                            const isRequested = currentEvent.status === 'requested' || (!currentEvent.status && currentEvent.memberId !== 'sh');
+                            const isRequested = (currentEvent.status === 'requested' || (!currentEvent.status && currentEvent.memberId !== 'sh')) && member.id !== 'sh';
                             return (
                               <div 
                                 className={`schedule-block ${currentEvent.color} ${isRequested ? 'status-requested' : ''}`}
@@ -694,6 +730,9 @@ export default function App() {
             <div className="modal-title">📅 일정 상세 및 수정</div>
             
             {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
+              const isCurrentUserRequester = selectedDetailEvent.requesterId === ME.id;
+              if (isCurrentUserRequester) return null;
+
               const isCurrentUserAssignee = selectedDetailEvent.memberIds 
                 ? selectedDetailEvent.memberIds.includes(ME.id) 
                 : selectedDetailEvent.memberId === ME.id;

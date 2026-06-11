@@ -362,7 +362,7 @@ export default function App() {
           status: isSelf ? 'accepted' : 'requested',
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n일정 ${index + 1}: "${parsed.title}"\n담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);

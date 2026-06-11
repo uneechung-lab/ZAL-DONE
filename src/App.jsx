@@ -557,12 +557,12 @@ export default function App() {
                   transition: 'var(--transition)'
                 }}
                 onClick={() => {
-                  if (confirm('모든 대화 및 일정 데이터를 초기화하고 기본 샘플 데이터 상태로 되돌리시겠습니까?')) {
-                    localStorage.removeItem('zal_schedules');
+                  if (confirm('모든 대화 및 일정 데이터를 초기화하시겠습니까?')) {
+                    localStorage.setItem('zal_schedules', JSON.stringify([]));
                     localStorage.removeItem('zal_messages');
-                    setSchedules(INITIAL_SCHEDULES);
+                    setSchedules([]);
                     setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()) }]);
-                    alert('데이터가 기본 상태로 초기화되었습니다.');
+                    alert('모든 데이터가 초기화되었습니다.');
                   }
                 }}
                 title="데이터 초기화"

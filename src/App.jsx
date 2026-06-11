@@ -3,7 +3,9 @@ import './index.css';
 import { appwriteService, isConfigured } from './appwrite';
 
 // ─── Team data (Updated to match the screenshot "정윤희" and others) ───────────────────────────
-const TEAM = [];
+const TEAM = [
+  { id: 'yoonhee', name: '정윤희', role: '웹 기획자', avatar: '윤희', color: '#6366f1', subtext: '기획 일정' }
+];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
 const INITIAL_SCHEDULES = [];
@@ -476,17 +478,43 @@ export default function App() {
           if (currentUser) {
             setUser(currentUser);
             
-            const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            const newMember = {
-              id: 'sh', // Map to local ME profile key so scheduling logic works
+            const getDeterministicColor = (str) => {
+              const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+              let hash = 0;
+              for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              const index = Math.abs(hash) % colors.length;
+              return colors[index];
+            };
+
+            const userColor = getDeterministicColor(currentUser.name);
+            const isCurrentUserYoonhee = currentUser.name === '정윤희';
+
+            const memberYoonhee = {
+              id: isCurrentUserYoonhee ? 'sh' : 'yoonhee',
+              name: '정윤희',
+              role: '웹 기획자',
+              avatar: '윤희',
+              color: '#6366f1',
+              subtext: '기획 일정'
+            };
+
+            const loggedInMember = {
+              id: 'sh', // Map to ME key for scheduling
               name: currentUser.name,
               role: '기획자',
               avatar: currentUser.name[0] || '나',
-              color: randomColor,
+              color: userColor,
               subtext: '개인 일정'
             };
-            setActiveTeam([newMember]);
+
+            if (isCurrentUserYoonhee) {
+              setActiveTeam([loggedInMember]); // Only Yoonhee is visible if yoonhee logs in
+            } else {
+              // Both yoonhee and the logged-in user are visible
+              setActiveTeam([loggedInMember, memberYoonhee]);
+            }
             
             // Fetch database records
             const dbSchedules = await appwriteService.getSchedules();

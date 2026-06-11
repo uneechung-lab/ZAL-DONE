@@ -3,12 +3,7 @@ import './index.css';
 import { appwriteService, isConfigured } from './appwrite';
 
 // ─── Team data (Updated to match the screenshot "정윤희" and others) ───────────────────────────
-const TEAM = [
-  { id: 'sh', name: '정윤희', role: '웹 기획자', avatar: '윤희', color: '#6366f1', subtext: '웹간 일정' },
-  { id: 'sm', name: '조성현', role: '상무', avatar: '성현', color: '#4f8ef7', subtext: '기획 일정' },
-  { id: 'jh', name: '조진희', role: '차장 · 개발자', avatar: '진희', color: '#10b981', subtext: '개발 일정' },
-  { id: 'jy', name: '손지영', role: '사원 · 개발자', avatar: '지영', color: '#f59e0b', subtext: '퍼블리싱 일정' },
-];
+const TEAM = [];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
 const INITIAL_SCHEDULES = [];
@@ -353,13 +348,13 @@ export default function App() {
 
   // Fallback virtual user state for non-configured environment
   const [virtualUser, setVirtualUser] = useState(() => {
-    return TEAM[0]; // Default to 정윤희
+    return TEAM[0] || { id: 'sh', name: '정윤희', role: '웹 기획자', avatar: '윤희', color: '#6366f1', subtext: '웹간 일정' };
   });
 
   // Dynamic active team members list
-  const [activeTeam, setActiveTeam] = useState(TEAM);
+  const [activeTeam, setActiveTeam] = useState([]);
 
-  const ME = isConfigured ? (user ? { id: 'sh', name: user.name, role: '기획자', avatar: user.name[0] || '나', color: '#6366f1' } : TEAM[0]) : virtualUser;
+  const ME = isConfigured ? (user ? { id: 'sh', name: user.name, role: '기획자', avatar: user.name[0] || '나', color: '#6366f1' } : { id: 'sh', name: '사용자', role: '기획자', avatar: '나', color: '#6366f1' }) : virtualUser;
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
 
   // UI States
@@ -481,26 +476,17 @@ export default function App() {
           if (currentUser) {
             setUser(currentUser);
             
-            // Check if current user is in TEAM list, if not add to activeTeam list
-            const matchedTeamUser = TEAM.find(m => m.name === currentUser.name);
-            if (matchedTeamUser) {
-              setActiveTeam(TEAM);
-            } else {
-              const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
-              const randomColor = colors[Math.floor(Math.random() * colors.length)];
-              const newMember = {
-                id: 'sh', // Map to local ME profile key so scheduling logic works
-                name: currentUser.name,
-                role: '웹 기획자',
-                avatar: currentUser.name[0] || '나',
-                color: randomColor,
-                subtext: '개인 일정'
-              };
-              
-              // Filter out default 'sh' (정윤희) and put new log in user as the first team item
-              const teamWithoutSH = TEAM.filter(m => m.id !== 'sh');
-              setActiveTeam([newMember, ...teamWithoutSH]);
-            }
+            const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const newMember = {
+              id: 'sh', // Map to local ME profile key so scheduling logic works
+              name: currentUser.name,
+              role: '기획자',
+              avatar: currentUser.name[0] || '나',
+              color: randomColor,
+              subtext: '개인 일정'
+            };
+            setActiveTeam([newMember]);
             
             // Fetch database records
             const dbSchedules = await appwriteService.getSchedules();

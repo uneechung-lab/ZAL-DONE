@@ -13,10 +13,10 @@ const ME = TEAM[0]; // Set ME to 정윤희 to align with screenshot
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
 const INITIAL_SCHEDULES = [
-  { id: 's1', memberId: 'sh', title: '2. 테스트', startHour: 8, endHour: 10, color: 'purple' },
-  { id: 's2', memberId: 'sm', title: 'B사 제안서 검토', startHour: 14, endHour: 16, color: 'blue' },
-  { id: 's3', memberId: 'jh', title: '가이드 문서 작성', startHour: 10, endHour: 12, color: 'green' },
-  { id: 's4', memberId: 'jy', title: '오후 반차 (병원)', startHour: 13, endHour: 18, color: 'orange' },
+  { id: 's1', memberId: 'sh', title: '2. 테스트', startHour: 8, endHour: 10, color: 'purple', date: 11 },
+  { id: 's2', memberId: 'sm', title: 'B사 제안서 검토', startHour: 14, endHour: 16, color: 'blue', date: 11 },
+  { id: 's3', memberId: 'jh', title: '가이드 문서 작성', startHour: 10, endHour: 12, color: 'green', date: 11 },
+  { id: 's4', memberId: 'jy', title: '오후 반차 (병원)', startHour: 13, endHour: 18, color: 'orange', date: 11 },
 ];
 
 // Helper to get mini-calendar days for June 2026
@@ -79,7 +79,7 @@ function normalizeHour(h, ampm) {
   return hr;
 }
 
-function parseMessageToSchedules(text) {
+function parseMessageToSchedules(text, selectedDate) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const results = [];
 
@@ -90,6 +90,13 @@ function parseMessageToSchedules(text) {
 
     let matched = false;
     let match;
+
+    let date = selectedDate;
+    if (line.includes('내일')) {
+      date = selectedDate + 1;
+    } else if (line.includes('모레')) {
+      date = selectedDate + 2;
+    }
 
     if ((match = rangeRegex.exec(temp)) !== null) {
       const h1 = parseInt(match[2]);
@@ -103,13 +110,14 @@ function parseMessageToSchedules(text) {
           .replace(/부터/g, '')
           .replace(/에/g, '')
           .replace(/오늘/g, '')
+          .replace(/내일/g, '')
           .trim();
         title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
         
         if (!title) title = '새로운 일정';
         if (title.length > 20) title = title.substring(0, 20) + '...';
 
-        results.push({ title, startHour, endHour, line });
+        results.push({ title, startHour, endHour, line, date });
         matched = true;
       }
     }
@@ -125,13 +133,14 @@ function parseMessageToSchedules(text) {
           .replace(/부터/g, '')
           .replace(/에/g, '')
           .replace(/오늘/g, '')
+          .replace(/내일/g, '')
           .trim();
         title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
         
         if (!title) title = '새로운 일정';
         if (title.length > 20) title = title.substring(0, 20) + '...';
 
-        results.push({ title, startHour, endHour, line });
+        results.push({ title, startHour, endHour, line, date });
         matched = true;
       }
     }
@@ -145,10 +154,10 @@ function parseMessageToSchedules(text) {
         endHour = 18;
       }
 
-      let title = temp.replace(/오늘/g, '').trim();
+      let title = temp.replace(/오늘/g, '').replace(/내일/g, '').trim();
       if (title.length > 20) title = title.substring(0, 20) + '...';
 
-      results.push({ title, startHour, endHour, line });
+      results.push({ title, startHour, endHour, line, date });
     }
   });
 
@@ -337,7 +346,7 @@ export default function App() {
     setIsTyping(true);
 
     setTimeout(() => {
-      const parsedList = parseMessageToSchedules(text);
+      const parsedList = parseMessageToSchedules(text, selectedDate);
       
       const colors = ['purple', 'blue', 'green', 'orange'];
       const newSchedules = [];
@@ -356,9 +365,10 @@ export default function App() {
           endHour: parsed.endHour,
           color: randomColor,
           status: isSelf ? 'accepted' : 'requested',
+          date: parsed.date,
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n📅 날짜: 2026.06.${parsed.date < 10 ? '0' : ''}${parsed.date}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);
@@ -580,7 +590,11 @@ export default function App() {
             </thead>
             <tbody>
               {filteredMembers.map(member => {
-                const memberSchedules = schedules.filter(s => s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id);
+                const memberSchedules = schedules.filter(s => {
+                  const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
+                  const matchesDate = s.date === selectedDate;
+                  return matchesMember && matchesDate;
+                });
                 const { trackMap, totalTracks } = getSchedulesWithTracks(memberSchedules);
                 const rowHeight = Math.max(totalTracks * 32 + 16, 74);
 

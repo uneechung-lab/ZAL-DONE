@@ -11,12 +11,7 @@ const TEAM = [
 ];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
-const INITIAL_SCHEDULES = [
-  { id: 's1', memberId: 'sh', title: '2. 테스트', startHour: 8, endHour: 10, color: 'purple', date: 11 },
-  { id: 's2', memberId: 'sm', title: 'B사 제안서 검토', startHour: 14, endHour: 16, color: 'blue', date: 11 },
-  { id: 's3', memberId: 'jh', title: '가이드 문서 작성', startHour: 10, endHour: 12, color: 'green', date: 11 },
-  { id: 's4', memberId: 'jy', title: '오후 반차 (병원)', startHour: 13, endHour: 18, color: 'orange', date: 11 },
-];
+const INITIAL_SCHEDULES = [];
 
 // Helper to get mini-calendar days for June 2026
 // June 2026 starts on Monday (1) and has 30 days.

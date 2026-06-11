@@ -232,6 +232,14 @@ export default function App() {
   const [modalStartHour, setModalStartHour] = useState(9);
   const [newTitle, setNewTitle] = useState('');
 
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
+
+  const openDetailModal = (event) => {
+    setSelectedDetailEvent(event);
+    setIsDetailModalOpen(true);
+  };
+
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const getInitialMsgId = () => {
@@ -517,11 +525,9 @@ export default function App() {
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if(confirm(`"${currentEvent.title}" 일정을 삭제하시겠습니까?`)) {
-                                  setSchedules(prev => prev.filter(s => s.id !== currentEvent.id));
-                                }
+                                openDetailModal(currentEvent);
                               }}
-                              title={`${currentEvent.title} (클릭시 삭제)`}
+                              title={`${currentEvent.title} (클릭시 상세 보기)`}
                             >
                               {currentEvent.title}
                             </div>
@@ -566,6 +572,41 @@ export default function App() {
             <div className="modal-actions">
               <button className="modal-btn" onClick={() => setIsModalOpen(false)}>취소</button>
               <button className="modal-btn primary" onClick={saveManualSchedule}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── SCHEDULE DETAIL MODAL ─────────────────── */}
+      {isDetailModalOpen && selectedDetailEvent && (
+        <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">📅 일정 상세 정보</div>
+            <div className="modal-detail-body" style={{ margin: '10px 0', fontSize: '15px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+              <div>
+                <strong>일정명:</strong> {selectedDetailEvent.title}
+              </div>
+              <div>
+                <strong>담당자:</strong> {TEAM.find(m => m.id === selectedDetailEvent.memberId)?.name || '지정되지 않음'}
+              </div>
+              <div>
+                <strong>시간:</strong> {formatHour(selectedDetailEvent.startHour)} ~ {formatHour(selectedDetailEvent.endHour)}
+              </div>
+            </div>
+            <div className="modal-actions" style={{ marginTop: '10px' }}>
+              <button className="modal-btn" onClick={() => setIsDetailModalOpen(false)}>닫기</button>
+              <button 
+                className="modal-btn" 
+                style={{ backgroundColor: 'var(--accent-red)', color: '#ffffff', borderColor: 'var(--accent-red)' }}
+                onClick={() => {
+                  if (confirm(`"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`)) {
+                    setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                    setIsDetailModalOpen(false);
+                  }
+                }}
+              >
+                삭제
+              </button>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Query } from 'appwrite';
+import { Client, Databases, Account, ID, Query } from 'appwrite';
 
 const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || '';
 const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
@@ -13,9 +13,54 @@ if (isConfigured) {
   client.setEndpoint(endpoint).setProject(projectId);
 }
 const databases = new Databases(client);
+const account = new Account(client);
 
 export const appwriteService = {
   isConfigured,
+
+  async register(email, password, name) {
+    if (!isConfigured) return null;
+    try {
+      // Create user account
+      await account.create(ID.unique(), email, password, name);
+      // Automatically create a session for the user after registration
+      return await this.login(email, password);
+    } catch (e) {
+      console.error('Appwrite failed to register user', e);
+      throw e;
+    }
+  },
+
+  async login(email, password) {
+    if (!isConfigured) return null;
+    try {
+      return await account.createEmailPasswordSession(email, password);
+    } catch (e) {
+      console.error('Appwrite failed to login user', e);
+      throw e;
+    }
+  },
+
+  async logout() {
+    if (!isConfigured) return null;
+    try {
+      await account.deleteSession('current');
+      return true;
+    } catch (e) {
+      console.error('Appwrite failed to logout user', e);
+      return false;
+    }
+  },
+
+  async getCurrentUser() {
+    if (!isConfigured) return null;
+    try {
+      return await account.get();
+    } catch (e) {
+      // Silently catch since it's expected when user is not logged in
+      return null;
+    }
+  },
   
   async getSchedules() {
     if (!isConfigured) return null;

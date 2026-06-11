@@ -10,8 +10,6 @@ const TEAM = [
   { id: 'jy', name: '손지영', role: '사원 · 개발자', avatar: '지영', color: '#f59e0b', subtext: '퍼블리싱 일정' },
 ];
 
-const ME = TEAM[0]; // Set ME to 정윤희 to align with screenshot
-
 // ─── Initial schedules ──────────────────────────────────────────────────────────
 const INITIAL_SCHEDULES = [
   { id: 's1', memberId: 'sh', title: '2. 테스트', startHour: 8, endHour: 10, color: 'purple', date: 11 },
@@ -348,20 +346,26 @@ function getSchedulesWithTracks(memberSchedules) {
 
 export default function App() {
   const slot = getTimeSlot();
+
+  // Auth States
+  const [user, setUser] = useState(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authLoading, setAuthLoading] = useState(isConfigured);
+  const [authError, setAuthError] = useState('');
+
+  // Fallback virtual user state for non-configured environment
+  const [virtualUser, setVirtualUser] = useState(() => {
+    return TEAM[0]; // Default to 정윤희
+  });
+
+  const ME = isConfigured ? (user ? { id: 'sh', name: user.name, role: '기획자', avatar: user.name[0] || '나', color: '#6366f1' } : TEAM[0]) : virtualUser;
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
 
   // UI States
-  const [messages, setMessages] = useState(() => {
-    if (isConfigured) return [];
-    const saved = localStorage.getItem('zal_messages');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return [initMsg];
-  });
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true); // Default to expanded/open
@@ -376,11 +380,7 @@ export default function App() {
   const [timeViewTab, setTimeViewTab] = useState('daily'); // daily | weekly
 
   // Schedule Data
-  const [schedules, setSchedules] = useState(() => {
-    if (isConfigured) return [];
-    const saved = localStorage.getItem('zal_schedules');
-    return saved ? JSON.parse(saved) : INITIAL_SCHEDULES;
-  });
+  const [schedules, setSchedules] = useState([]);
 
   // Event modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -474,31 +474,99 @@ export default function App() {
     }
   }, [messages, isTyping, isDrawerOpen]);
 
+  // Auth checking and data fetching initialization
   useEffect(() => {
     if (isConfigured) {
-      async function initAppwrite() {
-        const dbSchedules = await appwriteService.getSchedules();
-        if (dbSchedules !== null) {
-          setSchedules(dbSchedules);
-        }
-        const dbMessages = await appwriteService.getMessages();
-        if (dbMessages !== null && dbMessages.length > 0) {
-          setMessages(dbMessages);
-        } else {
-          // 데이터베이스에 메시지가 하나도 없을 때 인사말 생성 및 저장
-          const savedGreeting = await appwriteService.createMessage(initMsg);
-          setMessages([savedGreeting || initMsg]);
+      async function checkAuthAndFetch() {
+        try {
+          const currentUser = await appwriteService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+            
+            // Fetch database records
+            const dbSchedules = await appwriteService.getSchedules();
+            if (dbSchedules !== null) {
+              setSchedules(dbSchedules);
+            }
+            const dbMessages = await appwriteService.getMessages();
+            if (dbMessages !== null && dbMessages.length > 0) {
+              setMessages(dbMessages);
+            } else {
+              const savedGreeting = await appwriteService.createMessage(initMsg);
+              setMessages([savedGreeting || initMsg]);
+            }
+          }
+        } catch (err) {
+          console.error('Initialization error:', err);
+        } finally {
+          setAuthLoading(false);
         }
       }
-      initAppwrite();
+      checkAuthAndFetch();
     } else {
-      // 로컬 스토리지 데이터 재확인하여 없을 경우 greeting 강제 세팅
-      const saved = localStorage.getItem('zal_messages');
-      if (!saved) {
-        setMessages([initMsg]);
-      }
+      // Local mode setup
+      const savedSched = localStorage.getItem('zal_schedules');
+      setSchedules(savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES);
+
+      const savedMsg = localStorage.getItem('zal_messages');
+      setMessages(savedMsg ? JSON.parse(savedMsg) : [initMsg]);
+      setAuthLoading(false);
     }
-  }, []);
+  }, [user]);
+
+  // Handle User Registration
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    if (!authEmail.trim() || !authPassword.trim() || !authName.trim()) {
+      setAuthError('모든 필드를 입력해 주세요.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const session = await appwriteService.register(authEmail, authPassword, authName);
+      if (session) {
+        const currentUser = await appwriteService.getCurrentUser();
+        setUser(currentUser);
+      }
+    } catch (err) {
+      setAuthError(err.message || '회원가입에 실패했습니다.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Handle User Log In
+  const handleLogIn = async (e) => {
+    e.preventDefault();
+    if (!authEmail.trim() || !authPassword.trim()) {
+      setAuthError('이메일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      await appwriteService.login(authEmail, authPassword);
+      const currentUser = await appwriteService.getCurrentUser();
+      setUser(currentUser);
+    } catch (err) {
+      setAuthError(err.message || '로그인에 실패했습니다.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Handle User Log Out
+  const handleLogOut = async () => {
+    if (isConfigured) {
+      setAuthLoading(true);
+      await appwriteService.logout();
+      setUser(null);
+      setMessages([]);
+      setSchedules([]);
+      setAuthLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isConfigured) {
@@ -657,6 +725,90 @@ export default function App() {
 
   const hourSlots = [8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18, 18.5, 19];
 
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '16px', background: 'var(--bg-primary)' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '4px solid var(--border-light)', borderTopColor: 'var(--accent-purple)', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>데이터 동기화 중...</p>
+      </div>
+    );
+  }
+
+  // Display Login / Sign Up UI if configured but not authenticated
+  if (isConfigured && !user) {
+    return (
+      <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%)' }}>
+        <div style={{ background: '#ffffff', padding: '40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent-purple)', letterSpacing: '-0.5px' }}>ZAL : 잘됨</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>인공지능 일정 비서 및 협업 타임라인</p>
+          </div>
+          
+          <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {isSignUp && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이름</label>
+                <input 
+                  type="text" 
+                  placeholder="실명 입력 (예: 정윤희)" 
+                  value={authName} 
+                  onChange={(e) => setAuthName(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+                />
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이메일</label>
+              <input 
+                type="email" 
+                placeholder="email@example.com" 
+                value={authEmail} 
+                onChange={(e) => setAuthEmail(e.target.value)} 
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>비밀번호</label>
+              <input 
+                type="password" 
+                placeholder="6자리 이상 비밀번호" 
+                value={authPassword} 
+                onChange={(e) => setAuthPassword(e.target.value)} 
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+              />
+            </div>
+
+            {authError && (
+              <p style={{ color: 'var(--accent-red)', fontSize: '13px', fontWeight: '600', margin: '4px 0 0 0' }}>{authError}</p>
+            )}
+
+            <button 
+              type="submit" 
+              style={{ width: '100%', padding: '12px 14px', backgroundColor: 'var(--accent-purple)', color: '#ffffff', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: '700', cursor: 'pointer', transition: 'var(--transition)', marginTop: '8px' }}
+            >
+              {isSignUp ? '회원가입' : '로그인'}
+            </button>
+          </form>
+
+          <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            {isSignUp ? '이미 계정이 있으신가요?' : '아직 계정이 없으신가요?'} {' '}
+            <button 
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setAuthError('');
+              }} 
+              style={{ background: 'none', border: 'none', color: 'var(--accent-purple)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {isSignUp ? '로그인하기' : '회원가입하기'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       {/* ──── LEFT COLLAPSIBLE AI DRAWER ─────────────────── */}
@@ -667,6 +819,41 @@ export default function App() {
             <span>ZAL : 잘됨</span>
           </div>
           <button className="close-drawer-btn" onClick={() => setIsDrawerOpen(false)}>×</button>
+        </div>
+
+        {/* User Session Profile Header in Chat Drawer */}
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: ME.color || '#6366f1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>
+              {ME.avatar}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{ME.name}</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{isConfigured ? 'Appwrite 모드' : '로컬 모드 (데모)'}</span>
+            </div>
+          </div>
+          {isConfigured ? (
+            <button 
+              onClick={handleLogOut} 
+              style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
+            >
+              로그아웃
+            </button>
+          ) : (
+            // Local Mode Switcher for ease of testing different members locally
+            <select
+              value={virtualUser.id}
+              onChange={(e) => {
+                const target = TEAM.find(m => m.id === e.target.value);
+                if (target) setVirtualUser(target);
+              }}
+              style={{ fontSize: '11px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+            >
+              {TEAM.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="chat-messages">

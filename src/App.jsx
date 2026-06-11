@@ -534,6 +534,36 @@ export default function App() {
                 </button>
               </div>
             </div>
+            
+            {/* Reset Button (Right aligned) */}
+            <div style={{ marginLeft: 'auto', zIndex: 10 }}>
+              <button 
+                className="modal-btn" 
+                style={{ 
+                  fontSize: '13.5px', 
+                  fontWeight: '600', 
+                  color: '#ef4444', 
+                  borderColor: 'rgba(239, 68, 68, 0.2)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  transition: 'var(--transition)'
+                }}
+                onClick={() => {
+                  if (confirm('모든 대화 및 일정 데이터를 초기화하고 기본 샘플 데이터 상태로 되돌리시겠습니까?')) {
+                    localStorage.removeItem('zal_schedules');
+                    localStorage.removeItem('zal_messages');
+                    setSchedules(INITIAL_SCHEDULES);
+                    setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()) }]);
+                    alert('데이터가 기본 상태로 초기화되었습니다.');
+                  }
+                }}
+                title="데이터 초기화"
+              >
+                🔄 초기화
+              </button>
+            </div>
           </div>
 
 

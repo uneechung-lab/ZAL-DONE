@@ -143,18 +143,35 @@ function parseMessageToSchedules(text) {
       title = title.substring(0, 20) + '...';
     }
     
+    let memberId = 'sh';
+    for (const member of TEAM) {
+      if (title.includes(member.name) || title.includes(member.avatar) || temp.includes(member.name) || temp.includes(member.avatar)) {
+        memberId = member.id;
+        break;
+      }
+    }
+
     results.push({
       title,
       startHour,
-      endHour
+      endHour,
+      memberId
     });
   }
   
   if (results.length === 0) {
+    let memberId = 'sh';
+    for (const member of TEAM) {
+      if (text.includes(member.name) || text.includes(member.avatar)) {
+        memberId = member.id;
+        break;
+      }
+    }
     results.push({
       title: text.substring(0, 15),
       startHour: 9,
-      endHour: 11
+      endHour: 11,
+      memberId
     });
   }
   
@@ -331,16 +348,18 @@ export default function App() {
 
       parsedList.forEach((parsed, index) => {
         const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
+        const assignedMember = TEAM.find(m => m.id === parsed.memberId) || ME;
         const newSchedule = {
           id: `s_${Date.now()}_${index}`,
-          memberId: 'sh',
+          memberId: assignedMember.id,
+          memberIds: [assignedMember.id],
           title: parsed.title,
           startHour: parsed.startHour,
           endHour: parsed.endHour,
           color: randomColor,
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);

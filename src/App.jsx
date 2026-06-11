@@ -236,7 +236,7 @@ export default function App() {
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
   const [editTitle, setEditTitle] = useState('');
-  const [editMemberId, setEditMemberId] = useState('');
+  const [editMemberIds, setEditMemberIds] = useState([]);
   const [editStartHour, setEditStartHour] = useState(9);
   const [editEndHour, setEditEndHour] = useState(11);
   const [editDescription, setEditDescription] = useState('');
@@ -244,7 +244,7 @@ export default function App() {
   const openDetailModal = (event) => {
     setSelectedDetailEvent(event);
     setEditTitle(event.title);
-    setEditMemberId(event.memberId);
+    setEditMemberIds(event.memberIds ? event.memberIds : [event.memberId]);
     setEditStartHour(event.startHour);
     setEditEndHour(event.endHour);
     setEditDescription(event.description || '');
@@ -253,12 +253,17 @@ export default function App() {
 
   const saveEventEdits = () => {
     if (!editTitle.trim()) return;
+    if (editMemberIds.length === 0) {
+      alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
+      return;
+    }
     setSchedules(prev => prev.map(s => {
       if (s.id === selectedDetailEvent.id) {
         return {
           ...s,
           title: editTitle.trim(),
-          memberId: editMemberId,
+          memberIds: editMemberIds,
+          memberId: editMemberIds[0], // fallback compatibility
           startHour: parseFloat(editStartHour),
           endHour: parseFloat(editEndHour),
           description: editDescription.trim(),
@@ -524,7 +529,7 @@ export default function App() {
             </thead>
             <tbody>
               {filteredMembers.map(member => {
-                const memberSchedules = schedules.filter(s => s.memberId === member.id);
+                const memberSchedules = schedules.filter(s => s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id);
                 const { trackMap, totalTracks } = getSchedulesWithTracks(memberSchedules);
                 const rowHeight = Math.max(totalTracks * 32 + 16, 74);
 
@@ -633,16 +638,46 @@ export default function App() {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>담당자</label>
-                <select 
-                  value={editMemberId} 
-                  onChange={(e) => setEditMemberId(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff' }}
-                >
-                  {TEAM.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-                  ))}
-                </select>
+                <label style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
+                  {TEAM.map(m => {
+                    const isChecked = editMemberIds.includes(m.id);
+                    return (
+                      <label 
+                        key={m.id} 
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          cursor: 'pointer', 
+                          background: isChecked ? 'rgba(99, 102, 241, 0.08)' : '#f8fafc', 
+                          padding: '6px 12px', 
+                          borderRadius: '20px', 
+                          border: `1.5px solid ${isChecked ? 'var(--accent-purple)' : 'var(--border-light)'}`, 
+                          fontSize: '13.5px', 
+                          fontWeight: '600', 
+                          transition: 'var(--transition)',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditMemberIds(prev => [...prev, m.id]);
+                            } else {
+                              setEditMemberIds(prev => prev.filter(id => id !== m.id));
+                            }
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: m.color }} />
+                        {m.name}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>

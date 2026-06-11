@@ -663,6 +663,18 @@ button, input, select, textarea {
   color: #047857;
 }
 
+.schedule-block.status-requested {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0.18) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  border: 1.5px dashed currentColor;
+  opacity: 0.9;
+}
+
 /* Floating AI toggle button */
 .ai-toggle-floating-btn {
   position: absolute;

@@ -284,6 +284,7 @@ export default function App() {
           startHour: parseFloat(editStartHour),
           endHour: parseFloat(editEndHour),
           description: editDescription.trim(),
+          status: (s.status === 'requested' && editMemberIds.length === 1 && editMemberIds.includes('sh')) ? 'accepted' : s.status,
         };
       }
       return s;
@@ -349,6 +350,7 @@ export default function App() {
       parsedList.forEach((parsed, index) => {
         const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
         const assignedMember = TEAM.find(m => m.id === parsed.memberId) || ME;
+        const isSelf = assignedMember.id === 'sh';
         const newSchedule = {
           id: `s_${Date.now()}_${index}`,
           memberId: assignedMember.id,
@@ -357,9 +359,10 @@ export default function App() {
           startHour: parsed.startHour,
           endHour: parsed.endHour,
           color: randomColor,
+          status: isSelf ? 'accepted' : 'requested',
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);
@@ -399,13 +402,16 @@ export default function App() {
     const colors = ['purple', 'blue', 'green', 'orange'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
+    const isSelf = modalMember.id === 'sh';
     const newSchedule = {
       id: `s_${Date.now()}`,
       memberId: modalMember.id,
+      memberIds: [modalMember.id],
       title: newTitle.trim(),
       startHour: modalStartHour,
       endHour: Math.min(modalStartHour + 2, 19.5),
       color: randomColor,
+      status: isSelf ? 'accepted' : 'requested',
     };
 
     setSchedules(prev => [...prev, newSchedule]);
@@ -577,7 +583,7 @@ export default function App() {
                         >
                           {currentEvent && (
                             <div 
-                              className={`schedule-block ${currentEvent.color}`}
+                              className={`schedule-block ${currentEvent.color} ${currentEvent.status === 'requested' ? 'status-requested' : ''}`}
                               style={{ 
                                 width: `calc(${(currentEvent.endHour - currentEvent.startHour) * 2 * 100}% - 8px)`,
                                 top: `${topOffset}px`,
@@ -590,7 +596,7 @@ export default function App() {
                               }}
                               title={`${currentEvent.title} (클릭시 상세 보기)`}
                             >
-                              {currentEvent.title}
+                              {currentEvent.status === 'requested' && '⏳ '}{currentEvent.title}
                             </div>
                           )}
                         </td>
@@ -643,6 +649,36 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
           <div className="modal-content" style={{ width: '380px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-title">📅 일정 상세 및 수정</div>
+            
+            {selectedDetailEvent.status === 'requested' && (
+              <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>⚡ 요청 대기 중인 일정입니다</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button 
+                    className="modal-btn" 
+                    style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700' }}
+                    onClick={() => {
+                      setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted' } : s));
+                      setIsDetailModalOpen(false);
+                    }}
+                  >
+                    수락
+                  </button>
+                  <button 
+                    className="modal-btn" 
+                    style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
+                    onClick={() => {
+                      if (confirm('요청을 거부하고 일정을 삭제하시겠습니까?')) {
+                        setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                        setIsDetailModalOpen(false);
+                      }
+                    }}
+                  >
+                    거부
+                  </button>
+                </div>
+              </div>
+            )}
             
             <div className="modal-detail-body" style={{ margin: '12px 0', fontSize: '15px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

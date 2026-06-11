@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './index.css';
+import { appwriteService, isConfigured } from './appwrite';
 
 // ─── Team data (Updated to match the screenshot "정윤희" and others) ───────────────────────────
 const TEAM = [
@@ -339,6 +340,7 @@ export default function App() {
 
   // UI States
   const [messages, setMessages] = useState(() => {
+    if (isConfigured) return [];
     const saved = localStorage.getItem('zal_messages');
     return saved ? JSON.parse(saved) : [initMsg];
   });
@@ -357,6 +359,7 @@ export default function App() {
 
   // Schedule Data
   const [schedules, setSchedules] = useState(() => {
+    if (isConfigured) return [];
     const saved = localStorage.getItem('zal_schedules');
     return saved ? JSON.parse(saved) : INITIAL_SCHEDULES;
   });
@@ -386,22 +389,34 @@ export default function App() {
     setIsDetailModalOpen(true);
   };
 
-  const saveEventEdits = () => {
+  const saveEventEdits = async () => {
     if (!editTitle.trim()) return;
     if (editMemberIds.length === 0) {
       alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
       return;
     }
+
+    const updatedFields = {
+      title: editTitle.trim(),
+      memberIds: editMemberIds,
+      memberId: editMemberIds[0],
+      startHour: parseFloat(editStartHour),
+      endHour: parseFloat(editEndHour),
+      description: editDescription.trim(),
+    };
+
+    if (isConfigured) {
+      await appwriteService.updateSchedule(selectedDetailEvent.id, {
+        ...selectedDetailEvent,
+        ...updatedFields
+      });
+    }
+
     setSchedules(prev => prev.map(s => {
       if (s.id === selectedDetailEvent.id) {
         return {
           ...s,
-          title: editTitle.trim(),
-          memberIds: editMemberIds,
-          memberId: editMemberIds[0], // fallback compatibility
-          startHour: parseFloat(editStartHour),
-          endHour: parseFloat(editEndHour),
-          description: editDescription.trim(),
+          ...updatedFields,
           status: (s.status === 'requested' && editMemberIds.length === 1 && editMemberIds.includes('sh')) ? 'accepted' : s.status,
         };
       }
@@ -442,11 +457,34 @@ export default function App() {
   }, [messages, isTyping, isDrawerOpen]);
 
   useEffect(() => {
-    localStorage.setItem('zal_schedules', JSON.stringify(schedules));
+    if (isConfigured) {
+      async function initAppwrite() {
+        const dbSchedules = await appwriteService.getSchedules();
+        if (dbSchedules !== null) {
+          setSchedules(dbSchedules);
+        }
+        const dbMessages = await appwriteService.getMessages();
+        if (dbMessages !== null && dbMessages.length > 0) {
+          setMessages(dbMessages);
+        } else if (dbMessages !== null && dbMessages.length === 0) {
+          const savedGreeting = await appwriteService.createMessage(initMsg);
+          setMessages([savedGreeting || initMsg]);
+        }
+      }
+      initAppwrite();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isConfigured) {
+      localStorage.setItem('zal_schedules', JSON.stringify(schedules));
+    }
   }, [schedules]);
 
   useEffect(() => {
-    localStorage.setItem('zal_messages', JSON.stringify(messages));
+    if (!isConfigured) {
+      localStorage.setItem('zal_messages', JSON.stringify(messages));
+    }
   }, [messages]);
 
   const handleSend = () => {
@@ -454,11 +492,13 @@ export default function App() {
     if (!text) return;
 
     const userMsg = { id: msgId.current++, from: 'user', text, time: formatTime(new Date()) };
-    setMessages(prev => [...prev, userMsg]);
+    
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
+    const proceedWithAI = async (dbUserMsg) => {
+      setMessages(prev => [...prev, dbUserMsg || userMsg]);
+      
       const parsedList = parseMessageToSchedules(text, selectedDate);
       
       const colors = ['purple', 'blue', 'green', 'orange'];
@@ -502,13 +542,35 @@ export default function App() {
         replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${displayAssigneeName}${isSelf ? '' : ' (요청됨)'}\n📅 날짜: 2026.06.${parsed.date < 10 ? '0' : ''}${parsed.date}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
-      setSchedules(prev => [...prev, ...newSchedules]);
+      const savedSchedules = [];
+      for (const sched of newSchedules) {
+        if (isConfigured) {
+          const dbSched = await appwriteService.createSchedule(sched);
+          savedSchedules.push(dbSched || sched);
+        } else {
+          savedSchedules.push(sched);
+        }
+      }
+
+      setSchedules(prev => [...prev, ...savedSchedules]);
 
       const aiReply = `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!\n${replyDetails}`;
       const aiMsg = { id: msgId.current++, from: 'ai', text: aiReply, time: formatTime(new Date()) };
-      setMessages(prev => [...prev, aiMsg]);
+      
+      if (isConfigured) {
+        const dbAiMsg = await appwriteService.createMessage(aiMsg);
+        setMessages(prev => [...prev, dbAiMsg || aiMsg]);
+      } else {
+        setMessages(prev => [...prev, aiMsg]);
+      }
       setIsTyping(false);
-    }, 1000);
+    };
+
+    if (isConfigured) {
+      appwriteService.createMessage(userMsg).then(proceedWithAI);
+    } else {
+      proceedWithAI(userMsg);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -534,7 +596,7 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  const saveManualSchedule = () => {
+  const saveManualSchedule = async () => {
     if (!newTitle.trim()) return;
     const colors = ['purple', 'blue', 'green', 'orange'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
@@ -553,7 +615,12 @@ export default function App() {
       requesterId: 'sh',
     };
 
-    setSchedules(prev => [...prev, newSchedule]);
+    if (isConfigured) {
+      const dbSched = await appwriteService.createSchedule(newSchedule);
+      setSchedules(prev => [...prev, dbSched || newSchedule]);
+    } else {
+      setSchedules(prev => [...prev, newSchedule]);
+    }
     setIsModalOpen(false);
   };
 
@@ -689,8 +756,12 @@ export default function App() {
                   cursor: 'pointer',
                   transition: 'var(--transition)'
                 }}
-                onClick={() => {
+                onClick={async () => {
                   if (confirm('모든 대화 및 일정 데이터를 초기화하시겠습니까?')) {
+                    if (isConfigured) {
+                      await appwriteService.clearSchedules();
+                      await appwriteService.clearMessages();
+                    }
                     localStorage.setItem('zal_schedules', JSON.stringify([]));
                     localStorage.removeItem('zal_messages');
                     setSchedules([]);
@@ -847,7 +918,13 @@ export default function App() {
                         <button 
                           className="modal-btn" 
                           style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700' }}
-                          onClick={() => {
+                          onClick={async () => {
+                            if (isConfigured) {
+                              await appwriteService.updateSchedule(selectedDetailEvent.id, {
+                                ...selectedDetailEvent,
+                                status: 'accepted'
+                              });
+                            }
                             setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted' } : s));
                             setIsDetailModalOpen(false);
                           }}
@@ -857,8 +934,11 @@ export default function App() {
                         <button 
                           className="modal-btn" 
                           style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm('요청을 거부하고 일정을 삭제하시겠습니까?')) {
+                              if (isConfigured) {
+                                await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                              }
                               setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
                               setIsDetailModalOpen(false);
                             }
@@ -982,8 +1062,11 @@ export default function App() {
               <button 
                 className="modal-btn" 
                 style={{ backgroundColor: 'var(--accent-red)', color: '#ffffff', borderColor: 'var(--accent-red)' }}
-                onClick={() => {
+                onClick={async () => {
                   if (confirm(`"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`)) {
+                    if (isConfigured) {
+                      await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                    }
                     setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
                     setIsDetailModalOpen(false);
                   }

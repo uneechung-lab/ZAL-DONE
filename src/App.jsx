@@ -78,7 +78,7 @@ function normalizeHour(h, ampm) {
   return hr;
 }
 
-function parseMessageToSchedules(text, selectedDate) {
+function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
   // 줄 바꿈뿐만 아니라 쉼표(,)나 마침표(.) 등으로 구분되어 한 줄에 여러 일정이 나열된 경우를 위해 스플릿 강화
   let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const normalizedLines = [];
@@ -274,7 +274,7 @@ function parseMessageToSchedules(text, selectedDate) {
       isAll = true;
     } else {
       let targetMember = null;
-      for (const member of TEAM) {
+      for (const member of teamList) {
         const roleKeyword = member.role.split(' ')[0];
         if (
           res.line.includes(member.name) || 
@@ -360,6 +360,9 @@ export default function App() {
   const [virtualUser, setVirtualUser] = useState(() => {
     return TEAM[0]; // Default to 정윤희
   });
+
+  // Dynamic active team members list
+  const [activeTeam, setActiveTeam] = useState(TEAM);
 
   const ME = isConfigured ? (user ? { id: 'sh', name: user.name, role: '기획자', avatar: user.name[0] || '나', color: '#6366f1' } : TEAM[0]) : virtualUser;
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
@@ -483,6 +486,27 @@ export default function App() {
           if (currentUser) {
             setUser(currentUser);
             
+            // Check if current user is in TEAM list, if not add to activeTeam list
+            const matchedTeamUser = TEAM.find(m => m.name === currentUser.name);
+            if (matchedTeamUser) {
+              setActiveTeam(TEAM);
+            } else {
+              const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+              const randomColor = colors[Math.floor(Math.random() * colors.length)];
+              const newMember = {
+                id: 'sh', // Map to local ME profile key so scheduling logic works
+                name: currentUser.name,
+                role: '웹 기획자',
+                avatar: currentUser.name[0] || '나',
+                color: randomColor,
+                subtext: '개인 일정'
+              };
+              
+              // Filter out default 'sh' (정윤희) and put new log in user as the first team item
+              const teamWithoutSH = TEAM.filter(m => m.id !== 'sh');
+              setActiveTeam([newMember, ...teamWithoutSH]);
+            }
+            
             // Fetch database records
             const dbSchedules = await appwriteService.getSchedules();
             if (dbSchedules !== null) {
@@ -586,6 +610,7 @@ export default function App() {
       setUser(null);
       setMessages([]);
       setSchedules([]);
+      setActiveTeam(TEAM);
       setAuthLoading(false);
     }
   };
@@ -614,7 +639,7 @@ export default function App() {
     const proceedWithAI = async (dbUserMsg) => {
       setMessages(prev => [...prev, dbUserMsg || userMsg]);
       
-      const parsedList = parseMessageToSchedules(text, selectedDate);
+      const parsedList = parseMessageToSchedules(text, selectedDate, activeTeam);
       
       const colors = ['purple', 'blue', 'green', 'orange'];
       const newSchedules = [];
@@ -629,12 +654,12 @@ export default function App() {
         let displayAssigneeName;
 
         if (parsed.isAll) {
-          assignedMemberIds = TEAM.map(m => m.id);
+          assignedMemberIds = activeTeam.map(m => m.id);
           assignedMemberId = 'sh';
           isSelf = false;
           displayAssigneeName = '전체 인원';
         } else {
-          const assignedMember = TEAM.find(m => m.id === parsed.memberId) || ME;
+          const assignedMember = activeTeam.find(m => m.id === parsed.memberId) || ME;
           assignedMemberIds = [assignedMember.id];
           assignedMemberId = assignedMember.id;
           isSelf = assignedMember.id === 'sh';
@@ -739,7 +764,7 @@ export default function App() {
     setIsModalOpen(false);
   };
 
-  const filteredMembers = TEAM.filter(m => {
+  const filteredMembers = activeTeam.filter(m => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     return m.name.toLowerCase().includes(query) || m.role.toLowerCase().includes(query);

@@ -653,35 +653,53 @@ export default function App() {
           <div className="modal-content" style={{ width: '380px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-title">📅 일정 상세 및 수정</div>
             
-            {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (
-              <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>⚡ 요청 대기 중인 일정입니다</span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button 
-                    className="modal-btn" 
-                    style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700' }}
-                    onClick={() => {
-                      setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted' } : s));
-                      setIsDetailModalOpen(false);
-                    }}
-                  >
-                    수락
-                  </button>
-                  <button 
-                    className="modal-btn" 
-                    style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
-                    onClick={() => {
-                      if (confirm('요청을 거부하고 일정을 삭제하시겠습니까?')) {
-                        setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                        setIsDetailModalOpen(false);
-                      }
-                    }}
-                  >
-                    거부
-                  </button>
+            {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
+              const isCurrentUserAssignee = selectedDetailEvent.memberIds 
+                ? selectedDetailEvent.memberIds.includes(ME.id) 
+                : selectedDetailEvent.memberId === ME.id;
+              
+              const assignedNames = selectedDetailEvent.memberIds 
+                ? selectedDetailEvent.memberIds.map(id => TEAM.find(m => m.id === id)?.name).filter(Boolean).join(', ')
+                : (TEAM.find(m => m.id === selectedDetailEvent.memberId)?.name || '');
+
+              return (
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                  {isCurrentUserAssignee ? (
+                    <>
+                      <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>⚡ 요청 대기 중인 일정입니다</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button 
+                          className="modal-btn" 
+                          style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700' }}
+                          onClick={() => {
+                            setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted' } : s));
+                            setIsDetailModalOpen(false);
+                          }}
+                        >
+                          수락
+                        </button>
+                        <button 
+                          className="modal-btn" 
+                          style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
+                          onClick={() => {
+                            if (confirm('요청을 거부하고 일정을 삭제하시겠습니까?')) {
+                              setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                              setIsDetailModalOpen(false);
+                            }
+                          }}
+                        >
+                          거부
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700', width: '100%', textAlign: 'center' }}>
+                      ⏳ {assignedNames} 님의 수락 대기 중입니다
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
             
             <div className="modal-detail-body" style={{ margin: '12px 0', fontSize: '15px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

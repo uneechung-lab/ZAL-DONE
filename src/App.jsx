@@ -84,12 +84,11 @@ function parseMessageToSchedules(text, selectedDate) {
   const results = [];
 
   lines.forEach(line => {
-    let temp = line.replace(/~/g, '-');
-    const rangeRegex = /(오전|오후)?\s*(\d+)(?:시)?\s*-\s*(오전|오후)?\s*(\d+)(?:시)?/g;
-    const singleRegex = /(오전|오후)?\s*(\d+)\s*시/g;
-
+    let temp = line;
     let matched = false;
-    let match;
+    let startHour = 10;
+    let endHour = 11;
+    let matchedString = '';
 
     let date = selectedDate;
     if (line.includes('내일')) {
@@ -99,70 +98,140 @@ function parseMessageToSchedules(text, selectedDate) {
     }
 
     const clean = (str) => {
-      return str
-        .replace(/까지/g, '')
-        .replace(/부터/g, '')
-        .replace(/에/g, '')
-        .replace(/오늘/g, '')
-        .replace(/내일/g, '')
-        .replace(/모레/g, '')
+      let s = str
         .replace(/모두에게/g, '')
         .replace(/전체에게/g, '')
         .replace(/전원에게/g, '')
         .replace(/모두/g, '')
         .replace(/전체/g, '')
+        .replace(/전원/g, '')
+        .replace(/오늘/g, '')
+        .replace(/내일/g, '')
+        .replace(/모레/g, '');
+      
+      s = s
+        .replace(/\b에\b/g, '')
+        .replace(/시\s*반에/g, '시 반')
+        .replace(/시에/g, '시')
+        .replace(/까지/g, '')
+        .replace(/부터/g, '')
         .trim();
+        
+      return s;
     };
 
-    if ((match = rangeRegex.exec(temp)) !== null) {
+    // 1. Range match: HH:MM - HH:MM or HH:MM ~ HH:MM
+    const rangeTimeRegex = /(오전|오후)?\s*(\d{1,2}):(\d{2})\s*[-~]\s*(오전|오후)?\s*(\d{1,2}):(\d{2})/i;
+    let match = rangeTimeRegex.exec(temp);
+    if (match) {
       const h1 = parseInt(match[2]);
-      const h2 = parseInt(match[4]);
-      if (h1 >= 1 && h1 <= 24 && h2 >= 1 && h2 <= 24) {
-        const startHour = normalizeHour(h1, match[1]);
-        const endHour = normalizeHour(h2, match[3] || match[1]);
-        
-        let title = clean(temp.replace(match[0], ''));
-        title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
-        
-        if (!title) title = '새로운 일정';
-        if (title.length > 20) title = title.substring(0, 20) + '...';
+      const m1 = parseInt(match[3]);
+      const h2 = parseInt(match[5]);
+      const m2 = parseInt(match[6]);
+      startHour = normalizeHour(h1, match[1]) + (m1 === 30 ? 0.5 : 0);
+      endHour = normalizeHour(h2, match[4] || match[1]) + (m2 === 30 ? 0.5 : 0);
+      matchedString = match[0];
+      matched = true;
+    }
 
-        results.push({ title, startHour, endHour, line, date });
+    // 2. Range match: H시 (반/30분) ~ H시 (반/30분)
+    if (!matched) {
+      const rangeKoRegex = /(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?\s*[-~]\s*(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?/;
+      match = rangeKoRegex.exec(temp);
+      if (match) {
+        const h1 = parseInt(match[2]);
+        const m1 = match[3];
+        const h2 = parseInt(match[5]);
+        const m2 = match[6];
+        startHour = normalizeHour(h1, match[1]) + (m1 === '반' || m1 === '30분' ? 0.5 : 0);
+        endHour = normalizeHour(h2, match[4] || match[1]) + (m2 === '반' || m2 === '30분' ? 0.5 : 0);
+        matchedString = match[0];
         matched = true;
       }
     }
 
-    if (!matched && (match = singleRegex.exec(temp)) !== null) {
-      const h = parseInt(match[2]);
-      if (h >= 1 && h <= 24) {
-        const startHour = normalizeHour(h, match[1]);
-        const endHour = Math.min(startHour + 1, 19);
-        
-        let title = clean(temp.replace(match[0], ''));
-        title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
-        
-        if (!title) title = '새로운 일정';
-        if (title.length > 20) title = title.substring(0, 20) + '...';
-
-        results.push({ title, startHour, endHour, line, date });
+    // 3. Range match: 2-4시, 2~4시
+    if (!matched) {
+      const rangeSimpleRegex = /(오전|오후)?\s*(\d{1,2})\s*[-~]\s*(오전|오후)?\s*(\d{1,2})\s*시/;
+      match = rangeSimpleRegex.exec(temp);
+      if (match) {
+        const h1 = parseInt(match[2]);
+        const h2 = parseInt(match[4]);
+        startHour = normalizeHour(h1, match[1]);
+        endHour = normalizeHour(h2, match[3] || match[1]);
+        matchedString = match[0];
         matched = true;
       }
     }
 
-    if (!matched && temp.length > 2) {
-      let startHour = 10;
-      let endHour = 11;
-      
+    // 4. Single time with HH:MM
+    if (!matched) {
+      const singleTimeRegex = /(오전|오후)?\s*(\d{1,2}):(\d{2})/;
+      match = singleTimeRegex.exec(temp);
+      if (match) {
+        const h = parseInt(match[2]);
+        const m = parseInt(match[3]);
+        startHour = normalizeHour(h, match[1]) + (m === 30 ? 0.5 : 0);
+        
+        const matchIndex = match.index;
+        const afterMatch = temp.substring(matchIndex + match[0].length).trim();
+        const hasTrailingTilde = afterMatch.startsWith('~') || afterMatch.startsWith('-');
+        
+        if (hasTrailingTilde) {
+          endHour = 19.0;
+        } else {
+          endHour = Math.min(startHour + 1, 19.0);
+        }
+        matchedString = match[0];
+        if (hasTrailingTilde) {
+          matchedString = temp.substring(matchIndex, matchIndex + match[0].length + 1);
+        }
+        matched = true;
+      }
+    }
+
+    // 5. Single time with H시 (반/30분)
+    if (!matched) {
+      const singleKoRegex = /(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?/;
+      match = singleKoRegex.exec(temp);
+      if (match) {
+        const h = parseInt(match[2]);
+        const m = match[3];
+        startHour = normalizeHour(h, match[1]) + (m === '반' || m === '30분' ? 0.5 : 0);
+        
+        const matchIndex = match.index;
+        const afterMatch = temp.substring(matchIndex + match[0].length).trim();
+        const hasTrailingTilde = afterMatch.startsWith('~') || afterMatch.startsWith('-');
+        
+        if (hasTrailingTilde) {
+          endHour = 19.0;
+        } else {
+          endHour = Math.min(startHour + 1, 19.0);
+        }
+        matchedString = match[0];
+        if (hasTrailingTilde) {
+          matchedString = temp.substring(matchIndex, matchIndex + match[0].length + 1);
+        }
+        matched = true;
+      }
+    }
+
+    let title = '';
+    if (matched) {
+      title = clean(temp.replace(matchedString, ''));
+      title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
+    } else {
       if (temp.includes('연차') || temp.includes('휴가') || temp.includes('반차')) {
         startHour = 9;
         endHour = 18;
       }
-
-      let title = clean(temp);
-      if (title.length > 20) title = title.substring(0, 20) + '...';
-
-      results.push({ title, startHour, endHour, line, date });
+      title = clean(temp);
     }
+
+    if (!title) title = '새로운 일정';
+    if (title.length > 20) title = title.substring(0, 20) + '...';
+
+    results.push({ title, startHour, endHour, line, date });
   });
 
   results.forEach(res => {

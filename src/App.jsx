@@ -342,7 +342,13 @@ export default function App() {
   const [messages, setMessages] = useState(() => {
     if (isConfigured) return [];
     const saved = localStorage.getItem('zal_messages');
-    return saved ? JSON.parse(saved) : [initMsg];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [initMsg];
   });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -466,12 +472,19 @@ export default function App() {
         const dbMessages = await appwriteService.getMessages();
         if (dbMessages !== null && dbMessages.length > 0) {
           setMessages(dbMessages);
-        } else if (dbMessages !== null && dbMessages.length === 0) {
+        } else {
+          // 데이터베이스에 메시지가 하나도 없을 때 인사말 생성 및 저장
           const savedGreeting = await appwriteService.createMessage(initMsg);
           setMessages([savedGreeting || initMsg]);
         }
       }
       initAppwrite();
+    } else {
+      // 로컬 스토리지 데이터 재확인하여 없을 경우 greeting 강제 세팅
+      const saved = localStorage.getItem('zal_messages');
+      if (!saved) {
+        setMessages([initMsg]);
+      }
     }
   }, []);
 

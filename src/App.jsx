@@ -65,116 +65,112 @@ function getGreetingMsg(name, slot) {
 }
 
 // ─── Mock AI parser ───────────────────────────────────────────────────────────
+function normalizeHour(h, ampm) {
+  let hr = parseFloat(h);
+  if (ampm === '오후') {
+    if (hr < 12) hr += 12;
+  } else if (ampm === '오전') {
+    if (hr === 12) hr = 0;
+  } else {
+    if (hr >= 1 && hr <= 7) {
+      hr += 12;
+    }
+  }
+  return hr;
+}
+
 function parseMessageToSchedules(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const results = [];
-  let temp = text.replace(/~/g, '-');
-  
-  const rangeRegex = /(오전|오후)?\s*(\d+)(?:시)?\s*-\s*(오전|오후)?\s*(\d+)\s*시/g;
-  
-  let match;
-  const matches = [];
-  while ((match = rangeRegex.exec(temp)) !== null) {
-    matches.push({
-      index: match.index,
-      length: match[0].length,
-      ampm1: match[1],
-      h1: parseInt(match[2]),
-      ampm2: match[3],
-      h2: parseInt(match[4]),
-      text: match[0]
-    });
-  }
-  
-  if (matches.length === 0) {
+
+  lines.forEach(line => {
+    let temp = line.replace(/~/g, '-');
+    const rangeRegex = /(오전|오후)?\s*(\d+)(?:시)?\s*-\s*(오전|오후)?\s*(\d+)(?:시)?/g;
     const singleRegex = /(오전|오후)?\s*(\d+)\s*시/g;
-    while ((match = singleRegex.exec(temp)) !== null) {
-      matches.push({
-        index: match.index,
-        length: match[0].length,
-        ampm1: match[1],
-        h1: parseInt(match[2]),
-        ampm2: null,
-        h2: null,
-        text: match[0]
-      });
-    }
-  }
-  
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
-    
-    let startHour = m.h1;
-    let ampm = m.ampm1 || '';
-    if (ampm === '오후' && startHour < 12) {
-      startHour += 12;
-    } else if (ampm === '오전' && startHour === 12) {
-      startHour = 0;
-    }
-    
-    let endHour;
-    if (m.h2 !== null) {
-      endHour = m.h2;
-      let endAmpm = m.ampm2 || m.ampm1 || '';
-      if (endAmpm === '오후' && endHour < 12) {
-        endHour += 12;
-      } else if (endAmpm === '오전' && endHour === 12) {
-        endHour = 0;
-      }
-    } else {
-      endHour = Math.min(startHour + 2, 19);
-    }
-    
-    const startPos = m.index + m.length;
-    const endPos = (i + 1 < matches.length) ? matches[i + 1].index : temp.length;
-    let title = temp.substring(startPos, endPos)
-      .replace(/까지/g, '')
-      .replace(/부터/g, '')
-      .replace(/에/g, '')
-      .replace(/오늘/g, '')
-      .trim();
-    
-    title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
-    
-    if (!title) {
-      title = '새로운 일정';
-    }
-    
-    if (title.length > 20) {
-      title = title.substring(0, 20) + '...';
-    }
-    
-    let memberId = 'sh';
-    for (const member of TEAM) {
-      if (title.includes(member.name) || title.includes(member.avatar) || temp.includes(member.name) || temp.includes(member.avatar)) {
-        memberId = member.id;
-        break;
+
+    let matched = false;
+    let match;
+
+    if ((match = rangeRegex.exec(temp)) !== null) {
+      const h1 = parseInt(match[2]);
+      const h2 = parseInt(match[4]);
+      if (h1 >= 1 && h1 <= 24 && h2 >= 1 && h2 <= 24) {
+        const startHour = normalizeHour(h1, match[1]);
+        const endHour = normalizeHour(h2, match[3] || match[1]);
+        
+        let title = temp.replace(match[0], '')
+          .replace(/까지/g, '')
+          .replace(/부터/g, '')
+          .replace(/에/g, '')
+          .replace(/오늘/g, '')
+          .trim();
+        title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
+        
+        if (!title) title = '새로운 일정';
+        if (title.length > 20) title = title.substring(0, 20) + '...';
+
+        results.push({ title, startHour, endHour, line });
+        matched = true;
       }
     }
 
-    results.push({
-      title,
-      startHour,
-      endHour,
-      memberId
-    });
-  }
-  
-  if (results.length === 0) {
+    if (!matched && (match = singleRegex.exec(temp)) !== null) {
+      const h = parseInt(match[2]);
+      if (h >= 1 && h <= 24) {
+        const startHour = normalizeHour(h, match[1]);
+        const endHour = Math.min(startHour + 1, 19);
+        
+        let title = temp.replace(match[0], '')
+          .replace(/까지/g, '')
+          .replace(/부터/g, '')
+          .replace(/에/g, '')
+          .replace(/오늘/g, '')
+          .trim();
+        title = title.replace(/^[-~,\s]+/, '').replace(/[-~,\s]+$/, '').trim();
+        
+        if (!title) title = '새로운 일정';
+        if (title.length > 20) title = title.substring(0, 20) + '...';
+
+        results.push({ title, startHour, endHour, line });
+        matched = true;
+      }
+    }
+
+    if (!matched && temp.length > 2) {
+      let startHour = 10;
+      let endHour = 11;
+      
+      if (temp.includes('연차') || temp.includes('휴가') || temp.includes('반차')) {
+        startHour = 9;
+        endHour = 18;
+      }
+
+      let title = temp.replace(/오늘/g, '').trim();
+      if (title.length > 20) title = title.substring(0, 20) + '...';
+
+      results.push({ title, startHour, endHour, line });
+    }
+  });
+
+  results.forEach(res => {
     let memberId = 'sh';
     for (const member of TEAM) {
-      if (text.includes(member.name) || text.includes(member.avatar)) {
+      const roleKeyword = member.role.split(' ')[0];
+      if (
+        res.line.includes(member.name) || 
+        res.line.includes(member.avatar) || 
+        res.line.includes(roleKeyword) ||
+        res.title.includes(member.name) || 
+        res.title.includes(member.avatar) ||
+        res.title.includes(roleKeyword)
+      ) {
         memberId = member.id;
         break;
       }
     }
-    results.push({
-      title: text.substring(0, 15),
-      startHour: 9,
-      endHour: 11,
-      memberId
-    });
-  }
-  
+    res.memberId = memberId;
+  });
+
   return results;
 }
 
@@ -362,7 +358,7 @@ export default function App() {
           status: isSelf ? 'accepted' : 'requested',
         };
         newSchedules.push(newSchedule);
-        replyDetails += `\n일정 ${index + 1}: "${parsed.title}"\n담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
+        replyDetails += `\n📅 일정 ${index + 1}: "${parsed.title}"\n👤 담당자: ${assignedMember.name}${isSelf ? '' : ' (요청됨)'}\n⏰ 시간: ${formatHour(parsed.startHour)} ~ ${formatHour(parsed.endHour)}\n`;
       });
 
       setSchedules(prev => [...prev, ...newSchedules]);

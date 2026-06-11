@@ -164,6 +164,22 @@ function parseMessageToSchedules(text, selectedDate) {
       }
     }
 
+    // 3.5 Range match without '시': 9-11, 9~11, 13-15
+    if (!matched) {
+      const rangeNumRegex = /(오전|오후)?\s*(\d{1,2})\s*[-~]\s*(오전|오후)?\s*(\d{1,2})(?!\d)/;
+      match = rangeNumRegex.exec(temp);
+      if (match) {
+        const h1 = parseInt(match[2]);
+        const h2 = parseInt(match[4]);
+        if (h1 >= 1 && h1 <= 24 && h2 >= 1 && h2 <= 24 && h1 < h2) {
+          startHour = normalizeHour(h1, match[1]);
+          endHour = normalizeHour(h2, match[3] || match[1]);
+          matchedString = match[0];
+          matched = true;
+        }
+      }
+    }
+
     // 4. Single time with HH:MM
     if (!matched) {
       const singleTimeRegex = /(오전|오후)?\s*(\d{1,2}):(\d{2})/;
@@ -716,20 +732,20 @@ export default function App() {
 
                     {/* Timeline cells */}
                     {hourSlots.map(h => {
-                      const currentEvent = memberSchedules.find(s => s.startHour === h);
-                      const trackIndex = currentEvent ? (trackMap[currentEvent.id] ?? 0) : 0;
-                      const topOffset = totalTracks === 1 ? 24 : trackIndex * 32 + 12;
-
+                      const currentEvents = memberSchedules.filter(s => s.startHour === h);
                       return (
                         <td 
                           key={h} 
                           className="time-grid-cell"
                           onClick={() => openAddModal(member, h)}
                         >
-                          {currentEvent && (() => {
+                          {currentEvents.map(currentEvent => {
+                            const trackIndex = trackMap[currentEvent.id] ?? 0;
+                            const topOffset = totalTracks === 1 ? 24 : trackIndex * 32 + 12;
                             const isRequested = (currentEvent.status === 'requested' || (!currentEvent.status && currentEvent.memberId !== 'sh')) && member.id !== 'sh';
                             return (
                               <div 
+                                key={currentEvent.id}
                                 className={`schedule-block ${currentEvent.color} ${isRequested ? 'status-requested' : ''}`}
                                 style={{ 
                                   width: `calc(${(currentEvent.endHour - currentEvent.startHour) * 2 * 100}% - 8px)`,
@@ -746,7 +762,7 @@ export default function App() {
                                 {isRequested && '⏳ '}{currentEvent.title}
                               </div>
                             );
-                          })()}
+                          })}
                         </td>
                       );
                     })}

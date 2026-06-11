@@ -341,9 +341,10 @@ export default function App() {
 
   // Auth States
   const [user, setUser] = useState(null);
-  const [authEmail, setAuthEmail] = useState('');
+  const [authEmailId, setAuthEmailId] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
+  const [authRole, setAuthRole] = useState('사원');
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
@@ -356,7 +357,28 @@ export default function App() {
   // Dynamic active team members list
   const [activeTeam, setActiveTeam] = useState([]);
 
-  const ME = isConfigured ? (user ? { id: 'sh', name: user.name, role: '기획자', avatar: user.name[0] || '나', color: '#6366f1' } : { id: 'sh', name: '사용자', role: '기획자', avatar: '나', color: '#6366f1' }) : virtualUser;
+  // Extract display name and role from the stored name format "이름 직급" or fallback
+  const parseStoredName = (fullName) => {
+    if (!fullName) return { name: '사용자', role: '사원' };
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length > 1) {
+      const roleCandidate = parts[parts.length - 1];
+      const validRoles = ['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'];
+      if (validRoles.includes(roleCandidate)) {
+        return {
+          name: parts.slice(0, -1).join(' '),
+          role: roleCandidate
+        };
+      }
+    }
+    // Backward compatibility: default role is "사원" if no role matches, except "정윤희" who defaults to "웹 기획자"
+    const isYoonhee = fullName.trim() === '정윤희';
+    return { name: fullName.trim(), role: isYoonhee ? '웹 기획자' : '사원' };
+  };
+
+  const parsedUser = user ? parseStoredName(user.name) : { name: '사용자', role: '사원' };
+
+  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: parsedUser.name[0] || '나', color: '#6366f1' } : { id: 'sh', name: '사용자', role: '사원', avatar: '나', color: '#6366f1' }) : virtualUser;
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
 
   // UI States
@@ -488,8 +510,9 @@ export default function App() {
               return colors[index];
             };
 
-            const userColor = getDeterministicColor(currentUser.name);
-            const isCurrentUserYoonhee = currentUser.name === '정윤희';
+            const parsed = parseStoredName(currentUser.name);
+            const userColor = getDeterministicColor(parsed.name);
+            const isCurrentUserYoonhee = parsed.name === '정윤희';
 
             const memberYoonhee = {
               id: isCurrentUserYoonhee ? 'sh' : 'yoonhee',
@@ -502,9 +525,9 @@ export default function App() {
 
             const loggedInMember = {
               id: 'sh', // Map to ME key for scheduling
-              name: currentUser.name,
-              role: '기획자',
-              avatar: currentUser.name[0] || '나',
+              name: parsed.name,
+              role: parsed.role,
+              avatar: parsed.name[0] || '나',
               color: userColor,
               subtext: '개인 일정'
             };
@@ -572,14 +595,16 @@ export default function App() {
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!authEmail.trim() || !authPassword.trim() || !authName.trim()) {
+    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim()) {
       setAuthError('모든 필드를 입력해 주세요.');
       return;
     }
     setAuthLoading(true);
     setAuthError('');
     try {
-      const session = await appwriteService.register(authEmail, authPassword, authName);
+      const email = `${authEmailId.trim()}@daumit.net`;
+      const fullName = `${authName.trim()} ${authRole}`;
+      const session = await appwriteService.register(email, authPassword, fullName);
       if (session) {
         const currentUser = await appwriteService.getCurrentUser();
         setUser(currentUser);
@@ -594,14 +619,15 @@ export default function App() {
   // Handle User Log In
   const handleLogIn = async (e) => {
     e.preventDefault();
-    if (!authEmail.trim() || !authPassword.trim()) {
+    if (!authEmailId.trim() || !authPassword.trim()) {
       setAuthError('이메일과 비밀번호를 입력해 주세요.');
       return;
     }
     setAuthLoading(true);
     setAuthError('');
     try {
-      await appwriteService.login(authEmail, authPassword);
+      const email = `${authEmailId.trim()}@daumit.net`;
+      await appwriteService.login(email, authPassword);
       const currentUser = await appwriteService.getCurrentUser();
       setUser(currentUser);
     } catch (err) {
@@ -794,7 +820,7 @@ export default function App() {
   if (isConfigured && !user) {
     return (
       <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%)' }}>
-        <div style={{ background: '#ffffff', padding: '40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ background: '#ffffff', padding: '45px 40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '420px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent-purple)', letterSpacing: '-0.5px' }}>ZAL : 잘됨</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>인공지능 일정 비서 및 협업 타임라인</p>
@@ -802,27 +828,51 @@ export default function App() {
           
           <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {isSignUp && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이름</label>
-                <input 
-                  type="text" 
-                  placeholder="실명 입력 (예: 정윤희)" 
-                  value={authName} 
-                  onChange={(e) => setAuthName(e.target.value)} 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
-                />
-              </div>
+              <>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이름</label>
+                    <input 
+                      type="text" 
+                      placeholder="예: 정다운" 
+                      value={authName} 
+                      onChange={(e) => setAuthName(e.target.value)} 
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+                      required
+                    />
+                  </div>
+                  
+                  <div style={{ width: '120px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>직급</label>
+                    <select
+                      value={authRole}
+                      onChange={(e) => setAuthRole(e.target.value)}
+                      style={{ width: '100%', padding: '10px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none', background: '#fff' }}
+                    >
+                      {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
+                        <option key={rank} value={rank}>{rank}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이메일</label>
-              <input 
-                type="email" 
-                placeholder="email@example.com" 
-                value={authEmail} 
-                onChange={(e) => setAuthEmail(e.target.value)} 
-                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
-              />
+              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이메일 아이디</label>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                <input 
+                  type="text" 
+                  placeholder="이메일 아이디" 
+                  value={authEmailId} 
+                  onChange={(e) => setAuthEmailId(e.target.value)} 
+                  style={{ flex: 1, padding: '10px 14px', border: 'none', outline: 'none' }}
+                  required
+                />
+                <span style={{ padding: '10px 14px', background: '#f1f5f9', borderLeft: '1px solid var(--border-color)', fontSize: '14.5px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  @daumit.net
+                </span>
+              </div>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -833,13 +883,14 @@ export default function App() {
                 value={authPassword} 
                 onChange={(e) => setAuthPassword(e.target.value)} 
                 style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+                required
               />
             </div>
-
+ 
             {authError && (
               <p style={{ color: 'var(--accent-red)', fontSize: '13px', fontWeight: '600', margin: '4px 0 0 0' }}>{authError}</p>
             )}
-
+ 
             <button 
               type="submit" 
               style={{ width: '100%', padding: '12px 14px', backgroundColor: 'var(--accent-purple)', color: '#ffffff', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: '700', cursor: 'pointer', transition: 'var(--transition)', marginTop: '8px' }}
@@ -847,7 +898,7 @@ export default function App() {
               {isSignUp ? '회원가입' : '로그인'}
             </button>
           </form>
-
+ 
           <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
             {isSignUp ? '이미 계정이 있으신가요?' : '아직 계정이 없으신가요?'} {' '}
             <button 

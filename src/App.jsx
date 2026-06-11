@@ -81,10 +81,22 @@ function normalizeHour(h, ampm) {
 }
 
 function parseMessageToSchedules(text, selectedDate) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  // 줄 바꿈뿐만 아니라 쉼표(,)나 마침표(.) 등으로 구분되어 한 줄에 여러 일정이 나열된 경우를 위해 스플릿 강화
+  let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const normalizedLines = [];
+
+  lines.forEach(l => {
+    // '내일 연차, 오늘 9-11 대신증권...' 처럼 쉼표(,) 등으로 이어져 있는 구문을 분리
+    // 단, 9-11과 같은 숫자 표기 사이의 하이픈이나 9:30 과 같은 시간 표현의 콜론이 아닌 경우에 한해 '오늘/내일' 혹은 쉼표를 기준으로 나눔
+    // 단순 split(',')을 하면 제목 내의 쉼표가 쪼개질 수 있으므로, 쉼표 뒤에 '오늘', '내일', 시간대 키워드 또는 줄의 흐름을 확인
+    const splitRegex = /(?:\s*,\s*|\s+)(?=오늘|내일|모레|\d{1,2}시|\d{1,2}:)/g;
+    const parts = l.split(splitRegex).map(p => p.trim()).filter(Boolean);
+    normalizedLines.push(...parts);
+  });
+
   const results = [];
 
-  lines.forEach(line => {
+  normalizedLines.forEach(line => {
     let temp = line;
     let matched = false;
     let startHour = 10;

@@ -360,7 +360,8 @@ button, input, select, textarea {
 .toggle-group {
   display: flex;
   background: #f1f5f9;
-  padding: 2px;
+  padding: 4px;
+  gap: 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
 }
@@ -373,7 +374,7 @@ button, input, select, textarea {
 }
 
 .toggle-item {
-  padding: 6px 16px;
+  padding: 8px 24px;
   border: none;
   background: transparent;
   font-size: 17px; /* Increased from 13.5px */
@@ -558,6 +559,15 @@ button, input, select, textarea {
   padding: 2px;
 }
 
+.member-role-label {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-top: 2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .member-name-text {
   font-weight: 700;
   font-size: 15px; /* Increased from 14px */
@@ -673,6 +683,15 @@ button, input, select, textarea {
   );
   border: 1.5px dashed currentColor;
   opacity: 0.9;
+}
+
+.schedule-block.status-rejected {
+  background: #fef2f2 !important;
+  border-color: #fee2e2 !important;
+  border-left-color: var(--accent-red) !important;
+  color: #b91c1c !important;
+  text-decoration: line-through;
+  opacity: 0.8;
 }
 
 /* Floating AI toggle button */
@@ -816,6 +835,24 @@ button, input, select, textarea {
   margin-top: 1px;
 }
 
+.chat-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+  padding: 0 2px;
+}
+
+.chat-meta-sender {
+  font-weight: 700;
+}
+
+.chat-meta-time {
+  color: var(--text-tertiary);
+}
+
 /* Chat Input */
 .chat-input-area {
   padding: 14px;
@@ -941,4 +978,158 @@ button, input, select, textarea {
 
 .modal-btn.primary:hover {
   background: var(--accent-blue-light);
+}
+
+/* ===========================
+   Horizontal Date Selector
+=========================== */
+.horizontal-date-selector {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  align-items: center;
+}
+
+.horizontal-date-selector::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.date-item {
+  flex: 1;
+  background: none;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  padding: 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.date-item:hover:not(.active) {
+  background: var(--bg-hover);
+}
+
+.date-item-day {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.date-item-num {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* Day Specific Colors */
+.date-item.sat .date-item-num { color: #2563eb; }
+.date-item.sun .date-item-num { color: #ef4444; }
+
+/* Active (Selected) Styles */
+.date-item.active {
+  border: 1.5px dashed #22c55e;
+  background: rgba(34, 197, 94, 0.02);
+}
+
+.date-item.active .date-item-day,
+.date-item.active .date-item-num {
+  color: #22c55e !important;
+}
+
+.date-item.in-week:not(.active) {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.date-item.in-week:not(.active) .date-item-num,
+.date-item.in-week:not(.active) .date-item-day {
+  color: #15803d !important;
+}
+
+.date-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--text-tertiary);
+  margin-top: 4px;
+  transition: all 0.2s ease;
+  opacity: 0; /* 항상 공간을 차지하지만 기본값은 투명하게 설정 */
+}
+
+.date-item-dot.visible {
+  opacity: 1;
+}
+
+.date-item.active .date-item-dot {
+  background-color: #22c55e;
+}
+
+
+
+.date-item-today-badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8.5px;
+  background: var(--accent-purple);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+  white-space: nowrap;
+  line-height: 1;
+  z-index: 2;
+}
+
+/* Typing Indicator Animation */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: typingBlink 1.4s infinite both;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBlink {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
 }

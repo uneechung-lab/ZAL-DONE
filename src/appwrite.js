@@ -61,6 +61,16 @@ export const appwriteService = {
       return null;
     }
   },
+
+  async updateName(name) {
+    if (!isConfigured) return null;
+    try {
+      return await account.updateName(name);
+    } catch (e) {
+      console.error('Appwrite failed to update user name', e);
+      throw e;
+    }
+  },
   
   async getSchedules() {
     if (!isConfigured) return null;
@@ -100,7 +110,7 @@ export const appwriteService = {
         requesterId: schedule.requesterId || '',
         description: schedule.description || '',
       };
-      const response = await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data);
+      const response = await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
       return { ...schedule, id: response.$id };
     } catch (e) {
       console.error('Appwrite failed to create schedule', e);
@@ -181,7 +191,7 @@ export const appwriteService = {
         text: msg.text,
         time: msg.time,
       };
-      const response = await databases.createDocument(databaseId, messagesCollectionId, ID.unique(), data);
+      const response = await databases.createDocument(databaseId, messagesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
       return { ...msg, id: response.$id };
     } catch (e) {
       console.error('Appwrite failed to create message', e);

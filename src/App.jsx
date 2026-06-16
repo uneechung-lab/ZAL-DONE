@@ -1209,9 +1209,14 @@ export default function App() {
           }
           try {
             const dbSchedResult = await appwriteService.createSchedule(dbSched);
+            if (!dbSchedResult) {
+              console.error("Appwrite createSchedule returned null");
+              alert("데이터베이스 저장에 실패했습니다. (Appwrite write returned null)");
+            }
             savedSchedules.push(dbSchedResult ? { ...sched, id: dbSchedResult.id } : sched);
           } catch (e) {
             console.error("Appwrite failed to create schedule:", e);
+            alert("데이터베이스 저장 에러: " + e.message);
             savedSchedules.push(sched);
           }
         } else {

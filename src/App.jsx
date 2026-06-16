@@ -2469,7 +2469,7 @@ export default function App() {
       {/* ──── SCHEDULE DETAIL MODAL ─────────────────── */}
       {isDetailModalOpen && selectedDetailEvent && (
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
-          <div className="modal-content" style={{ width: '520px', padding: '26px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: '100%', maxWidth: '680px', padding: '28px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-title" style={{ fontSize: '21px', marginBottom: '8px' }}>📅 일정 상세 및 수정</div>
             
             {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {

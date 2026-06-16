@@ -451,7 +451,9 @@ export default function App() {
   });
 
   // Dynamic active team members list
-  const [activeTeam, setActiveTeam] = useState([]);
+  const [activeTeam, setActiveTeam] = useState(() => {
+    return isConfigured ? [] : TEAM;
+  });
 
   // Extract display name and role from the stored name format "이름 직급" or fallback
   const parseStoredName = (fullName) => {
@@ -480,7 +482,22 @@ export default function App() {
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
 
   // UI States
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    const defaultMsg = { id: 0, from: 'ai', text: getGreetingMsg(isConfigured ? '사용자' : (TEAM[0]?.name || '정윤희'), getTimeSlot()), time: formatTime(new Date()) };
+    const savedMsg = localStorage.getItem('zal_messages');
+    if (savedMsg) {
+      try {
+        const parsed = JSON.parse(savedMsg);
+        const filtered = parsed.filter(msg => 
+          !(msg.from === 'ai' && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
+        );
+        return [defaultMsg, ...filtered];
+      } catch (e) {
+        return [defaultMsg];
+      }
+    }
+    return [defaultMsg];
+  });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true); // Default to expanded/open
@@ -508,7 +525,10 @@ export default function App() {
   const [timeViewTab, setTimeViewTab] = useState('daily'); // daily | weekly
 
   // Schedule Data
-  const [schedules, setSchedules] = useState([]);
+  const [schedules, setSchedules] = useState(() => {
+    const savedSched = localStorage.getItem('zal_schedules');
+    return savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES;
+  });
 
   // Event modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -839,8 +859,6 @@ export default function App() {
                 !(msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
               );
               setMessages([initMsg, ...filteredDbMessages]);
-            } else {
-              setMessages([initMsg]);
             }
           }
         } catch (err) {
@@ -852,24 +870,7 @@ export default function App() {
       checkAuthAndFetch();
     } else {
       // Local mode setup
-      const savedSched = localStorage.getItem('zal_schedules');
-      setSchedules(savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES);
       setActiveTeam(TEAM);
-
-      const savedMsg = localStorage.getItem('zal_messages');
-      if (savedMsg) {
-        try {
-          const parsed = JSON.parse(savedMsg);
-          const filtered = parsed.filter(msg => 
-            !(msg.from === 'ai' && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
-          );
-          setMessages([initMsg, ...filtered]);
-        } catch (e) {
-          setMessages([initMsg]);
-        }
-      } else {
-        setMessages([initMsg]);
-      }
       setAuthLoading(false);
     }
   }, [user]);
@@ -955,15 +956,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!isConfigured) {
-      localStorage.setItem('zal_schedules', JSON.stringify(schedules));
-    }
+    localStorage.setItem('zal_schedules', JSON.stringify(schedules));
   }, [schedules]);
 
   useEffect(() => {
-    if (!isConfigured) {
-      localStorage.setItem('zal_messages', JSON.stringify(messages));
-    }
+    localStorage.setItem('zal_messages', JSON.stringify(messages));
   }, [messages]);
 
   const handleSend = () => {

@@ -1102,7 +1102,7 @@ export default function App() {
           isSelf = assignedMember.id === 'sh';
         }
 
-        const finalDescription = parsed.description || text;
+        const finalDescription = parsed.description || '';
 
         const newSchedule = {
           id: `s_${Date.now()}_${index}`,
@@ -1124,7 +1124,7 @@ export default function App() {
       const groupedForReply = [];
       newSchedules.forEach((sched, idx) => {
         const parsed = listToCreate[idx] || {};
-        const finalDescription = parsed.description || text;
+        const finalDescription = parsed.description || '';
         const matchGroupId = sched.description && sched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
         const groupId = matchGroupId ? matchGroupId[1] : null;
         

@@ -70,7 +70,7 @@ Values for "schedules" fields:
     - Verify your relative day calculations strictly.
 - "memberId" (string): Assigned member ID (default to first member's ID: "${teamList[0]?.id || 'sh'}").
 - "isAll" (boolean): true if for all members.
-- "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details (e.g., "- 상무님 법인카드 지급 및 규정 확인\n- 비즈플레이 앱 등록\n- 과장 승인 요청") summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees.
+- "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details (e.g., "- 상무님 법인카드 지급 및 규정 확인\n- 비즈플레이 앱 등록\n- 과장 승인 요청") summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. Do NOT include other unrelated schedules or their titles/times from the input. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input (i.e., the user only provided the date, time, and title of the schedule), you must leave this field empty ("").
 
 
 2. UPDATE ACTION:

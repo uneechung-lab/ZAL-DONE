@@ -151,6 +151,9 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     const rangeRegex = /(\d{1,2})\s*(?:\([^)]+\))?\s*(?:일)?\s*[-~]\s*(\d{1,2})\s*(?:\([^)]+\))?\s*(?:일)?/;
     const rangeMatch = rangeRegex.exec(temp);
 
+    const dateMmddRegex = /(?:^|\b)(0?6)(\d{2})(?:_|\b|\])/;
+    const mmddMatch = dateMmddRegex.exec(temp);
+
     if (rangeMatch) {
       const startDay = parseInt(rangeMatch[1]);
       currentDate = startDay;
@@ -158,6 +161,8 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
       currentDate = parseInt(koDateMatch[2]);
     } else if (simpleDateMatch) {
       currentDate = parseInt(simpleDateMatch[2]);
+    } else if (mmddMatch) {
+      currentDate = parseInt(mmddMatch[2]);
     }
 
     let matched = false;
@@ -246,7 +251,8 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     if (isItinerary) {
       if (matched) {
         let title = clean(temp.replace(matchedString, ''));
-        title = title.replace(/^[\-~,\s\(\)]+/, '').replace(/[\-~,\s\(\)]+$/, '').trim();
+        title = title.replace(/^(?:0?6\s*[\./-]?\s*\d{1,2}\s*[_\]\s-]*|0?6\d{2}\s*[_\]\s-]*|\d{1,2}\s*일\s*[_\]\s-]*)/, '');
+        title = title.replace(/^[\-~,\s\(\)\]]+/, '').replace(/[\-~,\s\(\)\]]+$/, '').trim();
         if (!title) title = '새로운 일정';
         if (title.length > 20) title = title.substring(0, 20) + '...';
 
@@ -267,7 +273,8 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
       }
     } else {
       let title = matched ? clean(temp.replace(matchedString, '')) : clean(temp);
-      title = title.replace(/^[\-~,\s\(\)]+/, '').replace(/[\-~,\s\(\)]+$/, '').trim();
+      title = title.replace(/^(?:0?6\s*[\./-]?\s*\d{1,2}\s*[_\]\s-]*|0?6\d{2}\s*[_\]\s-]*|\d{1,2}\s*일\s*[_\]\s-]*)/, '');
+      title = title.replace(/^[\-~,\s\(\)\]]+/, '').replace(/[\-~,\s\(\)\]]+$/, '').trim();
       
       if (!matched) {
         if (temp.includes('연차') || temp.includes('휴가') || temp.includes('반차')) {

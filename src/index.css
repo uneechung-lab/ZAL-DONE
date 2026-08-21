@@ -1199,7 +1199,9 @@ button, input, select, textarea {
 }
 
 .date-item.today .date-item-dot {
-  bottom: -17px;
+  bottom: -7px;
+  left: calc(50% + 17px);
+  transform: none;
 }
 
 .date-item.today:not(.active) .date-item-num {

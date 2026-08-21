@@ -65,10 +65,16 @@ Values for "schedules" fields:
 - "year" (number): Year of the schedule (e.g. ${year}). Default to current year ${year} unless another year is specified.
 - "month" (number): Month of the schedule (1 ~ 12). CRITICAL: If the user input mentions a specific month number (e.g. "9월 14일" -> month: 9, "9월 4일" -> month: 9, "10월 5일" -> month: 10), you MUST set "month" to that exact month number! Do NOT default to ${month} if a specific month (e.g. "9월") is written in the user input.
 - "date" (number): Day of the month (1 ~ 31). Relative dates calculated from today's date: ${todayDate}.
-  * If the schedule spans multiple days or dates (e.g., "26일 ~ 27일"), you must generate one schedule object for each date in the range, and assign them all the exact same "groupId" string (e.g., "g_2627" or any random identifier starting with "g_") so they are treated as a single cohesive schedule.
-  CRITICAL WEEKDAY RULES (Korean Context):
-  * "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday):
-    - Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
+  * CRITICAL DATE RANGE & "까지" (UNTIL/BY) RULES:
+    1) If the phrase uses "까지" (e.g., "9월 4일까지", "차주 말까지", "내일까지", "27일까지"):
+       - The start date of the range is Today (${year}.${monthStr}.${todayDate}).
+       - The end date is the target date specified (e.g., 9월 4일).
+       - You MUST generate one schedule object for EVERY SINGLE DATE from the start date (Today: ${year}.${monthStr}.${todayDate}) up to the end date (including intermediate dates across months if necessary).
+       - Assign ALL schedules in this range the EXACT SAME "groupId" string (e.g., "g_until_0904") so they form a continuous schedule bar from Today to the target date.
+    2) If the phrase specifies an explicit range (e.g. "26일 ~ 27일" or "8월 21일 ~ 9월 4일"):
+       - Generate one schedule object for each date in the range, and assign them all the exact same "groupId" string (e.g., "g_range_2627").
+  * CRITICAL WEEKDAY RULES (Korean Context):
+    - "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday): Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
 - "startHour" (number): Start time (24h format, e.g. 9.0).
 - "endHour" (number): End time (24h format, e.g. 10.0).
 - "memberId" (string): Assigned member ID (default to first member's ID: "${teamList[0]?.id || 'sh'}").

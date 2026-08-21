@@ -1199,32 +1199,29 @@ export default function App() {
               existingGroup = {
                 groupId,
                 title: sched.title,
-                year: sched.year,
-                month: sched.month,
                 startHour: sched.startHour,
                 endHour: sched.endHour,
                 memberId: sched.memberId,
                 memberIds: sched.memberIds,
-                dates: [sched.date],
+                items: [{ year: sched.year, month: sched.month, date: sched.date }],
                 status: sched.status,
                 description: finalDescription
               };
               groupedForReply.push(existingGroup);
             } else {
-              if (!existingGroup.dates.includes(sched.date)) {
-                existingGroup.dates.push(sched.date);
+              const alreadyExists = existingGroup.items.some(it => it.year === sched.year && it.month === sched.month && it.date === sched.date);
+              if (!alreadyExists) {
+                existingGroup.items.push({ year: sched.year, month: sched.month, date: sched.date });
               }
             }
           } else {
             groupedForReply.push({
               title: sched.title,
-              year: sched.year,
-              month: sched.month,
               startHour: sched.startHour,
               endHour: sched.endHour,
               memberId: sched.memberId,
               memberIds: sched.memberIds,
-              dates: [sched.date],
+              items: [{ year: sched.year, month: sched.month, date: sched.date }],
               status: sched.status,
               description: finalDescription
             });
@@ -1241,18 +1238,26 @@ export default function App() {
             displayAssigneeName = assignedMember.name;
           }
           
-          group.dates.sort((a, b) => a - b);
-          const grpYear = group.year || currentYear;
-          const grpMonth = group.month || currentMonth;
-          const monthFormatted = grpMonth < 10 ? `0${grpMonth}` : `${grpMonth}`;
+          group.items.sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            if (a.month !== b.month) return a.month - b.month;
+            return a.date - b.date;
+          });
+
           let dateStr = '';
-          if (group.dates.length > 1) {
-            const firstDate = group.dates[0];
-            const lastDate = group.dates[group.dates.length - 1];
-            dateStr = `${grpYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
+          if (group.items.length > 1) {
+            const first = group.items[0];
+            const last = group.items[group.items.length - 1];
+            const m1 = first.month < 10 ? `0${first.month}` : `${first.month}`;
+            const d1 = first.date < 10 ? `0${first.date}` : `${first.date}`;
+            const m2 = last.month < 10 ? `0${last.month}` : `${last.month}`;
+            const d2 = last.date < 10 ? `0${last.date}` : `${last.date}`;
+            dateStr = `${first.year}.${m1}.${d1} ~ ${last.year}.${m2}.${d2}`;
           } else {
-            const singleDate = group.dates[0];
-            dateStr = `${grpYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
+            const single = group.items[0];
+            const m = single.month < 10 ? `0${single.month}` : `${single.month}`;
+            const d = single.date < 10 ? `0${single.date}` : `${single.date}`;
+            dateStr = `${single.year}.${m}.${d}`;
           }
 
           replyDetails += `\n📅 일정 ${index + 1}: "${group.title}"\n📝 상세내용: ${group.description || '-'}\n👤 담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n📅 날짜: ${dateStr}\n⏰ 시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;

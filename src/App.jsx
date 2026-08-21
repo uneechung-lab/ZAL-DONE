@@ -1156,6 +1156,7 @@ export default function App() {
             isSelf = assignedMember.id === 'sh';
           }
 
+          const finalDescription = parsed.description || '';
           const schedYear = parsed.year ? parseInt(parsed.year) : currentYear;
           const schedMonth = parsed.month ? parseInt(parsed.month) : currentMonth;
 

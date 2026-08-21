@@ -1021,177 +1021,193 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
 
     const proceedWithAI = async () => {
-      const todayDate = selectedDate || new Date().getDate();
-      let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth);
-      
-      let aiResult;
-      if (rawResult && typeof rawResult === 'object' && rawResult.action) {
-        aiResult = rawResult;
-      } else if (Array.isArray(rawResult)) {
-        aiResult = { action: 'create', schedules: rawResult };
-      } else {
-        const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam);
-        aiResult = { action: 'create', schedules: fallbackList };
-      }
+      try {
+        const todayDate = selectedDate || new Date().getDate();
+        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth);
+        
+        let aiResult;
+        if (rawResult && typeof rawResult === 'object' && rawResult.action) {
+          aiResult = rawResult;
+        } else if (Array.isArray(rawResult)) {
+          aiResult = { action: 'create', schedules: rawResult };
+        } else {
+          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam);
+          aiResult = { action: 'create', schedules: fallbackList };
+        }
 
-      if (aiResult.action === 'update') {
-        const { criteria, updates } = aiResult;
-        let updatedCount = 0;
-        
-        const updatedSchedules = schedules.map(s => {
-          let match = false;
-          const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
-          if (criteria.all) {
-            match = monthMatch;
-          } else {
-            const dateMatch = criteria.date ? s.date === criteria.date : true;
-            const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
-            match = monthMatch && dateMatch && titleMatch;
-          }
+        if (aiResult.action === 'update') {
+          const { criteria, updates } = aiResult;
+          let updatedCount = 0;
           
-          if (match) {
-            updatedCount++;
-            return {
-              ...s,
-              ...updates
-            };
-          }
-          return s;
-        });
-        
-        if (updatedCount > 0) {
-          if (isConfigured) {
-            for (const s of updatedSchedules) {
-              const original = schedules.find(orig => orig.id === s.id);
-              if (original && JSON.stringify(original) !== JSON.stringify(s)) {
-                let dbSched = { ...s };
-                if (isCurrentUserYoonhee) {
-                  dbSched.memberId = s.memberId === 'sh' ? 'yoonhee' : (s.memberId === 'yoonhee' ? 'sh' : s.memberId);
-                  dbSched.memberIds = s.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-                  dbSched.requesterId = s.requesterId === 'sh' ? 'yoonhee' : (s.requesterId === 'yoonhee' ? 'sh' : s.requesterId);
+          const updatedSchedules = schedules.map(s => {
+            let match = false;
+            const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
+            if (criteria.all) {
+              match = monthMatch;
+            } else {
+              const dateMatch = criteria.date ? s.date === criteria.date : true;
+              const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
+              match = monthMatch && dateMatch && titleMatch;
+            }
+            
+            if (match) {
+              updatedCount++;
+              return {
+                ...s,
+                ...updates
+              };
+            }
+            return s;
+          });
+          
+          if (updatedCount > 0) {
+            if (isConfigured) {
+              for (const s of updatedSchedules) {
+                const original = schedules.find(orig => orig.id === s.id);
+                if (original && JSON.stringify(original) !== JSON.stringify(s)) {
+                  let dbSched = { ...s };
+                  if (isCurrentUserYoonhee) {
+                    dbSched.memberId = s.memberId === 'sh' ? 'yoonhee' : (s.memberId === 'yoonhee' ? 'sh' : s.memberId);
+                    dbSched.memberIds = s.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                    dbSched.requesterId = s.requesterId === 'sh' ? 'yoonhee' : (s.requesterId === 'yoonhee' ? 'sh' : s.requesterId);
+                  }
+                  await appwriteService.updateSchedule(s.id, dbSched);
                 }
-                await appwriteService.updateSchedule(s.id, dbSched);
               }
             }
-          }
-          setSchedules(updatedSchedules);
-        }
-        
-        const aiReply = `요청하신 조건에 따라 ${updatedCount}개의 등록된 일정을 변경해 드렸습니다!`;
-        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
-        if (isConfigured) {
-          await appwriteService.createMessage(aiMsg);
-        }
-        setMessages(prev => [...prev, aiMsg]);
-        setIsTyping(false);
-        return;
-      }
-
-      if (aiResult.action === 'delete') {
-        const { criteria } = aiResult;
-        let deletedCount = 0;
-        const targetIds = [];
-        
-        const remainingSchedules = schedules.filter(s => {
-          let match = false;
-          const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
-          if (criteria.all) {
-            match = monthMatch;
-          } else {
-            const dateMatch = criteria.date ? s.date === criteria.date : true;
-            const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
-            match = monthMatch && dateMatch && titleMatch;
+            setSchedules(updatedSchedules);
           }
           
-          if (match) {
-            deletedCount++;
-            targetIds.push(s.id);
-            return false;
+          const aiReply = `요청하신 조건에 따라 ${updatedCount}개의 등록된 일정을 변경해 드렸습니다!`;
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          if (isConfigured) {
+            await appwriteService.createMessage(aiMsg);
           }
-          return true;
+          setMessages(prev => [...prev, aiMsg]);
+          return;
+        }
+
+        if (aiResult.action === 'delete') {
+          const { criteria } = aiResult;
+          let deletedCount = 0;
+          const targetIds = [];
+          
+          const remainingSchedules = schedules.filter(s => {
+            let match = false;
+            const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
+            if (criteria.all) {
+              match = monthMatch;
+            } else {
+              const dateMatch = criteria.date ? s.date === criteria.date : true;
+              const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
+              match = monthMatch && dateMatch && titleMatch;
+            }
+            
+            if (match) {
+              deletedCount++;
+              targetIds.push(s.id);
+              return false;
+            }
+            return true;
+          });
+
+          if (deletedCount > 0) {
+            if (isConfigured) {
+              for (const id of targetIds) {
+                await appwriteService.deleteSchedule(id);
+              }
+            }
+            setSchedules(remainingSchedules);
+          }
+          
+          const aiReply = `요청하신 조건에 부합하는 ${deletedCount}개의 일정을 삭제했습니다!`;
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          if (isConfigured) {
+            await appwriteService.createMessage(aiMsg);
+          }
+          setMessages(prev => [...prev, aiMsg]);
+          return;
+        }
+
+        const listToCreate = aiResult.schedules || [];
+        const colors = ['purple', 'blue', 'green', 'orange'];
+        const newSchedules = [];
+
+        listToCreate.forEach((parsed, index) => {
+          const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
+          
+          let assignedMemberIds;
+          let assignedMemberId;
+          let isSelf;
+
+          if (parsed.isAll) {
+            assignedMemberIds = activeTeam.map(m => m.id);
+            assignedMemberId = 'sh';
+            isSelf = false;
+          } else {
+            const assignedMember = activeTeam.find(m => m.id === parsed.memberId) || ME;
+            assignedMemberIds = [assignedMember.id];
+            assignedMemberId = assignedMember.id;
+            isSelf = assignedMember.id === 'sh';
+          }
+
+          const finalDescription = parsed.description || '';
+
+          const newSchedule = {
+            id: `s_${Date.now()}_${index}`,
+            year: currentYear,
+            month: currentMonth,
+            memberId: assignedMemberId,
+            memberIds: assignedMemberIds,
+            title: parsed.title,
+            startHour: parsed.startHour,
+            endHour: parsed.endHour,
+            color: randomColor,
+            status: isSelf ? 'accepted' : 'requested',
+            date: parsed.date,
+            requesterId: 'sh',
+            description: parsed.groupId 
+              ? `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
+              : `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] ${finalDescription}`,
+          };
+          newSchedules.push(newSchedule);
         });
 
-        if (deletedCount > 0) {
-          if (isConfigured) {
-            for (const id of targetIds) {
-              await appwriteService.deleteSchedule(id);
+        // Group schedules for the AI text response
+        const groupedForReply = [];
+        newSchedules.forEach((sched, idx) => {
+          const parsed = listToCreate[idx] || {};
+          const finalDescription = parsed.description || '';
+          const matchGroupId = sched.description && sched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+          const groupId = matchGroupId ? matchGroupId[1] : null;
+          
+          if (groupId) {
+            let existingGroup = groupedForReply.find(g => 
+              g.groupId === groupId && 
+              g.title === sched.title &&
+              g.startHour === sched.startHour &&
+              g.endHour === sched.endHour
+            );
+            if (!existingGroup) {
+              existingGroup = {
+                groupId,
+                title: sched.title,
+                startHour: sched.startHour,
+                endHour: sched.endHour,
+                memberId: sched.memberId,
+                memberIds: sched.memberIds,
+                dates: [sched.date],
+                status: sched.status,
+                description: finalDescription
+              };
+              groupedForReply.push(existingGroup);
+            } else {
+              if (!existingGroup.dates.includes(sched.date)) {
+                existingGroup.dates.push(sched.date);
+              }
             }
-          }
-          setSchedules(remainingSchedules);
-        }
-        
-        const aiReply = `요청하신 조건에 부합하는 ${deletedCount}개의 일정을 삭제했습니다!`;
-        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
-        if (isConfigured) {
-          await appwriteService.createMessage(aiMsg);
-        }
-        setMessages(prev => [...prev, aiMsg]);
-        setIsTyping(false);
-        return;
-      }
-
-      const listToCreate = aiResult.schedules || [];
-      const colors = ['purple', 'blue', 'green', 'orange'];
-      const newSchedules = [];
-
-      listToCreate.forEach((parsed, index) => {
-        const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
-        
-        let assignedMemberIds;
-        let assignedMemberId;
-        let isSelf;
-
-        if (parsed.isAll) {
-          assignedMemberIds = activeTeam.map(m => m.id);
-          assignedMemberId = 'sh';
-          isSelf = false;
-        } else {
-          const assignedMember = activeTeam.find(m => m.id === parsed.memberId) || ME;
-          assignedMemberIds = [assignedMember.id];
-          assignedMemberId = assignedMember.id;
-          isSelf = assignedMember.id === 'sh';
-        }
-
-        const finalDescription = parsed.description || '';
-
-        const newSchedule = {
-          id: `s_${Date.now()}_${index}`,
-          year: currentYear,
-          month: currentMonth,
-          memberId: assignedMemberId,
-          memberIds: assignedMemberIds,
-          title: parsed.title,
-          startHour: parsed.startHour,
-          endHour: parsed.endHour,
-          color: randomColor,
-          status: isSelf ? 'accepted' : 'requested',
-          date: parsed.date,
-          requesterId: 'sh',
-          description: parsed.groupId 
-            ? `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
-            : `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] ${finalDescription}`,
-        };
-        newSchedules.push(newSchedule);
-      });
-
-      // Group schedules for the AI text response
-      const groupedForReply = [];
-      newSchedules.forEach((sched, idx) => {
-        const parsed = listToCreate[idx] || {};
-        const finalDescription = parsed.description || '';
-        const matchGroupId = sched.description && sched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-        const groupId = matchGroupId ? matchGroupId[1] : null;
-        
-        if (groupId) {
-          let existingGroup = groupedForReply.find(g => 
-            g.groupId === groupId && 
-            g.title === sched.title &&
-            g.startHour === sched.startHour &&
-            g.endHour === sched.endHour
-          );
-          if (!existingGroup) {
-            existingGroup = {
-              groupId,
+          } else {
+            groupedForReply.push({
               title: sched.title,
               startHour: sched.startHour,
               endHour: sched.endHour,
@@ -1200,94 +1216,86 @@ export default function App() {
               dates: [sched.date],
               status: sched.status,
               description: finalDescription
-            };
-            groupedForReply.push(existingGroup);
+            });
+          }
+        });
+
+        let replyDetails = '';
+        groupedForReply.forEach((group, index) => {
+          let displayAssigneeName;
+          if (group.memberIds.length === activeTeam.length) {
+            displayAssigneeName = '전체 인원';
           } else {
-            if (!existingGroup.dates.includes(sched.date)) {
-              existingGroup.dates.push(sched.date);
-            }
+            const assignedMember = activeTeam.find(m => m.id === group.memberId) || ME;
+            displayAssigneeName = assignedMember.name;
           }
-        } else {
-          groupedForReply.push({
-            title: sched.title,
-            startHour: sched.startHour,
-            endHour: sched.endHour,
-            memberId: sched.memberId,
-            memberIds: sched.memberIds,
-            dates: [sched.date],
-            status: sched.status,
-            description: finalDescription
-          });
-        }
-      });
-
-      let replyDetails = '';
-      groupedForReply.forEach((group, index) => {
-        let displayAssigneeName;
-        if (group.memberIds.length === activeTeam.length) {
-          displayAssigneeName = '전체 인원';
-        } else {
-          const assignedMember = activeTeam.find(m => m.id === group.memberId) || ME;
-          displayAssigneeName = assignedMember.name;
-        }
-        
-        group.dates.sort((a, b) => a - b);
-        const monthFormatted = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
-        if (group.dates.length > 1) {
-          const firstDate = group.dates[0];
-          const lastDate = group.dates[group.dates.length - 1];
-          dateStr = `${currentYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
-        } else {
-          const singleDate = group.dates[0];
-          dateStr = `${currentYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
-        }
-
-        replyDetails += `\n📅 일정 ${index + 1}: "${group.title}"\n📝 상세내용: ${group.description || '-'}\n👤 담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n📅 날짜: ${dateStr}\n⏰ 시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
-      });
-
-      const savedSchedules = [];
-      for (const sched of newSchedules) {
-        if (isConfigured) {
-          let dbSched = { ...sched };
-          if (isCurrentUserYoonhee) {
-            dbSched.memberId = sched.memberId === 'sh' ? 'yoonhee' : (sched.memberId === 'yoonhee' ? 'sh' : sched.memberId);
-            dbSched.memberIds = sched.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-            dbSched.requesterId = sched.requesterId === 'sh' ? 'yoonhee' : (sched.requesterId === 'yoonhee' ? 'sh' : sched.requesterId);
+          
+          group.dates.sort((a, b) => a - b);
+          const monthFormatted = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
+          let dateStr = '';
+          if (group.dates.length > 1) {
+            const firstDate = group.dates[0];
+            const lastDate = group.dates[group.dates.length - 1];
+            dateStr = `${currentYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
+          } else {
+            const singleDate = group.dates[0];
+            dateStr = `${currentYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
           }
-          try {
-            const dbSchedResult = await appwriteService.createSchedule(dbSched);
-            if (!dbSchedResult) {
-              console.error("Appwrite createSchedule returned null");
-              alert("데이터베이스 저장에 실패했습니다. (Appwrite write returned null)");
+
+          replyDetails += `\n📅 일정 ${index + 1}: "${group.title}"\n📝 상세내용: ${group.description || '-'}\n👤 담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n📅 날짜: ${dateStr}\n⏰ 시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+        });
+
+        const savedSchedules = [];
+        for (const sched of newSchedules) {
+          if (isConfigured) {
+            let dbSched = { ...sched };
+            if (isCurrentUserYoonhee) {
+              dbSched.memberId = sched.memberId === 'sh' ? 'yoonhee' : (sched.memberId === 'yoonhee' ? 'sh' : sched.memberId);
+              dbSched.memberIds = sched.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+              dbSched.requesterId = sched.requesterId === 'sh' ? 'yoonhee' : (sched.requesterId === 'yoonhee' ? 'sh' : sched.requesterId);
             }
-            savedSchedules.push(dbSchedResult ? { ...sched, id: dbSchedResult.id } : sched);
-          } catch (e) {
-            console.error("Appwrite failed to create schedule:", e);
-            alert("데이터베이스 저장 에러: " + e.message);
+            try {
+              const dbSchedResult = await appwriteService.createSchedule(dbSched);
+              if (!dbSchedResult) {
+                console.error("Appwrite createSchedule returned null");
+              }
+              savedSchedules.push(dbSchedResult ? { ...sched, id: dbSchedResult.id } : sched);
+            } catch (e) {
+              console.error("Appwrite failed to create schedule:", e);
+              savedSchedules.push(sched);
+            }
+          } else {
             savedSchedules.push(sched);
           }
-        } else {
-          savedSchedules.push(sched);
         }
-      }
 
-      setSchedules(prev => [...prev, ...savedSchedules]);
+        setSchedules(prev => [...prev, ...savedSchedules]);
 
-      const aiReply = `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!\n${replyDetails}`;
-      const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
-      
-      if (isConfigured) {
-        try {
-          const dbAiMsg = await appwriteService.createMessage(aiMsg);
-          setMessages(prev => [...prev, dbAiMsg || aiMsg]);
-        } catch (e) {
-          console.error("Appwrite failed to create AI message:", e);
+        const aiReply = newSchedules.length > 0 
+          ? `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!\n${replyDetails}`
+          : `입력해주신 내용에서 일정을 추출하지 못했습니다. 날짜나 업무 내용을 좀 더 명확히 작성해 주세요!`;
+
+        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+        
+        if (isConfigured) {
+          try {
+            const dbAiMsg = await appwriteService.createMessage(aiMsg);
+            setMessages(prev => [...prev, dbAiMsg || aiMsg]);
+          } catch (e) {
+            console.error("Appwrite failed to create AI message:", e);
+            setMessages(prev => [...prev, aiMsg]);
+          }
+        } else {
           setMessages(prev => [...prev, aiMsg]);
         }
-      } else {
-        setMessages(prev => [...prev, aiMsg]);
+      } catch (err) {
+        console.error("Critical error in proceedWithAI:", err);
+        const errReply = "메시지 분석 및 일정 정리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        const errMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: errReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+        setMessages(prev => [...prev, errMsg]);
+      } finally {
+        setIsTyping(false);
       }
-      setIsTyping(false);
     };
 
     if (isConfigured) {

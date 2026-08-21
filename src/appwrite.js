@@ -176,6 +176,7 @@ export const appwriteService = {
         from: doc.from,
         text: doc.text,
         time: doc.time,
+        createdAt: doc.$createdAt || null
       }));
     } catch (e) {
       console.error('Appwrite failed to get messages', e);
@@ -192,7 +193,7 @@ export const appwriteService = {
         time: msg.time,
       };
       const response = await databases.createDocument(databaseId, messagesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
-      return { ...msg, id: response.$id };
+      return { ...msg, id: response.$id, createdAt: response.$createdAt || msg.createdAt || new Date().toISOString() };
     } catch (e) {
       console.error('Appwrite failed to create message', e);
       return null;

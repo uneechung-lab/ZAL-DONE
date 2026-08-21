@@ -3,28 +3,97 @@ import './index.css';
 import { appwriteService, isConfigured } from './appwrite';
 import { parseMessageWithGemini } from './gemini';
 
-// ─── Team data (Updated to match the screenshot "정윤희" and others) ───────────────────────────
 const TEAM = [
-  { id: 'yoonhee', name: '정윤희', role: '웹 기획자', avatar: '윤희', color: '#6366f1', subtext: '기획 일정' }
+  { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#6366f1', subtext: '기획 일정' },
+  { id: 'daeum', name: '정다음', role: '정다음(사원)', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
 ];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
 const INITIAL_SCHEDULES = [];
 
-// Helper to get mini-calendar days for June 2026
-// June 2026 starts on Monday (1) and has 30 days.
-function getJune2026Days() {
+// Helper to get mini-calendar days dynamically for any year and month
+function getMonthDays(year, month) {
   const days = [];
-  // Add padding days for Sunday (May 31)
-  days.push({ dayNum: 31, isCurrentMonth: false });
-  for (let i = 1; i <= 30; i++) {
+  const firstDay = new Date(year, month - 1, 1).getDay(); // 0: Sun, 1: Mon, ...
+  const totalDays = new Date(year, month, 0).getDate();
+  const prevMonthTotalDays = new Date(year, month - 1, 0).getDate();
+
+  // Padding days from previous month
+  for (let i = firstDay - 1; i >= 0; i--) {
+    days.push({ dayNum: prevMonthTotalDays - i, isCurrentMonth: false });
+  }
+  // Days of current month
+  for (let i = 1; i <= totalDays; i++) {
     days.push({ dayNum: i, isCurrentMonth: true });
   }
-  // Add padding days for July (1 to 4)
-  for (let i = 1; i <= 4; i++) {
+  // Padding days for next month to complete 7-day grid rows
+  const remaining = (7 - (days.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
     days.push({ dayNum: i, isCurrentMonth: false });
   }
   return days;
+}
+
+// Helper to check if a schedule belongs to the target year and month (defaults to 2026.06 for legacy data)
+function isScheduleInMonth(s, year, month) {
+  if (!s) return false;
+  let schedYear = s.year;
+  let schedMonth = s.month;
+
+  if (!schedYear || !schedMonth) {
+    if (s.description) {
+      const match = s.description.match(/\[YM:(\d{4})\.(\d{1,2})\]/);
+      if (match) {
+        schedYear = parseInt(match[1]);
+        schedMonth = parseInt(match[2]);
+      }
+    }
+  }
+
+  schedYear = schedYear || 2026;
+  schedMonth = schedMonth || 6;
+  return schedYear === year && schedMonth === month;
+}
+
+function getMemberAvatarPic(member, index) {
+  if (!member) return '/pic1_thumb.png';
+  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '/pic2_thumb.png';
+  return '/pic1_thumb.png';
+}
+
+function getMemberRoleText(member, index) {
+  if (!member) return '나(부장)';
+  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '정다음(사원)';
+  return '나(부장)';
+}
+
+function getMemberAvatarStyle(member, index) {
+  return {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center center',
+    borderRadius: '50%',
+    display: 'block'
+  };
+}
+
+// Helper to check if a message is from today
+function isTodayMessage(msg) {
+  if (!msg) return false;
+  if (msg.id === 0) return true; // Initial greeting is always shown for today
+  if (!msg.createdAt) return false; // Legacy messages without createdAt timestamp belong to previous history
+  try {
+    const msgDate = new Date(msg.createdAt);
+    const now = new Date();
+    return (
+      msgDate.getFullYear() === now.getFullYear() &&
+      msgDate.getMonth() === now.getMonth() &&
+      msgDate.getDate() === now.getDate()
+    );
+  } catch (e) {
+    return false;
+  }
 }
 
 // Helper to parse schedules from AI text reply for cancel buttons
@@ -83,10 +152,10 @@ function formatHour(h) {
 
 function getGreetingMsg(name, slot) {
   const greets = {
-    morning:   `안녕하세요, ${name}님! 🌅 좋은 아침입니다.\n오늘 진행하실 업무나 일정을 채팅으로 입력하시면 타임라인에 등록해 드려요!`,
-    afternoon: `${name}님, 점심은 맛있게 드셨나요? ☀️\n오후 업무 일정을 추가로 입력해주시면 실시간으로 채워드릴게요.`,
-    evening:   `${name}님, 오늘 하루도 고생 많으셨습니다. ✨\n완료된 내역과 내일 일정 계획도 편하게 들려주세요.`,
-    night:     `${name}님, 늦게까지 수고하셨어요 🌙\n오늘 작업하신 내용을 남겨주시면 자동으로 타임라인에 기록됩니다.`,
+    morning:   `안녕하세요, ${name}님. 🌅\n좋은 아침입니다!\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요.\n(예: "오늘 14시 B사 미팅", "내일 대신증권 투입")`,
+    afternoon: `안녕하세요, ${name}님. ☀️\n점심은 맛있게 드셨나요?\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요. 타임라인에 자동으로 등록해 드립니다!\n(예: "오늘 14시 B사 미팅", "26일 ~ 27일 워크숍")`,
+    evening:   `안녕하세요, ${name}님. ✨\n오늘 하루도 수고하셨습니다.\n완료된 업무나 내일 등록할 일정을 아래 입력창에 남겨주세요!`,
+    night:     `안녕하세요, ${name}님. 🌙\n늦은 시간까지 수고 많으셨어요.\n기록해두실 일정이나 업무 내용을 입력해 주세요!`,
   };
   return greets[slot];
 }
@@ -111,7 +180,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
   
   // Clean year/month in lines
   lines = lines.map(line => {
-    return line.replace(/2026\s*[\./-]\s*0?6\s*[\./-]?\s*/g, '').replace(/2026\s*년?\s*(?:0?6\s*월?)?\s*/g, '');
+    return line.replace(/20\d{2}\s*[\./-]\s*\d{1,2}\s*[\./-]?\s*/g, '').replace(/20\d{2}\s*년?\s*(?:\d{1,2}\s*월?)?\s*/g, '');
   });
 
   const results = [];
@@ -447,7 +516,7 @@ export default function App() {
 
   // Fallback virtual user state for non-configured environment
   const [virtualUser, setVirtualUser] = useState(() => {
-    return TEAM[0] || { id: 'sh', name: '정윤희', role: '웹 기획자', avatar: '윤희', color: '#6366f1', subtext: '웹간 일정' };
+    return TEAM[0] || { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#6366f1', subtext: '기획 일정' };
   });
 
   // Dynamic active team members list
@@ -457,7 +526,7 @@ export default function App() {
 
   // Extract display name and role from the stored name format "이름 직급" or fallback
   const parseStoredName = (fullName) => {
-    if (!fullName) return { name: '사용자', role: '사원' };
+    if (!fullName) return { name: '정윤희', role: '나(부장)' };
     const trimmed = fullName.trim();
     const validRoles = [
       '웹 기획자', '기획자', '디자이너', '개발자',
@@ -472,18 +541,18 @@ export default function App() {
       }
     }
     const isYoonhee = trimmed.includes('정윤희');
-    return { name: trimmed, role: isYoonhee ? '웹 기획자' : '사원' };
+    return { name: trimmed, role: isYoonhee ? '나(부장)' : '사원' };
   };
 
-  const parsedUser = user ? parseStoredName(user.name) : { name: '사용자', role: '사원' };
+  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '나(부장)' };
   const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
 
-  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', color: '#6366f1' } : { id: 'sh', name: '사용자', role: '사원', avatar: '나', color: '#6366f1' }) : virtualUser;
-  const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()) };
+  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#6366f1' } : { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '나', avatarPic: '/pic1_thumb.png', color: '#6366f1' }) : virtualUser;
+  const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
   // UI States
   const [messages, setMessages] = useState(() => {
-    const defaultMsg = { id: 0, from: 'ai', text: getGreetingMsg(isConfigured ? '사용자' : (TEAM[0]?.name || '정윤희'), getTimeSlot()), time: formatTime(new Date()) };
+    const defaultMsg = { id: 0, from: 'ai', text: getGreetingMsg(isConfigured ? '사용자' : (TEAM[0]?.name || '정윤희'), getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
     const savedMsg = localStorage.getItem('zal_messages');
     if (savedMsg) {
       try {
@@ -501,18 +570,12 @@ export default function App() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true); // Default to expanded/open
+  const [showPreviousMessages, setShowPreviousMessages] = useState(false);
 
   // Scheduler States
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const saved = localStorage.getItem('zal_selected_date');
-    if (saved) {
-      const parsed = parseInt(saved);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 30) {
-        return parsed;
-      }
-    }
-    return 15; // default day (June 15th as in the screen)
-  });
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth() + 1); // 1-indexed (1-12)
+  const [selectedDate, setSelectedDate] = useState(() => new Date().getDate());
   const [searchQuery, setSearchQuery] = useState('');
   const [includeSubOrg, setIncludeSubOrg] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState('schedule'); // schedule | facility
@@ -720,38 +783,36 @@ export default function App() {
             const isCurrentUserYoonhee = parsed.name === '정윤희';
 
             const memberYoonhee = {
-              id: isCurrentUserYoonhee ? 'sh' : 'yoonhee',
+              id: 'sh',
               name: '정윤희',
-              role: '웹 기획자',
+              role: '나(부장)',
               avatar: '윤희',
+              avatarPic: '/pic1_thumb.png',
               color: '#6366f1',
               subtext: '기획 일정'
             };
 
-            const memberDaeul = {
-              id: 'yoonhee',
-              name: '정다을',
-              role: '사원',
-              avatar: '다을',
-              color: '#4f8ef7',
+            const memberDaeum = {
+              id: 'daeum',
+              name: '정다음',
+              role: '정다음(사원)',
+              avatar: '다음',
+              avatarPic: '/pic2_thumb.png',
+              color: '#10b981',
               subtext: '개인 일정'
             };
 
             const loggedInMember = {
-              id: 'sh', // Map to ME key for scheduling
-              name: parsed.name,
-              role: parsed.role,
+              id: 'sh',
+              name: '정윤희',
+              role: '나(부장)',
               avatar: '나',
+              avatarPic: '/pic1_thumb.png',
               color: userColor,
-              subtext: '개인 일정'
+              subtext: '기획 일정'
             };
 
-            if (isCurrentUserYoonhee) {
-              setActiveTeam([loggedInMember, memberDaeul]); // Both Yoonhee and Daeul are visible
-            } else {
-              // Both yoonhee and the logged-in user are visible
-              setActiveTeam([loggedInMember, memberYoonhee]);
-            }
+            setActiveTeam([loggedInMember, memberDaeum]);
             
             // Fetch database records
             const dbSchedules = await appwriteService.getSchedules();
@@ -818,35 +879,7 @@ export default function App() {
                 }
               }
 
-              let updatedActiveTeam = [loggedInMember];
-              if (isCurrentUserYoonhee) {
-                let daeumMember = { ...memberDaeul };
-                if (otherProfileDoc) {
-                  try {
-                    const p = JSON.parse(otherProfileDoc.description);
-                    daeumMember.name = p.name;
-                    daeumMember.role = p.role;
-                    daeumMember.avatar = p.name.slice(-2);
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }
-                updatedActiveTeam.push(daeumMember);
-              } else {
-                let yoonheeMember = { ...memberYoonhee };
-                if (otherProfileDoc) {
-                  try {
-                    const p = JSON.parse(otherProfileDoc.description);
-                    yoonheeMember.name = p.name;
-                    yoonheeMember.role = p.role;
-                    yoonheeMember.avatar = p.name.slice(-2);
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }
-                updatedActiveTeam.push(yoonheeMember);
-              }
-              setActiveTeam(updatedActiveTeam);
+              setActiveTeam([loggedInMember, memberDaeum]);
 
               const actualSchedules = mapped.filter(s => s.title !== '__PROFILE__');
               setSchedules(actualSchedules);
@@ -856,7 +889,7 @@ export default function App() {
               const userSuffix = currentUser.$id;
               const filteredDbMessages = dbMessages.filter(msg => 
                 (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
-                !(msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
+                !(msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요') || msg.text.includes('안녕하세요')))
               );
               setMessages([initMsg, ...filteredDbMessages]);
             }
@@ -864,6 +897,10 @@ export default function App() {
         } catch (err) {
           console.error('Initialization error:', err);
         } finally {
+          const now = new Date();
+          setCurrentYear(now.getFullYear());
+          setCurrentMonth(now.getMonth() + 1);
+          setSelectedDate(now.getDate());
           setAuthLoading(false);
         }
       }
@@ -871,6 +908,10 @@ export default function App() {
     } else {
       // Local mode setup
       setActiveTeam(TEAM);
+      const now = new Date();
+      setCurrentYear(now.getFullYear());
+      setCurrentMonth(now.getMonth() + 1);
+      setSelectedDate(now.getDate());
       setAuthLoading(false);
     }
   }, [user]);
@@ -879,6 +920,9 @@ export default function App() {
   const getKoreanErrorMessage = (msg) => {
     if (!msg) return '';
     const lower = msg.toLowerCase();
+    if (lower.includes('paused due to inactivity') || lower.includes('project is paused')) {
+      return 'Appwrite 프로젝트가 비활성화 상태입니다. Appwrite 콘솔(cloud.appwrite.io)에서 Restore 버튼을 클릭하여 프로젝트를 복구해 주세요.';
+    }
     if (lower.includes('password') && lower.includes('between 8 and 256')) {
       return '비밀번호는 최소 8자 이상이어야 합니다.';
     }
@@ -968,7 +1012,7 @@ export default function App() {
     if (!text) return;
 
     const userSuffix = user ? user.$id : 'local';
-    const userMsg = { id: msgId.current++, from: `user_${userSuffix}`, text, time: formatTime(new Date()) };
+    const userMsg = { id: msgId.current++, from: `user_${userSuffix}`, text, time: formatTime(new Date()), createdAt: new Date().toISOString() };
     
     setInput('');
     setIsTyping(true);
@@ -977,8 +1021,8 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
 
     const proceedWithAI = async () => {
-      const todayDate = new Date().getDate();
-      let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam);
+      const todayDate = selectedDate || new Date().getDate();
+      let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth);
       
       let aiResult;
       if (rawResult && typeof rawResult === 'object' && rawResult.action) {
@@ -996,12 +1040,13 @@ export default function App() {
         
         const updatedSchedules = schedules.map(s => {
           let match = false;
+          const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
           if (criteria.all) {
-            match = true;
+            match = monthMatch;
           } else {
             const dateMatch = criteria.date ? s.date === criteria.date : true;
             const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
-            match = dateMatch && titleMatch;
+            match = monthMatch && dateMatch && titleMatch;
           }
           
           if (match) {
@@ -1033,7 +1078,7 @@ export default function App() {
         }
         
         const aiReply = `요청하신 조건에 따라 ${updatedCount}개의 등록된 일정을 변경해 드렸습니다!`;
-        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()) };
+        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
         if (isConfigured) {
           await appwriteService.createMessage(aiMsg);
         }
@@ -1049,12 +1094,13 @@ export default function App() {
         
         const remainingSchedules = schedules.filter(s => {
           let match = false;
+          const monthMatch = isScheduleInMonth(s, currentYear, currentMonth);
           if (criteria.all) {
-            match = true;
+            match = monthMatch;
           } else {
             const dateMatch = criteria.date ? s.date === criteria.date : true;
             const titleMatch = criteria.title ? s.title.includes(criteria.title) : true;
-            match = dateMatch && titleMatch;
+            match = monthMatch && dateMatch && titleMatch;
           }
           
           if (match) {
@@ -1075,7 +1121,7 @@ export default function App() {
         }
         
         const aiReply = `요청하신 조건에 부합하는 ${deletedCount}개의 일정을 삭제했습니다!`;
-        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()) };
+        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
         if (isConfigured) {
           await appwriteService.createMessage(aiMsg);
         }
@@ -1110,6 +1156,8 @@ export default function App() {
 
         const newSchedule = {
           id: `s_${Date.now()}_${index}`,
+          year: currentYear,
+          month: currentMonth,
           memberId: assignedMemberId,
           memberIds: assignedMemberIds,
           title: parsed.title,
@@ -1119,7 +1167,9 @@ export default function App() {
           status: isSelf ? 'accepted' : 'requested',
           date: parsed.date,
           requesterId: 'sh',
-          description: parsed.groupId ? `[그룹 ID] ${parsed.groupId} | ${finalDescription}` : finalDescription,
+          description: parsed.groupId 
+            ? `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
+            : `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] ${finalDescription}`,
         };
         newSchedules.push(newSchedule);
       });
@@ -1182,14 +1232,14 @@ export default function App() {
         }
         
         group.dates.sort((a, b) => a - b);
-        let dateStr = '';
+        const monthFormatted = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
         if (group.dates.length > 1) {
           const firstDate = group.dates[0];
           const lastDate = group.dates[group.dates.length - 1];
-          dateStr = `2026.06.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
+          dateStr = `${currentYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
         } else {
           const singleDate = group.dates[0];
-          dateStr = `2026.06.${singleDate < 10 ? '0' : ''}${singleDate}`;
+          dateStr = `${currentYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
         }
 
         replyDetails += `\n📅 일정 ${index + 1}: "${group.title}"\n📝 상세내용: ${group.description || '-'}\n👤 담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n📅 날짜: ${dateStr}\n⏰ 시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
@@ -1224,7 +1274,7 @@ export default function App() {
       setSchedules(prev => [...prev, ...savedSchedules]);
 
       const aiReply = `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!\n${replyDetails}`;
-      const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()) };
+      const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
       
       if (isConfigured) {
         try {
@@ -1285,6 +1335,8 @@ export default function App() {
     const isSelf = modalMember.id === 'sh';
     const newSchedule = {
       id: `s_${Date.now()}`,
+      year: currentYear,
+      month: currentMonth,
       memberId: modalMember.id,
       memberIds: [modalMember.id],
       title: newTitle.trim(),
@@ -1294,6 +1346,7 @@ export default function App() {
       status: isSelf ? 'accepted' : 'requested',
       date: selectedDate,
       requesterId: 'sh',
+      description: `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}]`,
     };
 
     if (isConfigured) {
@@ -1331,7 +1384,7 @@ export default function App() {
   // Display Login / Sign Up UI if configured but not authenticated
   if (isConfigured && !user) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%)' }}>
+      <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', background: '#ffffff' }}>
         <div style={{ background: '#ffffff', padding: '45px 40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '420px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent-purple)', letterSpacing: '-0.5px' }}>ZAL : 잘됨</h1>
@@ -1433,226 +1486,300 @@ export default function App() {
       {/* ──── LEFT COLLAPSIBLE AI DRAWER ─────────────────── */}
       <div className={`chat-drawer ${isDrawerOpen ? '' : 'closed'}`}>
         <div className="chat-header">
-          <div className="chat-header-title">
-            <span className="chat-header-logo">🤖</span>
-            <span>ZAL : 잘됨</span>
+          <div className="chat-header-title" style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'flex-start', paddingTop: '6px' }}>
+            <img src="/bi2.png" alt="BI Logo 2" style={{ height: '58px', width: 'auto', maxHeight: 'none', objectFit: 'contain', objectPosition: 'top left', flexShrink: 0, marginTop: '6px' }} />
+            <span style={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'baseline', gap: '2px' }}>
+              <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px' }}>ZAL</span>
+              <span style={{ fontSize: '17.5px', fontWeight: '700' }}> : 잘됨</span>
+            </span>
           </div>
           <button className="close-drawer-btn" onClick={() => setIsDrawerOpen(false)}>×</button>
         </div>
 
-        {/* User Session Profile Header in Chat Drawer */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: ME.color || '#6366f1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>
-              {ME.avatar}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{ME.name}</span>
-              <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{isConfigured ? 'Appwrite 모드' : '로컬 모드 (데모)'}</span>
-            </div>
-          </div>
-          {isConfigured ? (
-            <button 
-              onClick={handleLogOut} 
-              style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
-            >
-              로그아웃
-            </button>
-          ) : (
-            // Local Mode Switcher for ease of testing different members locally
-            <select
-              value={virtualUser.id}
-              onChange={(e) => {
-                const target = activeTeam.find(m => m.id === e.target.value);
-                if (target) setVirtualUser(target);
-              }}
-              style={{ fontSize: '11px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-            >
-              {activeTeam.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
+
 
         <div className="chat-messages">
-          {messages.map(msg => {
-            const isUser = msg.from.startsWith('user');
-            const roleClass = isUser ? 'user' : 'ai';
-            return (
-              <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
-                <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line', padding: '16px' }}>
-                  {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:')) ? (() => {
-                    const parsedSchedules = parseSchedulesFromText(msg.text);
-                    const introText = msg.text.split(/📅?\s*일정 \d+:/)[0].trim();
-                    const blocks = msg.text.split(/📅?\s*일정 \d+:\s*/);
+          {(() => {
+            const todayMessages = messages.filter(msg => isTodayMessage(msg));
+            const previousMessages = messages.filter(msg => !isTodayMessage(msg));
 
-                    const existingSchedules = [];
-                    parsedSchedules.forEach(p => {
-                      p.dates.forEach(d => {
-                        const match = schedules.find(s => 
-                          s.title === p.title &&
-                          s.date === d
-                        );
-                        if (match && !existingSchedules.some(es => es.id === match.id)) {
-                          existingSchedules.push(match);
-                        }
+            const renderBubble = (msg) => {
+              if (msg.id === 0) {
+                const now = new Date();
+                const month = now.getMonth() + 1;
+                const dateNum = now.getDate();
+                const lines = msg.text.split('\n');
+                const titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
+                const subLines = lines.slice(1).join('\n');
+
+                return (
+                  <div key={msg.id} style={{ padding: '8px 4px 16px 4px', marginBottom: '8px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#64748b' }}>
+                      {month}월 {dateNum}일
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.5px', marginTop: '2px' }}>
+                      {titleLine}
+                    </div>
+                    {subLines && (
+                      <div style={{ fontSize: '13.5px', color: '#475569', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                        {subLines}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              const isUser = msg.from.startsWith('user');
+              const roleClass = isUser ? 'user' : 'ai';
+              return (
+                <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
+                  <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line', padding: '16px' }}>
+                    {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:')) ? (() => {
+                      const parsedSchedules = parseSchedulesFromText(msg.text);
+                      const introText = msg.text.split(/📅?\s*일정 \d+:/)[0].trim();
+                      const blocks = msg.text.split(/📅?\s*일정 \d+:\s*/);
+
+                      const existingSchedules = [];
+                      parsedSchedules.forEach(p => {
+                        p.dates.forEach(d => {
+                          const match = schedules.find(s => 
+                            s.title === p.title &&
+                            isScheduleInMonth(s, currentYear, currentMonth) &&
+                            s.date === d
+                          );
+                          if (match && !existingSchedules.some(es => es.id === match.id)) {
+                            existingSchedules.push(match);
+                          }
+                        });
                       });
-                    });
 
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <div style={{ fontWeight: '600' }}>{introText}</div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          {parsedSchedules.map((parsed, idx) => {
-                            let matchedSchedule = null;
-                            for (const d of parsed.dates) {
-                              const match = schedules.find(s => 
-                                s.title === parsed.title &&
-                                s.date === d
-                              );
-                              if (match) {
-                                matchedSchedule = match;
-                                break;
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          <div style={{ fontWeight: '600' }}>{introText}</div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {parsedSchedules.map((parsed, idx) => {
+                              let matchedSchedule = null;
+                              for (const d of parsed.dates) {
+                                const match = schedules.find(s => 
+                                  s.title === parsed.title &&
+                                  isScheduleInMonth(s, currentYear, currentMonth) &&
+                                  s.date === d
+                                );
+                                if (match) {
+                                  matchedSchedule = match;
+                                  break;
+                                }
                               }
-                            }
-                            
-                            const blockLines = (blocks[idx + 1] || '').trim().split('\n');
-                            
-                            return (
-                              <div key={idx} style={{ 
-                                padding: '10px 12px', 
-                                backgroundColor: 'rgba(255, 255, 255, 0.12)', 
-                                borderRadius: '8px',
-                                border: '1px solid rgba(255, 255, 255, 0.15)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '3px'
-                              }}>
-                                <div style={{ fontWeight: '800', fontSize: '13.5px' }}>📅 일정 {idx + 1}: "{parsed.title}"</div>
-                                {blockLines.map((line, lIdx) => {
-                                  if (line.includes('📅 일정')) return null;
-                                  if (line.startsWith('"') || line.includes(parsed.title)) return null;
-                                  return <div key={lIdx} style={{ fontSize: '12.5px', opacity: 0.9 }}>{line}</div>;
-                                })}
-                                
-                                <div style={{ marginTop: '8px' }}>
-                                    {matchedSchedule ? (
-                                      <button
-                                        style={{
-                                          padding: '4px 10px',
-                                          fontSize: '11.5px',
-                                          backgroundColor: 'rgba(239, 68, 68, 0.08)', 
-                                          color: '#ef4444', 
-                                          border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                          borderRadius: '6px',
-                                          fontWeight: '700',
-                                          cursor: 'pointer',
-                                          transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.target.style.backgroundColor = '#ef4444';
-                                          e.target.style.borderColor = '#ef4444';
-                                          e.target.style.color = '#fff';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
-                                          e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
-                                          e.target.style.color = '#ef4444';
-                                        }}
-                                        onClick={async () => {
-                                           const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                                           const groupId = matchGroupId ? matchGroupId[1] : null;
-                                           if (groupId) {
-                                             const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                                             if (isConfigured) {
-                                               for (const t of targets) {
-                                                 await appwriteService.deleteSchedule(t.id);
-                                               }
-                                             }
-                                             const targetIds = targets.map(t => t.id);
-                                             setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
-                                           } else {
-                                             if (isConfigured) {
-                                               for (const d of parsed.dates) {
-                                                 const match = schedules.find(s => s.title === parsed.title && s.date === d);
-                                                 if (match) {
-                                                   await appwriteService.deleteSchedule(match.id);
+                              
+                              const blockLines = (blocks[idx + 1] || '').trim().split('\n');
+                              
+                              return (
+                                <div key={idx} style={{ 
+                                  padding: '10px 12px', 
+                                  backgroundColor: '#ffffff', 
+                                  borderRadius: '8px',
+                                  border: '1px solid var(--border-color)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '3px'
+                                }}>
+                                  <div style={{ fontWeight: '600', fontSize: '13.5px' }}>📅 일정 {idx + 1}: "{parsed.title}"</div>
+                                  {blockLines.map((line, lIdx) => {
+                                    if (line.includes('📅 일정')) return null;
+                                    if (line.startsWith('"') || line.includes(parsed.title)) return null;
+                                    return <div key={lIdx} style={{ fontSize: '12.5px', opacity: 0.9 }}>{line}</div>;
+                                  })}
+                                  
+                                  <div style={{ marginTop: '8px' }}>
+                                      {matchedSchedule ? (
+                                        <button
+                                          style={{
+                                            padding: '4px 10px',
+                                            fontSize: '11.5px',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                                            color: '#ef4444', 
+                                            border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                            borderRadius: '6px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.target.style.backgroundColor = '#ef4444';
+                                            e.target.style.borderColor = '#ef4444';
+                                            e.target.style.color = '#fff';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                                            e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                            e.target.style.color = '#ef4444';
+                                          }}
+                                          onClick={async () => {
+                                             const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                                             const groupId = matchGroupId ? matchGroupId[1] : null;
+                                             if (groupId) {
+                                               const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                                               if (isConfigured) {
+                                                 for (const t of targets) {
+                                                   await appwriteService.deleteSchedule(t.id);
                                                  }
                                                }
+                                               const targetIds = targets.map(t => t.id);
+                                               setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
+                                             } else {
+                                               if (isConfigured) {
+                                                 for (const d of parsed.dates) {
+                                                   const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
+                                                   if (match) {
+                                                     await appwriteService.deleteSchedule(match.id);
+                                                   }
+                                                 }
+                                               }
+                                               setSchedules(prev => prev.filter(s => {
+                                                  const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
+                                                 return !isMatching;
+                                               }));
                                              }
-                                             setSchedules(prev => prev.filter(s => {
-                                               const isMatching = s.title === parsed.title && parsed.dates.includes(s.date);
-                                               return !isMatching;
-                                             }));
-                                           }
-                                         }}
-                                      >
-                                        등록취소
-                                      </button>
-                                    ) : (
-                                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
-                                        ✓ 취소됨
-                                      </span>
-                                    )}
+                                           }}
+                                        >
+                                          등록취소
+                                        </button>
+                                      ) : (
+                                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
+                                          ✓ 취소됨
+                                        </span>
+                                      )}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {existingSchedules.length > 1 && (
-                          <button
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px 12px', 
-                              fontSize: '12px', 
-                              backgroundColor: '#ef4444', 
-                              color: '#fff', 
-                              border: 'none',
-                              borderRadius: '4px', 
-                              fontWeight: '800',
-                              cursor: 'pointer',
-                              marginTop: '4px',
-                              transition: 'all 0.2s',
-                              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = '#b91c1c';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = '#ef4444';
-                            }}
-                            onClick={async () => {
-                              if (confirm('이 메시지로 등록된 모든 일정을 취소하시겠습니까?')) {
-                                for (const s of existingSchedules) {
-                                  if (isConfigured) {
-                                    await appwriteService.deleteSchedule(s.id);
+                              );
+                            })}
+                          </div>
+                          {existingSchedules.length > 1 && (
+                            <button
+                              style={{ 
+                                width: '100%', 
+                                padding: '8px 12px', 
+                                fontSize: '12px', 
+                                backgroundColor: '#ef4444', 
+                                color: '#fff', 
+                                border: 'none',
+                                borderRadius: '4px', 
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                marginTop: '4px',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#b91c1c';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#ef4444';
+                              }}
+                              onClick={async () => {
+                                if (confirm('이 메시지로 등록된 모든 일정을 취소하시겠습니까?')) {
+                                  for (const s of existingSchedules) {
+                                    if (isConfigured) {
+                                      await appwriteService.deleteSchedule(s.id);
+                                    }
                                   }
+                                  const ids = existingSchedules.map(s => s.id);
+                                  setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
                                 }
-                                const ids = existingSchedules.map(s => s.id);
-                                setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
-                              }
-                            }}
-                          >
-                            모두 등록취소
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })() : (
-                    msg.text
-                  )}
+                              }}
+                            >
+                              모두 등록취소
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })() : (
+                      msg.text
+                    )}
+                  </div>
+                  <div className="chat-meta-row" style={{ alignSelf: isUser ? 'flex-end' : 'flex-start' }}>
+                    <span className="chat-meta-sender">
+                      {roleClass === 'ai' ? 'AI 잘됨이' : ME.name}
+                    </span>
+                    <span className="chat-meta-time">{msg.time}</span>
+                  </div>
                 </div>
-                <div className="chat-meta-row" style={{ alignSelf: isUser ? 'flex-end' : 'flex-start' }}>
-                  <span className="chat-meta-sender">
-                    {roleClass === 'ai' ? 'AI 잘됨이' : ME.name}
-                  </span>
-                  <span className="chat-meta-time">{msg.time}</span>
-                </div>
-              </div>
+              );
+            };
+
+            return (
+              <>
+                {previousMessages.length > 0 && (
+                  <div style={{
+                    position: 'sticky',
+                    top: '0px',
+                    zIndex: 12,
+                    textAlign: 'center',
+                    margin: '0 0 10px 0',
+                    pointerEvents: 'none'
+                  }}>
+                    <button
+                      onClick={() => setShowPreviousMessages(prev => !prev)}
+                      style={{
+                        pointerEvents: 'auto',
+                        background: '#ffffff',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '5px 14px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        margin: '0 auto'
+                      }}
+                    >
+                      <span>{showPreviousMessages ? '이전 대화 접기' : `이전 대화 보기 (${previousMessages.length}개)`}</span>
+                      <svg 
+                        width="13" 
+                        height="13" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        style={{
+                          transform: showPreviousMessages ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                {showPreviousMessages && previousMessages.length > 0 && (
+                  <>
+                    {previousMessages.map(msg => renderBubble(msg))}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '16px 0 16px 0',
+                      gap: '12px'
+                    }}>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-tertiary)' }}>오늘 대화</span>
+                      <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+                    </div>
+                  </>
+                )}
+
+                {todayMessages.map(msg => renderBubble(msg))}
+              </>
             );
-          })}
+          })()}
 
           {isTyping && (
             <div className="chat-bubble-wrap ai">
@@ -1702,8 +1829,15 @@ export default function App() {
             <div className="date-navigator">
               <button 
                 className="nav-arrow-text" 
-                onClick={() => setSelectedDate(prev => Math.max(1, timeViewTab === 'weekly' ? prev - 7 : prev - 1))} 
-                title={timeViewTab === 'weekly' ? "이전 주" : "이전 날짜"}
+                onClick={() => {
+                  if (currentMonth === 1) {
+                    setCurrentYear(prev => prev - 1);
+                    setCurrentMonth(12);
+                  } else {
+                    setCurrentMonth(prev => prev - 1);
+                  }
+                }} 
+                title="이전 달"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                   <polyline points="15 18 9 12 15 6" />
@@ -1711,26 +1845,35 @@ export default function App() {
               </button>
               <span className="current-date-text" style={{ minWidth: timeViewTab === 'weekly' ? '200px' : '70px', textAlign: 'center' }}>
                 {(() => {
+                  const monthFormatted = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
                   if (timeViewTab === 'weekly') {
-                    const dayOfWeekIndex = (1 + (selectedDate - 1)) % 7;
-                    const startOfWeek = selectedDate - dayOfWeekIndex;
-                    const endOfWeek = startOfWeek + 6;
+                    const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
+                    const dayOfWeekIndex = selectedObj.getDay();
+                    const startOfWeekDate = new Date(currentYear, currentMonth - 1, selectedDate - dayOfWeekIndex);
+                    const endOfWeekDate = new Date(currentYear, currentMonth - 1, selectedDate - dayOfWeekIndex + 6);
                     
-                    const formatDay = (d) => {
-                      if (d < 1) return '05.31';
-                      if (d > 30) return '07.04';
-                      return `06.${d < 10 ? '0' : ''}${d}`;
+                    const formatObj = (dObj) => {
+                      const m = dObj.getMonth() + 1;
+                      const d = dObj.getDate();
+                      return `${m < 10 ? '0' : ''}${m}.${d < 10 ? '0' : ''}${d}`;
                     };
                     
-                    return `2026.${formatDay(startOfWeek)} ~ ${formatDay(endOfWeek)}`;
+                    return `${currentYear}.${formatObj(startOfWeekDate)} ~ ${formatObj(endOfWeekDate)}`;
                   }
-                  return '2026.06';
+                  return `${currentYear}.${monthFormatted}`;
                 })()}
               </span>
               <button 
                 className="nav-arrow-text" 
-                onClick={() => setSelectedDate(prev => Math.min(30, timeViewTab === 'weekly' ? prev + 7 : prev + 1))} 
-                title={timeViewTab === 'weekly' ? "다음 주" : "다음 날짜"}
+                onClick={() => {
+                  if (currentMonth === 12) {
+                    setCurrentYear(prev => prev + 1);
+                    setCurrentMonth(1);
+                  } else {
+                    setCurrentMonth(prev => prev + 1);
+                  }
+                }} 
+                title="다음 달"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                   <polyline points="9 18 15 12 9 6" />
@@ -1744,80 +1887,107 @@ export default function App() {
                 <button 
                   className={`toggle-item ${timeViewTab === 'daily' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('daily')}
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                    <circle cx="12" cy="15" r="1.5" fill="currentColor" />
-                  </svg>
-                  일간
+                  DAY
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'weekly' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('weekly')}
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                    <line x1="9" y1="14" x2="9" y2="20" />
-                    <line x1="15" y1="14" x2="15" y2="20" />
-                  </svg>
-                  주간
+                  WEEK
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'monthly' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('monthly')}
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                    <circle cx="8" cy="14" r="1" fill="currentColor" />
-                    <circle cx="12" cy="14" r="1" fill="currentColor" />
-                    <circle cx="16" cy="14" r="1" fill="currentColor" />
-                    <circle cx="8" cy="18" r="1" fill="currentColor" />
-                    <circle cx="12" cy="18" r="1" fill="currentColor" />
-                    <circle cx="16" cy="18" r="1" fill="currentColor" />
-                  </svg>
-                  월간
+                  MONTH
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'list' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('list')}
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                    <line x1="8" y1="6" x2="21" y2="6" />
-                    <line x1="8" y1="12" x2="21" y2="12" />
-                    <line x1="8" y1="18" x2="21" y2="18" />
-                    <line x1="3" y1="6" x2="3.01" y2="6" strokeWidth="3.5" />
-                    <line x1="3" y1="12" x2="3.01" y2="12" strokeWidth="3.5" />
-                    <line x1="3" y1="18" x2="3.01" y2="18" strokeWidth="3.5" />
-                  </svg>
-                  목록
+                  LIST
                 </button>
               </div>
             </div>
             
-            {/* Reset Button (Right aligned) */}
-            <div style={{ marginLeft: 'auto', zIndex: 10 }}>
+            {/* User Session & Reset Controls (Right aligned) */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
+              {/* User Avatar & Name & Mode */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  backgroundColor: ME.color || '#6366f1',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  overflow: 'hidden',
+                  padding: 0
+                }}>
+                  {getMemberAvatarPic(ME) ? (
+                    <img src={getMemberAvatarPic(ME)} alt={ME.name} style={getMemberAvatarStyle(ME, 0)} />
+                  ) : (
+                    ME.avatar
+                  )}
+                </div>
+                <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-primary)' }}>{ME.name}</span>
+              </div>
+
+              {/* Logout button (if configured) or local user switcher */}
+              {isConfigured ? (
+                <button
+                  onClick={handleLogOut}
+                  style={{
+                    fontSize: '12.5px',
+                    color: 'var(--text-secondary)',
+                    background: '#ffffff',
+                    border: '1px solid var(--border-color)',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    transition: 'var(--transition)'
+                  }}
+                >
+                  로그아웃
+                </button>
+              ) : (
+                <select
+                  value={virtualUser.id}
+                  onChange={(e) => {
+                    const target = activeTeam.find(m => m.id === e.target.value);
+                    if (target) setVirtualUser(target);
+                  }}
+                  style={{
+                    fontSize: '12px',
+                    padding: '3px 6px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-color)',
+                    background: '#ffffff',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  {activeTeam.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              )}
+
+              {/* Reset Button */}
               <button 
                 className="modal-btn" 
                 style={{ 
-                  fontSize: '13.5px', 
-                  fontWeight: '600', 
+                  fontSize: '12.5px', 
+                  fontWeight: '500', 
                   color: '#ef4444', 
-                  borderColor: 'rgba(239, 68, 68, 0.2)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                  padding: '6px 12px',
+                  borderColor: 'var(--border-color)',
+                  backgroundColor: '#ffffff',
+                  padding: '4px 10px',
                   borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   transition: 'var(--transition)'
@@ -1831,7 +2001,7 @@ export default function App() {
                     localStorage.setItem('zal_schedules', JSON.stringify([]));
                     localStorage.removeItem('zal_messages');
                     setSchedules([]);
-                    setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()) }]);
+                    setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
                     alert('모든 데이터가 초기화되었습니다.');
                   }
                 }}
@@ -1847,37 +2017,42 @@ export default function App() {
 
         {/* Horizontal Date Selector */}
         <div className="horizontal-date-selector">
-          {Array.from({ length: 30 }, (_, i) => {
-            const dayNum = i + 1;
-            const getDayOfWeek = (d) => {
-              const days = ['일', '월', '화', '수', '목', '금', '토'];
-              return days[(1 + (d - 1)) % 7];
-            };
-            const dayOfWeek = getDayOfWeek(dayNum);
-            const isSelected = dayNum === selectedDate;
-            const isToday = dayNum === new Date().getDate();
-            const isSat = dayOfWeek === '토';
-            const isSun = dayOfWeek === '일';
-            const hasSchedules = schedules.some(s => s.date === dayNum);
-            
-            const dayOfWeekIndex = (1 + (selectedDate - 1)) % 7;
-            const startOfWeek = selectedDate - dayOfWeekIndex;
-            const endOfWeek = startOfWeek + 6;
-            const isInWeek = timeViewTab === 'weekly' && dayNum >= startOfWeek && dayNum <= endOfWeek;
+          {(() => {
+            const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const daysArr = ['일', '월', '화', '수', '목', '금', '토'];
+            return Array.from({ length: totalDaysInMonth }, (_, i) => {
+              const dayNum = i + 1;
+              const dateObj = new Date(currentYear, currentMonth - 1, dayNum);
+              const dayOfWeek = daysArr[dateObj.getDay()];
+              const isSelected = dayNum === selectedDate;
+              const now = new Date();
+              const isToday = currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
+              const isSat = dayOfWeek === '토';
+              const isSun = dayOfWeek === '일';
+              const hasSchedules = schedules.some(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum);
+              
+              const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
+              const dayOfWeekIndex = selectedObj.getDay();
+              const startOfWeek = selectedDate - dayOfWeekIndex;
+              const endOfWeek = startOfWeek + 6;
+              const isInWeek = timeViewTab === 'weekly' && dayNum >= startOfWeek && dayNum <= endOfWeek;
 
-            return (
-              <button
-                key={dayNum}
-                className={`date-item ${isSelected ? 'active' : ''} ${isInWeek ? 'in-week' : ''} ${isToday ? 'today' : ''} ${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                onClick={() => setSelectedDate(dayNum)}
-              >
-                {isToday && <span className="date-item-today-badge">오늘</span>}
-                <span className="date-item-day">{dayOfWeek}</span>
-                <span className="date-item-num">{dayNum}</span>
-                <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={dayNum}
+                  className={`date-item ${isSelected ? 'active' : ''} ${isInWeek ? 'in-week' : ''} ${isToday ? 'today' : ''} ${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
+                  onClick={() => setSelectedDate(dayNum)}
+                >
+                  <span className="date-item-day">{dayOfWeek}</span>
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="date-item-num">{dayNum}</span>
+                    {isToday && <span className="date-item-today-badge">TODAY</span>}
+                  </div>
+                  <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
+                </button>
+              );
+            });
+          })()}
         </div>
 
         {/* Timeline Grid Table */}
@@ -1895,10 +2070,10 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map(member => {
+                {filteredMembers.map((member, index) => {
                   const memberSchedules = schedules.filter(s => {
                     const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
-                    const matchesDate = s.date === selectedDate;
+                    const matchesDate = isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate;
                     return matchesMember && matchesDate;
                   });
                   const { trackMap, totalTracks } = getSchedulesWithTracks(memberSchedules);
@@ -1909,10 +2084,14 @@ export default function App() {
                       {/* Column 1: Member profile info */}
                       <td className="col-member">
                         <div className="member-cell-content">
-                          <div className="member-avatar-circle" style={{ backgroundColor: member.color, color: '#ffffff', fontWeight: '700', border: 'none' }}>
-                            {member.id === 'sh' ? '나' : member.avatar}
+                          <div className="member-avatar-circle" style={{ backgroundColor: '#ffffff', color: '#ffffff', fontWeight: '700', border: '1px solid #e2e8f0', overflow: 'hidden', padding: 0 }}>
+                            {getMemberAvatarPic(member, index) ? (
+                              <img src={getMemberAvatarPic(member, index)} alt={member.name} style={getMemberAvatarStyle(member, index)} />
+                            ) : (
+                              member.id === 'sh' ? '나' : member.avatar
+                            )}
                           </div>
-                          <span className="member-role-label">{member.role}</span>
+                          <span className="member-role-label">{getMemberRoleText(member, index)}</span>
                         </div>
                       </td>
 
@@ -1968,21 +2147,15 @@ export default function App() {
           {timeViewTab === 'weekly' && (() => {
             const getDayLabelAndDow = (d) => {
               const days = ['일', '월', '화', '수', '목', '금', '토'];
-              if (d < 1) {
-                const dayNum = 31 + d;
-                const dowIndex = (1 + (d - 1) + 700) % 7;
-                return { label: `5/${dayNum}`, dow: days[dowIndex], month: 5, dayNum };
-              }
-              if (d > 30) {
-                const dayNum = d - 30;
-                const dowIndex = (1 + (d - 1)) % 7;
-                return { label: `7/${dayNum}`, dow: days[dowIndex], month: 7, dayNum };
-              }
-              const dowIndex = (1 + (d - 1)) % 7;
-              return { label: `${d}일`, dow: days[dowIndex], month: 6, dayNum: d };
+              const dateObj = new Date(currentYear, currentMonth - 1, d);
+              const m = dateObj.getMonth() + 1;
+              const dayNum = dateObj.getDate();
+              const dow = days[dateObj.getDay()];
+              return { label: `${m}/${dayNum}`, dow, month: m, dayNum };
             };
 
-            const dayOfWeekIndex = (1 + (selectedDate - 1)) % 7;
+            const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
+            const dayOfWeekIndex = selectedObj.getDay();
             const startOfWeek = selectedDate - dayOfWeekIndex;
             const weekDates = Array.from({ length: 7 }, (_, i) => startOfWeek + i);
             const numMembers = filteredMembers.length;
@@ -2021,7 +2194,7 @@ export default function App() {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
                       const isSun = info.dow === '일';
-                      return filteredMembers.map(member => (
+                      return filteredMembers.map((member, memberIdx) => (
                         <th 
                           key={`${d}_${member.id}`}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
@@ -2035,29 +2208,41 @@ export default function App() {
                             minWidth: '65px'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px' }}>
                             <div 
                               className="member-avatar-circle" 
                               style={{ 
-                                width: '38px', 
-                                height: '38px', 
-                                fontSize: '12px', 
-                                backgroundColor: member.color, 
+                                width: '24px', 
+                                height: '24px', 
+                                minWidth: '24px',
+                                minHeight: '24px',
+                                maxWidth: '24px',
+                                maxHeight: '24px',
+                                aspectRatio: '1 / 1',
+                                borderRadius: '50%',
+                                backgroundColor: '#ffffff', 
                                 color: '#ffffff', 
                                 fontWeight: '700', 
-                                border: 'none',
+                                border: '1px solid #e2e8f0',
                                 margin: '0',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 whiteSpace: 'nowrap',
-                                boxShadow: 'var(--shadow-sm)',
-                                borderRadius: '50%'
+                                overflow: 'hidden',
+                                padding: 0
                               }}
-                              title={`${member.name} (${member.role})`}
+                              title={`${member.name} (${getMemberRoleText(member, memberIdx)})`}
                             >
-                              {member.id === 'sh' ? '나' : member.avatar}
+                              {getMemberAvatarPic(member, memberIdx) ? (
+                                <img src={getMemberAvatarPic(member, memberIdx)} alt={member.name} style={getMemberAvatarStyle(member, memberIdx)} />
+                              ) : (
+                                member.id === 'sh' ? '나' : member.avatar
+                              )}
                             </div>
+                            <span style={{ fontSize: '11.5px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                              {member.name}
+                            </span>
                           </div>
                         </th>
                       ));
@@ -2088,7 +2273,7 @@ export default function App() {
                         return filteredMembers.map(member => {
                           const daySchedules = schedules.filter(s => {
                             const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
-                            return matchesMember && info.month === 6 && s.date === info.dayNum;
+                            return matchesMember && isScheduleInMonth(s, currentYear, info.month) && s.date === info.dayNum;
                           });
 
                           const currentEvents = daySchedules.filter(s => {
@@ -2182,7 +2367,7 @@ export default function App() {
               </thead>
               <tbody>
                 {(() => {
-                  const days = getJune2026Days();
+                  const days = getMonthDays(currentYear, currentMonth);
                   const rows = [];
                   for (let i = 0; i < days.length; i += 7) {
                     rows.push(days.slice(i, i + 7));
@@ -2194,9 +2379,10 @@ export default function App() {
                         const dayNum = day.dayNum;
                         const isSat = dIdx === 6;
                         const isSun = dIdx === 0;
-                        const isToday = isCurrentMonth && dayNum === new Date().getDate();
+                        const now = new Date();
+                        const isToday = isCurrentMonth && currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
                         
-                        const daySchedules = isCurrentMonth ? schedules.filter(s => s.date === dayNum) : [];
+                        const daySchedules = isCurrentMonth ? schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum) : [];
                         
                         return (
                           <td
@@ -2311,7 +2497,7 @@ export default function App() {
 
           {timeViewTab === 'list' && (() => {
             const grouped = {};
-            schedules.forEach(s => {
+            schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth)).forEach(s => {
               if (!grouped[s.date]) {
                 grouped[s.date] = [];
               }
@@ -2330,7 +2516,8 @@ export default function App() {
             
             const getDayOfWeek = (d) => {
               const days = ['일', '월', '화', '수', '목', '금', '토'];
-              return days[(1 + (d - 1)) % 7];
+              const dateObj = new Date(currentYear, currentMonth - 1, d);
+              return days[dateObj.getDay()];
             };
 
             return (
@@ -2431,15 +2618,16 @@ export default function App() {
           })()}
         </div>
 
-        {/* Floating AI Panel Button */}
-        <button 
-          className="ai-toggle-floating-btn"
-          onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-          title="AI 비서"
-          style={{ left: '20px', right: 'auto' }} // Positioned 20px from the left edge of the main content
-        >
-          🤖
-        </button>
+        {/* Floating AI Panel Button (Shown ONLY when chat drawer is closed) */}
+        {!isDrawerOpen && (
+          <button 
+            className="ai-toggle-floating-btn"
+            onClick={() => setIsDrawerOpen(true)}
+            title="AI 비서 열기"
+          >
+            <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </button>
+        )}
       </main>
 
       {/* ──── ADD SCHEDULE MODAL ─────────────────── */}

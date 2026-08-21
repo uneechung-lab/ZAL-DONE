@@ -1533,7 +1533,7 @@ export default function App() {
               const roleClass = isUser ? 'user' : 'ai';
               return (
                 <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
-                  <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line', padding: '16px' }}>
+                  <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line' }}>
                     {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:')) ? (() => {
                       const parsedSchedules = parseSchedulesFromText(msg.text);
                       const introText = msg.text.split(/📅?\s*일정 \d+:/)[0].trim();

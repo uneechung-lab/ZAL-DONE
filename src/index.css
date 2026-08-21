@@ -890,9 +890,9 @@ button, input, select, textarea {
 }
 
 .chat-bubble.user {
-  background: #ffffff;
-  color: #0f172a;
-  border: 1.5px solid #0f172a;
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
   border-bottom-right-radius: 4px;
   font-weight: 500;
 }

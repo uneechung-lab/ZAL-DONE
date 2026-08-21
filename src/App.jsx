@@ -2535,41 +2535,111 @@ export default function App() {
           })()}
 
           {timeViewTab === 'monthly' && (
-            <table className="timeline-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px' }}>일</th>
-                  <th style={{ textAlign: 'center', padding: '10px' }}>월</th>
-                  <th style={{ textAlign: 'center', padding: '10px' }}>화</th>
-                  <th style={{ textAlign: 'center', padding: '10px' }}>수</th>
-                  <th style={{ textAlign: 'center', padding: '10px' }}>목</th>
-                  <th style={{ textAlign: 'center', padding: '10px' }}>금</th>
-                  <th style={{ color: 'var(--accent-blue)', textAlign: 'center', padding: '10px' }}>토</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const allNormalizedSchedules = normalizeRangeSchedules(schedules);
-                  const days = getMonthDays(currentYear, currentMonth);
-                  const rows = [];
-                  for (let i = 0; i < days.length; i += 7) {
-                    rows.push(days.slice(i, i + 7));
-                  }
+            <div style={{ width: '100%', border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden', background: 'var(--border-light)' }}>
+              {/* Header: Days of Week */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#f8fafc', borderBottom: '1px solid var(--border-light)' }}>
+                <div style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>일</div>
+                <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>월</div>
+                <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>화</div>
+                <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>수</div>
+                <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>목</div>
+                <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>금</div>
+                <div style={{ color: 'var(--accent-blue)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>토</div>
+              </div>
 
-                  return rows.map((row, rIdx) => {
-                    const weekRowSchedules = row.map(day => {
-                      if (!day.isCurrentMonth) return [];
-                      const list = allNormalizedSchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
-                      list.sort((a, b) => {
-                        const keyA = (a.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || a.title;
-                        const keyB = (b.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || b.title;
-                        return keyA.localeCompare(keyB);
-                      });
-                      return list;
+              {/* Month Weeks (Rows) */}
+              {(() => {
+                const allNormalizedSchedules = normalizeRangeSchedules(schedules);
+                const days = getMonthDays(currentYear, currentMonth);
+                const rows = [];
+                for (let i = 0; i < days.length; i += 7) {
+                  rows.push(days.slice(i, i + 7));
+                }
+
+                return rows.map((row, rIdx) => {
+                  // 1. Collect all schedules for each day in this week row
+                  const weekDaySchedules = row.map(day => {
+                    if (!day.isCurrentMonth) return [];
+                    return allNormalizedSchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
+                  });
+
+                  // 2. Group items by title or groupId to form continuous range bars across columns 0..6
+                  const weekEventsMap = {};
+
+                  row.forEach((day, col) => {
+                    if (!day.isCurrentMonth) return;
+                    const dayScheds = weekDaySchedules[col];
+                    dayScheds.forEach(s => {
+                      const groupId = s.description && s.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+                      const key = groupId ? `g_${groupId}` : `t_${s.title}`;
+                      
+                      if (!weekEventsMap[key]) {
+                        weekEventsMap[key] = {
+                          key,
+                          title: s.title,
+                          color: s.color,
+                          status: s.status,
+                          description: s.description,
+                          memberId: s.memberId,
+                          memberIds: s.memberIds,
+                          sampleEvent: s,
+                          startCol: col,
+                          endCol: col,
+                          cols: [col]
+                        };
+                      } else {
+                        weekEventsMap[key].endCol = col;
+                        if (!weekEventsMap[key].cols.includes(col)) {
+                          weekEventsMap[key].cols.push(col);
+                        }
+                      }
                     });
+                  });
 
-                    return (
-                      <tr key={rIdx} style={{ height: 'auto' }}>
+                  const weekEvents = Object.values(weekEventsMap);
+
+                  // Sort events: longer span first, then earlier startCol
+                  weekEvents.sort((a, b) => {
+                    const spanA = a.endCol - a.startCol + 1;
+                    const spanB = b.endCol - b.startCol + 1;
+                    if (spanA !== spanB) return spanB - spanA;
+                    return a.startCol - b.startCol;
+                  });
+
+                  // 3. Track Assignment (Slot allocation for row)
+                  const trackOccupied = [];
+
+                  weekEvents.forEach(evt => {
+                    let trackIndex = 0;
+                    while (true) {
+                      if (!trackOccupied[trackIndex]) {
+                        trackOccupied[trackIndex] = [false, false, false, false, false, false, false];
+                      }
+                      let isAvailable = true;
+                      for (let c = evt.startCol; c <= evt.endCol; c++) {
+                        if (trackOccupied[trackIndex][c]) {
+                          isAvailable = false;
+                          break;
+                        }
+                      }
+                      if (isAvailable) {
+                        evt.trackIndex = trackIndex;
+                        for (let c = evt.startCol; c <= evt.endCol; c++) {
+                          trackOccupied[trackIndex][c] = true;
+                        }
+                        break;
+                      }
+                      trackIndex++;
+                    }
+                  });
+
+                  const totalTracksInRow = Math.max(trackOccupied.length, 3);
+                  const cellMinHeight = totalTracksInRow * 26 + 36;
+
+                  return (
+                    <div key={rIdx} style={{ position: 'relative', width: '100%', background: '#fff', borderBottom: rIdx < rows.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                      {/* Day Cells Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', width: '100%' }}>
                         {row.map((day, dIdx) => {
                           const isCurrentMonth = day.isCurrentMonth;
                           const dayNum = day.dayNum;
@@ -2577,29 +2647,26 @@ export default function App() {
                           const isSun = dIdx === 0;
                           const now = new Date();
                           const isToday = isCurrentMonth && currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
-                          
-                          const daySchedules = weekRowSchedules[dIdx] || [];
-                        
-                        return (
-                          <td
-                            key={dIdx}
-                            style={{
-                              width: '14.28%',
-                              border: '1px solid var(--border-light)',
-                              verticalAlign: 'top',
-                              padding: '6px',
-                              background: isCurrentMonth ? '#ffffff' : '#f8fafc',
-                              opacity: isCurrentMonth ? 1 : 0.4,
-                              position: 'relative'
-                            }}
-                            onClick={() => {
-                              if (isCurrentMonth) {
-                                setSelectedDate(dayNum);
-                                setTimeViewTab('daily');
-                              }
-                            }}
-                          >
-                            <div style={{ minHeight: '98px', display: 'flex', flexDirection: 'column' }}>
+
+                          return (
+                            <div
+                              key={dIdx}
+                              style={{
+                                borderRight: dIdx < 6 ? '1px solid var(--border-light)' : 'none',
+                                padding: '6px',
+                                background: isCurrentMonth ? '#ffffff' : '#f8fafc',
+                                opacity: isCurrentMonth ? 1 : 0.4,
+                                minHeight: `${cellMinHeight}px`,
+                                boxSizing: 'border-box',
+                                cursor: isCurrentMonth ? 'pointer' : 'default'
+                              }}
+                              onClick={() => {
+                                if (isCurrentMonth) {
+                                  setSelectedDate(dayNum);
+                                  setTimeViewTab('daily');
+                                }
+                              }}
+                            >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <span 
                                   style={{ 
@@ -2620,93 +2687,90 @@ export default function App() {
                                 </span>
                                 {isToday && <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--accent-purple)' }}>오늘</span>}
                               </div>
-                              
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              {daySchedules.map(event => {
-                                const assignees = event.memberIds && event.memberIds.length > 0
-                                  ? event.memberIds.map(id => activeTeam.find(t => t.id === id)).filter(Boolean)
-                                  : (event.memberId ? [activeTeam.find(t => t.id === event.memberId)].filter(Boolean) : [ME]);
-
-                                const isPrevConnected = dIdx > 0 && weekRowSchedules[dIdx - 1].some(s => isSameScheduleRange(s, event));
-                                const isNextConnected = dIdx < 6 && weekRowSchedules[dIdx + 1].some(s => isSameScheduleRange(s, event));
-
-                                const showTitle = !isPrevConnected || dIdx === 0;
-
-                                return (
-                                  <div
-                                    key={event.id}
-                                    className={`schedule-block ${event.color}`}
-                                    style={{
-                                      position: 'relative',
-                                      width: 'auto',
-                                      height: '22px',
-                                      padding: '0 6px',
-                                      borderTopLeftRadius: isPrevConnected ? '0px' : '4px',
-                                      borderBottomLeftRadius: isPrevConnected ? '0px' : '4px',
-                                      borderTopRightRadius: isNextConnected ? '0px' : '4px',
-                                      borderBottomRightRadius: isNextConnected ? '0px' : '4px',
-                                      marginLeft: isPrevConnected ? '-7px' : '0px',
-                                      marginRight: isNextConnected ? '-7px' : '0px',
-                                      fontSize: '11px',
-                                      fontWeight: '600',
-                                      cursor: 'pointer',
-                                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      zIndex: (isPrevConnected || isNextConnected) ? 2 : 1
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openDetailModal(event);
-                                    }}
-                                    title={`${event.title} (${assignees.map(a => a.name).join(', ')})`}
-                                  >
-                                    {showTitle ? (
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px' }}>
-                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                          {event.title}
-                                        </span>
-                                        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-                                          {assignees.map(a => (
-                                            <span 
-                                              key={a.id} 
-                                              style={{ 
-                                                width: '16px', 
-                                                height: '16px', 
-                                                borderRadius: '50%', 
-                                                backgroundColor: a.color, 
-                                                color: '#fff', 
-                                                fontSize: '9px', 
-                                                display: 'inline-flex', 
-                                                alignItems: 'center', 
-                                                justifyContent: 'center',
-                                                fontWeight: '800',
-                                                lineHeight: 1
-                                              }}
-                                              title={a.name}
-                                            >
-                                              {a.id === 'sh' ? '나' : a.avatar.slice(0, 1)}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div style={{ width: '100%', height: '100%' }} />
-                                    )}
-                                  </div>
-                                );
-                              })}
                             </div>
-                          </div>
-                        </td>
-                        );
-                      })}
-                    </tr>
+                          );
+                        })}
+                      </div>
+
+                      {/* Event Overlay Layer */}
+                      <div style={{ position: 'absolute', top: '32px', left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+                        {weekEvents.map(evt => {
+                          const startCol = evt.startCol;
+                          const span = evt.endCol - evt.startCol + 1;
+                          const leftPct = (startCol / 7) * 100;
+                          const widthPct = (span / 7) * 100;
+                          const topPx = evt.trackIndex * 26;
+
+                          const assignees = evt.memberIds && evt.memberIds.length > 0
+                            ? evt.memberIds.map(id => activeTeam.find(t => t.id === id)).filter(Boolean)
+                            : (evt.memberId ? [activeTeam.find(t => t.id === evt.memberId)].filter(Boolean) : [ME]);
+
+                          const sample = evt.sampleEvent;
+
+                          return (
+                            <div
+                              key={evt.key}
+                              className={`schedule-block ${evt.color}`}
+                              style={{
+                                position: 'absolute',
+                                top: `${topPx}px`,
+                                left: `calc(${leftPct}% + 4px)`,
+                                width: `calc(${widthPct}% - 8px)`,
+                                height: '22px',
+                                padding: '0 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                pointerEvents: 'auto',
+                                zIndex: 5
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDetailModal(sample);
+                              }}
+                              title={`${evt.title} (${assignees.map(a => a.name).join(', ')})`}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '6px' }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  {evt.title}
+                                </span>
+                                <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                                  {assignees.map(a => (
+                                    <span 
+                                      key={a.id} 
+                                      style={{ 
+                                        width: '16px', 
+                                        height: '16px', 
+                                        borderRadius: '50%', 
+                                        backgroundColor: a.color, 
+                                        color: '#fff', 
+                                        fontSize: '9px', 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        fontWeight: '800',
+                                        lineHeight: 1
+                                      }}
+                                      title={a.name}
+                                    >
+                                      {a.id === 'sh' ? '나' : a.avatar.slice(0, 1)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 });
-                })()}
-              </tbody>
-            </table>
+              })()}
+            </div>
           )}
 
           {timeViewTab === 'list' && (() => {

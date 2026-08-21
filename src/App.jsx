@@ -512,6 +512,14 @@ function formatScheduleDescription(groupId, detail, memo, year = null, month = n
   return parts.join(' | ');
 }
 
+function isSameScheduleRange(s1, s2) {
+  if (!s1 || !s2) return false;
+  const g1 = s1.description && s1.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+  const g2 = s2.description && s2.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+  if (g1 && g2 && g1 === g2) return true;
+  return s1.title === s2.title && s1.startHour === s2.startHour && s1.endHour === s2.endHour && (s1.memberId === s2.memberId || JSON.stringify(s1.memberIds) === JSON.stringify(s2.memberIds));
+}
+
 export default function App() {
   const slot = getTimeSlot();
 
@@ -2489,17 +2497,30 @@ export default function App() {
                   for (let i = 0; i < days.length; i += 7) {
                     rows.push(days.slice(i, i + 7));
                   }
-                  return rows.map((row, rIdx) => (
-                    <tr key={rIdx} style={{ height: 'auto' }}>
-                      {row.map((day, dIdx) => {
-                        const isCurrentMonth = day.isCurrentMonth;
-                        const dayNum = day.dayNum;
-                        const isSat = dIdx === 6;
-                        const isSun = dIdx === 0;
-                        const now = new Date();
-                        const isToday = isCurrentMonth && currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
-                        
-                        const daySchedules = isCurrentMonth ? schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum) : [];
+
+                  return rows.map((row, rIdx) => {
+                    const weekRowSchedules = row.map(day => {
+                      if (!day.isCurrentMonth) return [];
+                      const list = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
+                      list.sort((a, b) => {
+                        const keyA = (a.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || a.title;
+                        const keyB = (b.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || b.title;
+                        return keyA.localeCompare(keyB);
+                      });
+                      return list;
+                    });
+
+                    return (
+                      <tr key={rIdx} style={{ height: 'auto' }}>
+                        {row.map((day, dIdx) => {
+                          const isCurrentMonth = day.isCurrentMonth;
+                          const dayNum = day.dayNum;
+                          const isSat = dIdx === 6;
+                          const isSun = dIdx === 0;
+                          const now = new Date();
+                          const isToday = isCurrentMonth && currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
+                          
+                          const daySchedules = weekRowSchedules[dIdx] || [];
                         
                         return (
                           <td
@@ -2547,21 +2568,34 @@ export default function App() {
                                 const assignees = event.memberIds 
                                   ? event.memberIds.map(id => activeTeam.find(t => t.id === id)).filter(Boolean)
                                   : [];
+
+                                const isPrevConnected = dIdx > 0 && weekRowSchedules[dIdx - 1].some(s => isSameScheduleRange(s, event));
+                                const isNextConnected = dIdx < 6 && weekRowSchedules[dIdx + 1].some(s => isSameScheduleRange(s, event));
+
+                                const showTitle = !isPrevConnected || dIdx === 0;
+
                                 return (
                                   <div
                                     key={event.id}
                                     className={`schedule-block ${event.color}`}
                                     style={{
-                                      position: 'static',
-                                      width: '100%',
-                                      height: 'auto',
-                                      padding: '3px 6px',
-                                      borderRadius: '4px',
+                                      position: 'relative',
+                                      width: 'auto',
+                                      height: '22px',
+                                      padding: '0 6px',
+                                      borderTopLeftRadius: isPrevConnected ? '0px' : '4px',
+                                      borderBottomLeftRadius: isPrevConnected ? '0px' : '4px',
+                                      borderTopRightRadius: isNextConnected ? '0px' : '4px',
+                                      borderBottomRightRadius: isNextConnected ? '0px' : '4px',
+                                      marginLeft: isPrevConnected ? '-7px' : '0px',
+                                      marginRight: isNextConnected ? '-7px' : '0px',
                                       fontSize: '11px',
                                       fontWeight: '600',
                                       cursor: 'pointer',
                                       boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                                      display: 'block'
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      zIndex: (isPrevConnected || isNextConnected) ? 2 : 1
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2569,34 +2603,38 @@ export default function App() {
                                     }}
                                     title={`${event.title} (${assignees.map(a => a.name).join(', ')})`}
                                   >
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px' }}>
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                        {event.title}
-                                      </span>
-                                      <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-                                        {assignees.map(a => (
-                                          <span 
-                                            key={a.id} 
-                                            style={{ 
-                                              width: '18px', 
-                                              height: '18px', 
-                                              borderRadius: '50%', 
-                                              backgroundColor: a.color, 
-                                              color: '#fff', 
-                                              fontSize: '10px', 
-                                              display: 'inline-flex', 
-                                              alignItems: 'center', 
-                                              justifyContent: 'center',
-                                              fontWeight: '800',
-                                              lineHeight: 1
-                                            }}
-                                            title={a.name}
-                                          >
-                                            {a.id === 'sh' ? '나' : a.avatar.slice(0, 1)}
-                                          </span>
-                                        ))}
+                                    {showTitle ? (
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '4px' }}>
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                          {event.title}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                                          {assignees.map(a => (
+                                            <span 
+                                              key={a.id} 
+                                              style={{ 
+                                                width: '16px', 
+                                                height: '16px', 
+                                                borderRadius: '50%', 
+                                                backgroundColor: a.color, 
+                                                color: '#fff', 
+                                                fontSize: '9px', 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center',
+                                                fontWeight: '800',
+                                                lineHeight: 1
+                                              }}
+                                              title={a.name}
+                                            >
+                                              {a.id === 'sh' ? '나' : a.avatar.slice(0, 1)}
+                                            </span>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
+                                    ) : (
+                                      <div style={{ width: '100%', height: '100%' }} />
+                                    )}
                                   </div>
                                 );
                               })}
@@ -2606,7 +2644,8 @@ export default function App() {
                         );
                       })}
                     </tr>
-                  ));
+                  );
+                });
                 })()}
               </tbody>
             </table>

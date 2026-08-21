@@ -473,7 +473,10 @@ function parseScheduleDescription(description = '') {
     groupId = groupMatch[1];
   }
 
-  let remaining = description.replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/, '').trim();
+  let remaining = description
+    .replace(/\[YM:\d{4}\.\d{2}\]\s*\|?\s*/g, '')
+    .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/g, '')
+    .trim();
 
   const detailMatch = remaining.match(/\[상세\]\s*(.*?)(?=\s*\|\s*\[메모\]|\s*\[메모\]|$)/s);
   const memoMatch = remaining.match(/\[메모\]\s*(.*)$/s);
@@ -492,8 +495,11 @@ function parseScheduleDescription(description = '') {
   return { groupId, detail, memo };
 }
 
-function formatScheduleDescription(groupId, detail, memo) {
+function formatScheduleDescription(groupId, detail, memo, year = null, month = null) {
   let parts = [];
+  if (year && month) {
+    parts.push(`[YM:${year}.${month < 10 ? '0' : ''}${month}]`);
+  }
   if (groupId) {
     parts.push(`[그룹 ID] ${groupId}`);
   }
@@ -614,8 +620,10 @@ export default function App() {
   const [editDescription, setEditDescription] = useState('');
   const [editDetail, setEditDetail] = useState('');
   const [editMemo, setEditMemo] = useState('');
+  const [editStartDateStr, setEditStartDateStr] = useState('');
+  const [editEndDateStr, setEditEndDateStr] = useState('');
 
-   const [isRejecting, setIsRejecting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [rejectReasonInput, setRejectReasonInput] = useState('');
 
   const [isReRequesting, setIsReRequesting] = useState(false);
@@ -636,6 +644,41 @@ export default function App() {
     const parsedDesc = parseScheduleDescription(event.description || '');
     setEditDetail(parsedDesc.detail);
     setEditMemo(parsedDesc.memo);
+
+    const matchGroupId = event.description && event.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const groupId = matchGroupId ? matchGroupId[1] : null;
+    let startY = event.year || currentYear;
+    let startM = event.month || currentMonth;
+    let startD = event.date;
+    let endY = event.year || currentYear;
+    let endM = event.month || currentMonth;
+    let endD = event.date;
+
+    if (groupId) {
+      const groupSchedules = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+      if (groupSchedules.length > 0) {
+        groupSchedules.sort((a, b) => {
+          const ya = a.year || currentYear, yb = b.year || currentYear;
+          if (ya !== yb) return ya - yb;
+          const ma = a.month || currentMonth, mb = b.month || currentMonth;
+          if (ma !== mb) return ma - mb;
+          return a.date - b.date;
+        });
+        const first = groupSchedules[0];
+        const last = groupSchedules[groupSchedules.length - 1];
+        startY = first.year || currentYear;
+        startM = first.month || currentMonth;
+        startD = first.date;
+        endY = last.year || currentYear;
+        endM = last.month || currentMonth;
+        endD = last.date;
+      }
+    }
+
+    const fmt = (y, m, d) => `${y}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
+    setEditStartDateStr(fmt(startY, startM, startD));
+    setEditEndDateStr(fmt(endY, endM, endD));
+
     setIsRejecting(false);
     setRejectReasonInput('');
     setIsReRequesting(false);
@@ -649,12 +692,34 @@ export default function App() {
       alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
       return;
     }
+    if (!editStartDateStr || !editEndDateStr) {
+      alert('시작일과 종료일을 지정해야 합니다.');
+      return;
+    }
+    if (editStartDateStr > editEndDateStr) {
+      alert('시작일은 종료일보다 이전이어야 합니다.');
+      return;
+    }
+
+    const dStart = new Date(editStartDateStr + 'T00:00:00');
+    const dEnd = new Date(editEndDateStr + 'T00:00:00');
+    
+    const dateList = [];
+    const curr = new Date(dStart.getTime());
+    while (curr <= dEnd) {
+      dateList.push({
+        year: curr.getFullYear(),
+        month: curr.getMonth() + 1,
+        date: curr.getDate()
+      });
+      curr.setDate(curr.getDate() + 1);
+    }
 
     const prevMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
     const hasAssigneeChanged = editMemberIds.length !== prevMemberIds.length || !editMemberIds.every(id => prevMemberIds.includes(id));
     
-    let newStatus = selectedDetailEvent.status;
-    let newRequesterId = selectedDetailEvent.requesterId;
+    let newStatus = selectedDetailEvent.status || 'accepted';
+    let newRequesterId = selectedDetailEvent.requesterId || 'sh';
     
     if (hasAssigneeChanged) {
       const isAssignedToSelfOnly = editMemberIds.length === 1 && editMemberIds.includes('sh');
@@ -662,47 +727,73 @@ export default function App() {
       newRequesterId = 'sh';
     }
 
-    const { groupId } = parseScheduleDescription(selectedDetailEvent.description || '');
-    const newDescription = formatScheduleDescription(groupId, editDetail.trim(), editMemo.trim());
-
-    const updatedFields = {
-      title: editTitle.trim(),
-      memberIds: editMemberIds,
-      memberId: editMemberIds[0],
-      startHour: parseFloat(editStartHour),
-      endHour: parseFloat(editEndHour),
-      description: newDescription,
-      status: newStatus,
-      requesterId: newRequesterId,
-    };
-
-    if (isConfigured) {
-      let dbFields = { ...updatedFields };
-      if (isCurrentUserYoonhee) {
-        dbFields.memberId = updatedFields.memberId === 'sh' ? 'yoonhee' : (updatedFields.memberId === 'yoonhee' ? 'sh' : updatedFields.memberId);
-        dbFields.memberIds = updatedFields.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-        dbFields.requesterId = updatedFields.requesterId === 'sh' ? 'yoonhee' : (updatedFields.requesterId === 'yoonhee' ? 'sh' : updatedFields.requesterId);
-        if (dbFields.status && dbFields.status.startsWith('rejected_')) {
-          const targetId = dbFields.status.replace('rejected_', '');
-          const mappedId = targetId === 'sh' ? 'yoonhee' : (targetId === 'yoonhee' ? 'sh' : targetId);
-          dbFields.status = `rejected_${mappedId}`;
-        }
-      }
-      await appwriteService.updateSchedule(selectedDetailEvent.id, {
-        ...selectedDetailEvent,
-        ...dbFields
-      });
+    const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const oldGroupId = matchGroupId ? matchGroupId[1] : null;
+    
+    let oldTargets = [];
+    if (oldGroupId) {
+      oldTargets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${oldGroupId}`));
+    }
+    if (oldTargets.length === 0) {
+      oldTargets = [selectedDetailEvent];
     }
 
-    setSchedules(prev => prev.map(s => {
-      if (s.id === selectedDetailEvent.id) {
-        return {
-          ...s,
-          ...updatedFields,
-        };
+    if (isConfigured) {
+      for (const t of oldTargets) {
+        try {
+          await appwriteService.deleteSchedule(t.id);
+        } catch (e) {
+          console.error("Appwrite delete error:", e);
+        }
       }
-      return s;
-    }));
+    }
+
+    const newGroupId = dateList.length > 1 ? (oldGroupId || `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`) : null;
+    const colors = ['purple', 'blue', 'green', 'orange'];
+    const randomColor = selectedDetailEvent.color || colors[Math.floor(Math.random() * colors.length)];
+
+    const createdSchedules = [];
+    for (let idx = 0; idx < dateList.length; idx++) {
+      const item = dateList[idx];
+      const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month);
+
+      const schedObj = {
+        id: `s_${Date.now()}_${idx}`,
+        year: item.year,
+        month: item.month,
+        date: item.date,
+        title: editTitle.trim(),
+        memberIds: editMemberIds,
+        memberId: editMemberIds[0],
+        startHour: parseFloat(editStartHour),
+        endHour: parseFloat(editEndHour),
+        color: randomColor,
+        description: newDesc,
+        status: newStatus,
+        requesterId: newRequesterId,
+      };
+
+      if (isConfigured) {
+        let dbSched = { ...schedObj };
+        if (isCurrentUserYoonhee) {
+          dbSched.memberId = schedObj.memberId === 'sh' ? 'yoonhee' : (schedObj.memberId === 'yoonhee' ? 'sh' : schedObj.memberId);
+          dbSched.memberIds = schedObj.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+          dbSched.requesterId = schedObj.requesterId === 'sh' ? 'yoonhee' : (schedObj.requesterId === 'yoonhee' ? 'sh' : schedObj.requesterId);
+        }
+        try {
+          const result = await appwriteService.createSchedule(dbSched);
+          createdSchedules.push(result ? { ...schedObj, id: result.id } : schedObj);
+        } catch (e) {
+          console.error("Appwrite create error:", e);
+          createdSchedules.push(schedObj);
+        }
+      } else {
+        createdSchedules.push(schedObj);
+      }
+    }
+
+    const oldIds = oldTargets.map(t => t.id);
+    setSchedules(prev => [...prev.filter(s => !oldIds.includes(s.id)), ...createdSchedules]);
     setIsDetailModalOpen(false);
   };
 
@@ -2908,6 +2999,34 @@ export default function App() {
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '15.5px' }}
                   disabled={!isDetailEditable}
                 />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정 기간 (날짜)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input 
+                    type="date" 
+                    className="modal-input" 
+                    value={editStartDateStr} 
+                    onChange={(e) => {
+                      setEditStartDateStr(e.target.value);
+                      if (!editEndDateStr || e.target.value > editEndDateStr) {
+                        setEditEndDateStr(e.target.value);
+                      }
+                    }} 
+                    style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14.5px', background: '#fff' }}
+                    disabled={!isDetailEditable}
+                  />
+                  <span style={{ fontWeight: '700', color: 'var(--text-tertiary)' }}>~</span>
+                  <input 
+                    type="date" 
+                    className="modal-input" 
+                    value={editEndDateStr} 
+                    onChange={(e) => setEditEndDateStr(e.target.value)} 
+                    style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14.5px', background: '#fff' }}
+                    disabled={!isDetailEditable}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

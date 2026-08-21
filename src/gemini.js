@@ -41,16 +41,18 @@ Determine if the user wants to CREATE new schedules, UPDATE existing schedules, 
 Return a JSON object in one of the following formats:
 
 1. CREATE ACTION:
-Use this if the user wants to add new schedules (e.g. "오늘 12시 회의 등록해줘", "내일 대신증권 투입").
+Use this if the user wants to add new schedules (e.g. "오늘 12시 회의 등록해줘", "9월 14일 대외 오픈일", "내일 대신증권 투입").
 Format:
 {
   "action": "create",
   "schedules": [
     {
-      "title": "대신증권 투입",
+      "title": "대외 오픈일",
+      "year": ${year},
+      "month": 9,
+      "date": 14,
       "startHour": 9.0,
       "endHour": 10.0,
-      "date": 15,
       "memberId": "sh",
       "isAll": false,
       "groupId": "g_123",
@@ -60,45 +62,47 @@ Format:
 }
 Values for "schedules" fields:
 - "title" (string): Concise event title.
-- "startHour" (number): Start time (24h format).
-- "endHour" (number): End time (24h format).
-- "date" (number): Day of the month in ${year}.${monthStr}. Relative dates calculated from today's date: ${todayDate}.
+- "year" (number): Year of the schedule (e.g. ${year}). Default to current year ${year} unless another year is specified.
+- "month" (number): Month of the schedule (1 ~ 12). CRITICAL: If the user input mentions a specific month number (e.g. "9월 14일" -> month: 9, "9월 4일" -> month: 9, "10월 5일" -> month: 10), you MUST set "month" to that exact month number! Do NOT default to ${month} if a specific month (e.g. "9월") is written in the user input.
+- "date" (number): Day of the month (1 ~ 31). Relative dates calculated from today's date: ${todayDate}.
   * If the schedule spans multiple days or dates (e.g., "26일 ~ 27일"), you must generate one schedule object for each date in the range, and assign them all the exact same "groupId" string (e.g., "g_2627" or any random identifier starting with "g_") so they are treated as a single cohesive schedule.
   CRITICAL WEEKDAY RULES (Korean Context):
   * "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday):
-    - If today is Friday June 12th (12), "다음주 월요일" (next Monday) refers to June 15th (15), which is 3 days later. It must NOT refer to June 22nd. June 22nd is the Monday of the week after next.
-    - Generally, if today is Friday, the upcoming Monday is "다음주 월요일" because it belongs to the next calendar week.
-    - Verify your relative day calculations strictly.
+    - Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
+- "startHour" (number): Start time (24h format, e.g. 9.0).
+- "endHour" (number): End time (24h format, e.g. 10.0).
 - "memberId" (string): Assigned member ID (default to first member's ID: "${teamList[0]?.id || 'sh'}").
 - "isAll" (boolean): true if for all members.
 - "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input, you must leave this field empty ("").
 
 
 2. UPDATE ACTION:
-Use this if the user wants to change or move existing schedules (e.g. "모든 일정의 날짜를 오늘로 변경", "15일 일정들 다 16일로 옮겨줘", "회의 일정을 15시로 변경해줘").
+Use this if the user wants to change or move existing schedules.
 Format:
 {
   "action": "update",
   "criteria": {
-    "all": true/false, // Set to true if target is "all schedules" or "모든 일정"
-    "date": 15, // Target schedules on a specific date (optional, number)
-    "title": "회의" // Target schedules with a matching title keyword (optional, string)
+    "all": true/false,
+    "month": 9,
+    "date": 15,
+    "title": "회의"
   },
   "updates": {
-    "date": 12, // New date day to apply (optional, number)
-    "startHour": 15.0, // New start hour (optional, number)
-    "endHour": 16.0 // New end hour (optional, number)
+    "month": 9,
+    "date": 12,
+    "startHour": 15.0,
+    "endHour": 16.0
   }
 }
-Note: Calculate relative dates based on today's date: ${todayDate}. For example, "오늘" is ${todayDate}.
 
 3. DELETE ACTION:
-Use this if the user wants to remove/clear existing schedules (e.g. "15일 일정 전부 삭제해줘").
+Use this if the user wants to remove/clear existing schedules.
 Format:
 {
   "action": "delete",
   "criteria": {
     "all": true/false,
+    "month": 9,
     "date": 15,
     "title": "회의"
   }

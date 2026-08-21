@@ -185,6 +185,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
 
   const results = [];
   let currentDate = selectedDate;
+  let currentMonthNum = null;
   let lastSchedule = null;
 
   const isItinerary = lines.length > 3;
@@ -227,8 +228,12 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
       const startDay = parseInt(rangeMatch[1]);
       currentDate = startDay;
     } else if (koDateMatch) {
+      if (koDateMatch[1]) {
+        currentMonthNum = parseInt(koDateMatch[1]);
+      }
       currentDate = parseInt(koDateMatch[2]);
     } else if (simpleDateMatch) {
+      currentMonthNum = parseInt(simpleDateMatch[1]);
       currentDate = parseInt(simpleDateMatch[2]);
     } else if (mmddMatch) {
       currentDate = parseInt(mmddMatch[2]);
@@ -370,7 +375,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
 
       const gId = parsedDates.length > 1 ? `g_${Date.now()}_${Math.floor(Math.random() * 1000)}` : undefined;
       parsedDates.forEach(d => {
-        results.push({ title, startHour, endHour, line, date: d, groupId: gId });
+        results.push({ title, startHour, endHour, line, year: currentYear, month: currentMonthNum || currentMonth, date: d, groupId: gId });
       });
     }
   });
@@ -1151,12 +1156,13 @@ export default function App() {
             isSelf = assignedMember.id === 'sh';
           }
 
-          const finalDescription = parsed.description || '';
+          const schedYear = parsed.year ? parseInt(parsed.year) : currentYear;
+          const schedMonth = parsed.month ? parseInt(parsed.month) : currentMonth;
 
           const newSchedule = {
             id: `s_${Date.now()}_${index}`,
-            year: currentYear,
-            month: currentMonth,
+            year: schedYear,
+            month: schedMonth,
             memberId: assignedMemberId,
             memberIds: assignedMemberIds,
             title: parsed.title,
@@ -1167,8 +1173,8 @@ export default function App() {
             date: parsed.date,
             requesterId: 'sh',
             description: parsed.groupId 
-              ? `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
-              : `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}] ${finalDescription}`,
+              ? `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
+              : `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] ${finalDescription}`,
           };
           newSchedules.push(newSchedule);
         });
@@ -1192,6 +1198,8 @@ export default function App() {
               existingGroup = {
                 groupId,
                 title: sched.title,
+                year: sched.year,
+                month: sched.month,
                 startHour: sched.startHour,
                 endHour: sched.endHour,
                 memberId: sched.memberId,
@@ -1209,6 +1217,8 @@ export default function App() {
           } else {
             groupedForReply.push({
               title: sched.title,
+              year: sched.year,
+              month: sched.month,
               startHour: sched.startHour,
               endHour: sched.endHour,
               memberId: sched.memberId,
@@ -1231,15 +1241,17 @@ export default function App() {
           }
           
           group.dates.sort((a, b) => a - b);
-          const monthFormatted = currentMonth < 10 ? `0${currentMonth}` : `${currentMonth}`;
+          const grpYear = group.year || currentYear;
+          const grpMonth = group.month || currentMonth;
+          const monthFormatted = grpMonth < 10 ? `0${grpMonth}` : `${grpMonth}`;
           let dateStr = '';
           if (group.dates.length > 1) {
             const firstDate = group.dates[0];
             const lastDate = group.dates[group.dates.length - 1];
-            dateStr = `${currentYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
+            dateStr = `${grpYear}.${monthFormatted}.${firstDate < 10 ? '0' : ''}${firstDate} ~ ${lastDate < 10 ? '0' : ''}${lastDate}`;
           } else {
             const singleDate = group.dates[0];
-            dateStr = `${currentYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
+            dateStr = `${grpYear}.${monthFormatted}.${singleDate < 10 ? '0' : ''}${singleDate}`;
           }
 
           replyDetails += `\n📅 일정 ${index + 1}: "${group.title}"\n📝 상세내용: ${group.description || '-'}\n👤 담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n📅 날짜: ${dateStr}\n⏰ 시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;

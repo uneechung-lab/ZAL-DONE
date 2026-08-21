@@ -1174,7 +1174,7 @@ button, input, select, textarea {
 
 .date-item-dot {
   position: absolute;
-  bottom: 2px;
+  bottom: -7px;
   left: 50%;
   transform: translateX(-50%);
   width: 4px;
@@ -1196,6 +1196,10 @@ button, input, select, textarea {
 
 .date-item.today {
   border: none !important;
+}
+
+.date-item.today .date-item-dot {
+  bottom: -17px;
 }
 
 .date-item.today:not(.active) .date-item-num {

@@ -2055,8 +2055,8 @@ export default function App() {
                   <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="date-item-num">{dayNum}</span>
                     {isToday && <span className="date-item-today-badge">TODAY</span>}
+                    <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
                   </div>
-                  <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
                 </button>
               );
             });

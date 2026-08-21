@@ -517,7 +517,64 @@ function isSameScheduleRange(s1, s2) {
   const g1 = s1.description && s1.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
   const g2 = s2.description && s2.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
   if (g1 && g2 && g1 === g2) return true;
-  return s1.title === s2.title && s1.startHour === s2.startHour && s1.endHour === s2.endHour && (s1.memberId === s2.memberId || JSON.stringify(s1.memberIds) === JSON.stringify(s2.memberIds));
+  return s1.title === s2.title;
+}
+
+function normalizeRangeSchedules(rawSchedules) {
+  if (!Array.isArray(rawSchedules) || rawSchedules.length === 0) return rawSchedules;
+  
+  const groups = {};
+  rawSchedules.forEach(s => {
+    const groupId = s.description && s.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+    const key = groupId ? `group_${groupId}` : `title_${s.title}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  });
+
+  const result = [...rawSchedules];
+
+  Object.values(groups).forEach(items => {
+    if (items.length <= 1) return;
+    
+    items.sort((a, b) => {
+      const ya = a.year || 2026, yb = b.year || 2026;
+      if (ya !== yb) return ya - yb;
+      const ma = a.month || 8, mb = b.month || 8;
+      if (ma !== mb) return ma - mb;
+      return a.date - b.date;
+    });
+
+    const first = items[0];
+    const last = items[items.length - 1];
+
+    const startDate = new Date((first.year || 2026), (first.month || 8) - 1, first.date);
+    const endDate = new Date((last.year || 2026), (last.month || 8) - 1, last.date);
+
+    const curr = new Date(startDate.getTime());
+    curr.setDate(curr.getDate() + 1);
+
+    while (curr < endDate) {
+      const cYear = curr.getFullYear();
+      const cMonth = curr.getMonth() + 1;
+      const cDate = curr.getDate();
+
+      const exists = items.some(it => (it.year || 2026) === cYear && (it.month || 8) === cMonth && it.date === cDate);
+      if (!exists) {
+        const fillItem = {
+          ...first,
+          id: `fill_${first.id}_${cYear}_${cMonth}_${cDate}`,
+          year: cYear,
+          month: cMonth,
+          date: cDate
+        };
+        result.push(fillItem);
+        items.push(fillItem);
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
+  });
+
+  return result;
 }
 
 export default function App() {
@@ -2492,6 +2549,7 @@ export default function App() {
               </thead>
               <tbody>
                 {(() => {
+                  const allNormalizedSchedules = normalizeRangeSchedules(schedules);
                   const days = getMonthDays(currentYear, currentMonth);
                   const rows = [];
                   for (let i = 0; i < days.length; i += 7) {
@@ -2501,7 +2559,7 @@ export default function App() {
                   return rows.map((row, rIdx) => {
                     const weekRowSchedules = row.map(day => {
                       if (!day.isCurrentMonth) return [];
-                      const list = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
+                      const list = allNormalizedSchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
                       list.sort((a, b) => {
                         const keyA = (a.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || a.title;
                         const keyB = (b.description?.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1]) || b.title;
@@ -2565,9 +2623,9 @@ export default function App() {
                               
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {daySchedules.map(event => {
-                                const assignees = event.memberIds 
+                                const assignees = event.memberIds && event.memberIds.length > 0
                                   ? event.memberIds.map(id => activeTeam.find(t => t.id === id)).filter(Boolean)
-                                  : [];
+                                  : (event.memberId ? [activeTeam.find(t => t.id === event.memberId)].filter(Boolean) : [ME]);
 
                                 const isPrevConnected = dIdx > 0 && weekRowSchedules[dIdx - 1].some(s => isSameScheduleRange(s, event));
                                 const isNextConnected = dIdx < 6 && weekRowSchedules[dIdx + 1].some(s => isSameScheduleRange(s, event));

@@ -3728,16 +3728,16 @@ export default function App() {
                         <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
                           {isDailyReport ? (
                             <>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
                             </>
                           ) : (
                             <>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '20%' }}>날짜/시간</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '22%' }}>일정명</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '44%' }}>상세내용</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '20%' }}>날짜/시간</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '22%' }}>일정명</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '44%' }}>상세내용</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
                             </>
                           )}
                         </tr>

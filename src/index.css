@@ -830,21 +830,21 @@ button, input, select, textarea {
 
 .close-drawer-btn {
   background: transparent;
-  border: none;
-  font-size: 16px;
+  border: 1px solid transparent;
   cursor: pointer;
-  color: var(--text-tertiary);
+  color: #475569;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition);
+  transition: all 0.15s ease;
   border-radius: 6px;
   padding: 4px;
 }
 
 .close-drawer-btn:hover {
-  color: var(--text-primary);
-  background: #f1f5f9;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: #94a3b8;
+  color: #475569;
 }
 
 .chat-messages {

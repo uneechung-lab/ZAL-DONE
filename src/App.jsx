@@ -3841,74 +3841,108 @@ export default function App() {
                 }
 
                 if (timeViewTab === 'monthly') {
-                  const getWeekName = (dateNum) => {
-                    if (dateNum <= 7) return '1주차';
-                    if (dateNum <= 14) return '2주차';
-                    if (dateNum <= 21) return '3주차';
-                    if (dateNum <= 28) return '4주차';
-                    return '5주차';
-                  };
+                  const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
+                  const weekBuckets = [
+                    { weekName: '1주차', label: `${currentMonth}.01 ~ ${currentMonth}.07`, min: 1, max: 7 },
+                    { weekName: '2주차', label: `${currentMonth}.08 ~ ${currentMonth}.14`, min: 8, max: 14 },
+                    { weekName: '3주차', label: `${currentMonth}.15 ~ ${currentMonth}.21`, min: 15, max: 21 },
+                    { weekName: '4주차', label: `${currentMonth}.22 ~ ${currentMonth}.28`, min: 22, max: 28 },
+                  ];
+                  if (lastDayInMonth > 28) {
+                    weekBuckets.push({
+                      weekName: '5주차',
+                      label: `${currentMonth}.29 ~ ${currentMonth}.${lastDayInMonth}`,
+                      min: 29,
+                      max: lastDayInMonth
+                    });
+                  }
 
-                  const sortedMonthlySchedules = [...filteredSchedules].sort((a, b) => a.date - b.date);
+                  const weeklySummaries = weekBuckets.map(wb => {
+                    const weekSchedules = filteredSchedules.filter(s => s.date >= wb.min && s.date <= wb.max);
+
+                    // Unique consolidated titles
+                    const titles = Array.from(new Set(weekSchedules.map(s => s.title))).join('\n');
+
+                    // Unique consolidated member names
+                    const memberSet = new Set();
+                    weekSchedules.forEach(s => {
+                      if (s.memberIds && s.memberIds.length > 0) {
+                        s.memberIds.forEach(id => {
+                          const m = activeTeam.find(teamM => teamM.id === id);
+                          if (m) memberSet.add(m.name);
+                        });
+                      } else {
+                        const m = activeTeam.find(teamM => teamM.id === s.memberId);
+                        memberSet.add(m ? m.name : '전체');
+                      }
+                    });
+                    const members = Array.from(memberSet);
+
+                    // Consolidated bullet points of all accomplishments in this week
+                    const descLines = [];
+                    const seenLines = new Set();
+                    weekSchedules.forEach(s => {
+                      let d = (s.description || '')
+                        .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+                        .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+                        .replace(/\[상세\]\s*/gi, '')
+                        .replace(/^[\s|]+/, '')
+                        .trim();
+
+                      if (d) {
+                        d.split('\n').forEach(line => {
+                          const t = line.replace(/^[•\-\s]+/, '').trim();
+                          if (t && !seenLines.has(t)) {
+                            seenLines.add(t);
+                            descLines.push(`• ${t}`);
+                          }
+                        });
+                      }
+                    });
+
+                    return {
+                      weekName: wb.weekName,
+                      label: wb.label,
+                      scheduleCount: weekSchedules.length,
+                      titles: titles || '-',
+                      descSummary: descLines.length > 0 ? descLines.join('\n') : '-',
+                      members: members.length > 0 ? members : ['-']
+                    };
+                  });
 
                   return (
                     <div>
                       <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', color: '#334155' }}>
-                        📌 월간 주요 수행 업무 및 실적 ({sortedMonthlySchedules.length}건)
+                        📌 월간 주차별 주요 업무 종합 요약 (총 {filteredSchedules.length}건)
                       </div>
                       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                         <thead>
-                          <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
-                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '14%' }}>주차</th>
-                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '22%' }}>주요 일정</th>
-                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '50%' }}>상세 내용 및 실적</th>
-                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
+                          <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '15%' }}>주차 (기간)</th>
+                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '25%' }}>주요 수행 일정</th>
+                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '46%' }}>전반적 업무 및 추진 실적 요약</th>
+                            <th style={{ padding: '9px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {sortedMonthlySchedules.map((s, idx) => {
-                            const currentWeekStr = getWeekName(s.date);
-                            const prevWeekStr = idx > 0 ? getWeekName(sortedMonthlySchedules[idx - 1].date) : null;
-                            const isFirstOfWeek = currentWeekStr !== prevWeekStr;
-
-                            const memberList = s.memberIds && s.memberIds.length > 0
-                              ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
-                              : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
-
-                            let cleanDesc = (s.description || '')
-                              .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
-                              .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
-                              .replace(/\[상세\]\s*/gi, '')
-                              .replace(/^[\s|]+/, '')
-                              .trim();
-
-                            if (cleanDesc) {
-                              cleanDesc = cleanDesc
-                                .split('\n')
-                                .map(line => {
-                                  const t = line.trim();
-                                  if (!t) return '';
-                                  if (t.startsWith('-') || t.startsWith('•')) return t;
-                                  return `• ${t}`;
-                                })
-                                .filter(Boolean)
-                                .join('\n');
-                            }
-
+                          {weeklySummaries.map((ws, idx) => {
+                            const hasData = ws.scheduleCount > 0;
                             return (
-                              <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#6366f1', fontWeight: '800', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
-                                  {isFirstOfWeek ? currentWeekStr : ''}
+                              <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: hasData ? '#ffffff' : '#fafafa' }}>
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top' }}>
+                                  <div style={{ color: '#6366f1', fontWeight: '800', fontSize: '14.5px' }}>{ws.weekName}</div>
+                                  <div style={{ color: '#64748b', fontSize: '12px', fontWeight: '500', marginTop: '2px' }}>{ws.label}</div>
+                                  <div style={{ color: hasData ? '#475569' : '#94a3b8', fontSize: '11.5px', marginTop: '4px', fontWeight: '600' }}>({ws.scheduleCount}건)</div>
                                 </td>
-                                <td style={{ padding: '7px 10px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                                  {s.title}
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.45', fontSize: '13.5px' }}>
+                                  {ws.titles}
                                 </td>
-                                <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
-                                  {cleanDesc || '-'}
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', color: hasData ? '#334155' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '13px' }}>
+                                  {ws.descSummary}
                                 </td>
-                                <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
-                                  {memberList.map((name, i) => (
-                                    <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
+                                  {ws.members.map((name, i) => (
+                                    <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
                                   ))}
                                 </td>
                               </tr>

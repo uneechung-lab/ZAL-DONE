@@ -1886,7 +1886,7 @@ export default function App() {
                                     }
 
                                     return (
-                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
                                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
                                           {icon}
                                           <span>{f.label}</span>

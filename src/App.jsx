@@ -1820,15 +1820,17 @@ export default function App() {
                                     if (line.includes('상세내용:')) {
                                       const cleanText = line.replace(/.*상세내용:\s*/, '');
                                       return (
-                                        <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '2px' }}>
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                            <polyline points="14 2 14 8 20 8"/>
-                                            <line x1="16" y1="13" x2="8" y2="13"/>
-                                            <line x1="16" y1="17" x2="8" y2="17"/>
-                                          </svg>
-                                          <div style={{ flex: 1, wordBreak: 'break-all' }}>
-                                            <span style={{ fontWeight: '600', color: '#475569', marginRight: '4px' }}>상세내용:</span>
+                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                              <polyline points="14 2 14 8 20 8"/>
+                                              <line x1="16" y1="13" x2="8" y2="13"/>
+                                              <line x1="16" y1="17" x2="8" y2="17"/>
+                                            </svg>
+                                            <span>상세내용:</span>
+                                          </div>
+                                          <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>
                                             {renderTextWithLinks(cleanText)}
                                           </div>
                                         </div>
@@ -1836,13 +1838,15 @@ export default function App() {
                                     } else if (line.includes('담당자:')) {
                                       const cleanText = line.replace(/.*담당자:\s*/, '');
                                       return (
-                                        <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="12" cy="7" r="4"/>
-                                          </svg>
-                                          <div>
-                                            <span style={{ fontWeight: '600', color: '#475569', marginRight: '4px' }}>담당자:</span>
+                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                              <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                            <span>담당자:</span>
+                                          </div>
+                                          <div style={{ wordBreak: 'break-all' }}>
                                             {renderTextWithLinks(cleanText)}
                                           </div>
                                         </div>
@@ -1850,15 +1854,17 @@ export default function App() {
                                     } else if (line.includes('날짜:')) {
                                       const cleanText = line.replace(/.*날짜:\s*/, '');
                                       return (
-                                        <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                            <line x1="16" y1="2" x2="16" y2="6"/>
-                                            <line x1="8" y1="2" x2="8" y2="6"/>
-                                            <line x1="3" y1="10" x2="21" y2="10"/>
-                                          </svg>
-                                          <div>
-                                            <span style={{ fontWeight: '600', color: '#475569', marginRight: '4px' }}>날짜:</span>
+                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                              <line x1="16" y1="2" x2="16" y2="6"/>
+                                              <line x1="8" y1="2" x2="8" y2="6"/>
+                                              <line x1="3" y1="10" x2="21" y2="10"/>
+                                            </svg>
+                                            <span>날짜:</span>
+                                          </div>
+                                          <div style={{ wordBreak: 'break-all' }}>
                                             {renderTextWithLinks(cleanText)}
                                           </div>
                                         </div>
@@ -1866,13 +1872,15 @@ export default function App() {
                                     } else if (line.includes('시간:')) {
                                       const cleanText = line.replace(/.*시간:\s*/, '');
                                       return (
-                                        <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <polyline points="12 6 12 12 16 14"/>
-                                          </svg>
-                                          <div>
-                                            <span style={{ fontWeight: '600', color: '#475569', marginRight: '4px' }}>시간:</span>
+                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                              <circle cx="12" cy="12" r="10"/>
+                                              <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                            <span>시간:</span>
+                                          </div>
+                                          <div style={{ wordBreak: 'break-all' }}>
                                             {renderTextWithLinks(cleanText)}
                                           </div>
                                         </div>

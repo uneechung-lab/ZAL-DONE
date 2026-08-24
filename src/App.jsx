@@ -3897,18 +3897,18 @@ export default function App() {
 
                             return (
                               <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#6366f1', fontWeight: '800', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#6366f1', fontWeight: '800', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
                                   {isFirstOfWeek ? currentWeekStr : ''}
                                 </td>
-                                <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                <td style={{ padding: '7px 10px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
                                   {s.title}
                                 </td>
-                                <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.55' }}>
+                                <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
                                   {cleanDesc || '-'}
                                 </td>
-                                <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569' }}>
+                                <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
                                   {memberList.map((name, i) => (
-                                    <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                    <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
                                   ))}
                                 </td>
                               </tr>
@@ -3930,17 +3930,17 @@ export default function App() {
                         <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
                           {timeViewTab === 'daily' ? (
                             <>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '53%' }}>상세내용</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'center', width: '15%' }}>담당자</th>
                             </>
                           ) : (
                             <>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '12%' }}>날짜</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '16%' }}>시간</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '20%' }}>일정명</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '39%' }}>상세내용</th>
-                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '13%' }}>담당자</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '12%' }}>날짜</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '16%' }}>시간</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '20%' }}>일정명</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '39%' }}>상세내용</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'center', width: '13%' }}>담당자</th>
                             </>
                           )}
                         </tr>
@@ -3967,40 +3967,40 @@ export default function App() {
                             <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                               {timeViewTab === 'daily' ? (
                                 <>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
-                                    <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top' }}>
+                                    <div style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600', marginBottom: '2px' }}>
                                       {timeStr}
                                     </div>
-                                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
                                       {s.title}
                                     </div>
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
                                     {cleanDesc || '-'}
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
-                                      <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                      <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
                                     ))}
                                   </td>
                                 </>
                               ) : (
                                 <>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
                                     {isFirstOfDate ? currentDateStr : ''}
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                                     {timeStr}
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
                                     {s.title}
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
                                     {cleanDesc || '-'}
                                   </td>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
-                                      <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                      <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
                                     ))}
                                   </td>
                                 </>

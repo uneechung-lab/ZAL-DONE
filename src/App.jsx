@@ -3707,6 +3707,8 @@ export default function App() {
                   );
                 }
 
+                const isDailyReport = timeViewTab === 'daily';
+
                 return (
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#334155' }}>
@@ -3715,9 +3717,20 @@ export default function App() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>일정 및 일시</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
+                          {isDailyReport ? (
+                            <>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>일정 및 일시</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
+                            </>
+                          ) : (
+                            <>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '20%' }}>날짜/시간</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '22%' }}>일정명</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '44%' }}>상세내용</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
+                            </>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -3735,20 +3748,40 @@ export default function App() {
 
                           return (
                             <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
-                                <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
-                                  {s.month ? `${s.month}/${s.date}` : `${s.date}일`} <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>({timeStr})</span>
-                                </div>
-                                <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
-                                  {s.title}
-                                </div>
-                              </td>
-                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                                {cleanDesc || '-'}
-                              </td>
-                              <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
-                                {assignedNames}
-                              </td>
+                              {isDailyReport ? (
+                                <>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
+                                    <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
+                                      {s.month ? `${s.month}/${s.date}` : `${s.date}일`} <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>({timeStr})</span>
+                                    </div>
+                                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
+                                      {s.title}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                    {cleanDesc || '-'}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                    {assignedNames}
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '600', fontSize: '13px' }}>
+                                    {s.month ? `${s.month}/${s.date}` : `${s.date}일`}<br/>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{timeStr}</span>
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                    {s.title}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                    {cleanDesc || '-'}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                    {assignedNames}
+                                  </td>
+                                </>
+                              )}
                             </tr>
                           );
                         })}

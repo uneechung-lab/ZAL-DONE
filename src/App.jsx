@@ -135,13 +135,13 @@ function isTodayMessage(msg) {
 function parseSchedulesFromText(text) {
   if (!text) return [];
   const schedulesList = [];
-  const blocks = text.split(/📅?\s*일정 \d+:\s*/);
+  const blocks = text.split(/📅?\s*일정 \d+:?\s*/);
   for (let i = 1; i < blocks.length; i++) {
     const block = blocks[i];
     const titleMatch = block.match(/"([^"]+)"/);
     const title = titleMatch ? titleMatch[1] : '';
     
-    const dateRangeMatch = block.match(/📅?\s*날짜:\s*\d{4}\.\d{2}\.(\d{2})\s*~\s*(?:\d{4}\.\d{2}\.)?(\d{2})/);
+    const dateRangeMatch = block.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})\s*~\s*(?:\d{4}\.\d{2}\.)?(\d{2})/);
     let dates = [];
     if (dateRangeMatch) {
       const startD = parseInt(dateRangeMatch[1]);
@@ -150,13 +150,13 @@ function parseSchedulesFromText(text) {
         dates.push(d);
       }
     } else {
-      const dateMatch = block.match(/📅?\s*날짜:\s*\d{4}\.\d{2}\.(\d{2})/);
+      const dateMatch = block.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})/);
       if (dateMatch) {
         dates.push(parseInt(dateMatch[1]));
       }
     }
     
-    const timeMatch = block.match(/⏰?\s*시간:\s*(\d{2}):\d{2}\s*~\s*(\d{2}):\d{2}/);
+    const timeMatch = block.match(/⏰?\s*시간:?\s*(\d{2}):\d{2}\s*~\s*(\d{2}):\d{2}/);
     const startHour = timeMatch ? parseInt(timeMatch[1]) : null;
     const endHour = timeMatch ? parseInt(timeMatch[2]) : null;
     
@@ -1766,10 +1766,10 @@ export default function App() {
               return (
                 <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
                   <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line' }}>
-                    {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:')) ? (() => {
+                    {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:') || msg.text.includes('일정 1')) ? (() => {
                       const parsedSchedules = parseSchedulesFromText(msg.text);
-                      const introText = msg.text.split(/📅?\s*일정 \d+:/)[0].trim();
-                      const blocks = msg.text.split(/📅?\s*일정 \d+:\s*/);
+                      const introText = msg.text.split(/📅?\s*일정 \d+:?/)[0].trim();
+                      const blocks = msg.text.split(/📅?\s*일정 \d+:?\s*/);
 
                       const existingSchedules = [];
                       parsedSchedules.forEach(p => {

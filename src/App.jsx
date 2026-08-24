@@ -779,6 +779,7 @@ export default function App() {
   const handleSaveReportEdits = async () => {
     setIsSavingReport(true);
     try {
+      await new Promise(r => setTimeout(r, 450));
       const editEntries = Object.entries(reportScheduleEdits);
       if (editEntries.length > 0) {
         for (const [id, changes] of editEntries) {
@@ -987,6 +988,7 @@ export default function App() {
 
     setIsSavingEvent(true);
     try {
+      await new Promise(r => setTimeout(r, 450));
       const dStart = new Date(editStartDateStr + 'T00:00:00');
       const dEnd = new Date(editEndDateStr + 'T00:00:00');
       

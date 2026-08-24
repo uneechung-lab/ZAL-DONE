@@ -734,6 +734,16 @@ export default function App() {
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [reportScheduleEdits, setReportScheduleEdits] = useState({});
 
+  const handleReportScheduleChange = (id, field, value) => {
+    setReportScheduleEdits(prev => ({
+      ...prev,
+      [id]: {
+        ...(prev[id] || {}),
+        [field]: value
+      }
+    }));
+  };
+
   const handleSaveReportEdits = async () => {
     setIsEditingReport(false);
     const editEntries = Object.entries(reportScheduleEdits);
@@ -4170,27 +4180,66 @@ export default function App() {
                                     <div style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600', marginBottom: '2px' }}>
                                       {timeStr}
                                     </div>
-                                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
-                                      {s.title}
-                                    </div>
+                                    {isEditingReport ? (
+                                      <input 
+                                        type="text" 
+                                        defaultValue={s.title} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'title', e.target.value)} 
+                                        style={{ 
+                                          width: '100%', 
+                                          padding: '4px 8px', 
+                                          fontSize: '13.5px', 
+                                          fontWeight: '700', 
+                                          border: '1px solid #6366f1', 
+                                          borderRadius: '4px',
+                                          backgroundColor: '#ffffff',
+                                          color: '#0f172a',
+                                          boxSizing: 'border-box'
+                                        }} 
+                                      />
+                                    ) : (
+                                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
+                                        {s.title}
+                                      </div>
+                                    )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
-                                    {(cleanDesc || '-').split('\n').map((line, i) => {
-                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                      return (
-                                        <div 
-                                          key={i} 
-                                          style={{ 
-                                            paddingLeft: isBullet ? '0.65em' : '0', 
-                                            textIndent: isBullet ? '-0.65em' : '0', 
-                                            marginBottom: '3px', 
-                                            lineHeight: '1.4' 
-                                          }}
-                                        >
-                                          {line}
-                                        </div>
-                                      );
-                                    })}
+                                    {isEditingReport ? (
+                                      <textarea 
+                                        defaultValue={s.description || ''} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', e.target.value)} 
+                                        style={{ 
+                                          width: '100%', 
+                                          minHeight: '65px', 
+                                          padding: '6px 8px', 
+                                          fontSize: '13px', 
+                                          border: '1px solid #6366f1', 
+                                          borderRadius: '4px', 
+                                          lineHeight: '1.4',
+                                          backgroundColor: '#ffffff',
+                                          color: '#334155',
+                                          resize: 'vertical',
+                                          boxSizing: 'border-box'
+                                        }} 
+                                      />
+                                    ) : (
+                                      (cleanDesc || '-').split('\n').map((line, i) => {
+                                        const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                        return (
+                                          <div 
+                                            key={i} 
+                                            style={{ 
+                                              paddingLeft: isBullet ? '0.65em' : '0', 
+                                              textIndent: isBullet ? '-0.65em' : '0', 
+                                              marginBottom: '3px', 
+                                              lineHeight: '1.4' 
+                                            }}
+                                          >
+                                            {line}
+                                          </div>
+                                        );
+                                      })
+                                    )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
@@ -4207,25 +4256,64 @@ export default function App() {
                                     {timeStr}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
-                                    {s.title}
+                                    {isEditingReport ? (
+                                      <input 
+                                        type="text" 
+                                        defaultValue={s.title} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'title', e.target.value)} 
+                                        style={{ 
+                                          width: '100%', 
+                                          padding: '4px 8px', 
+                                          fontSize: '13.5px', 
+                                          fontWeight: '700', 
+                                          border: '1px solid #6366f1', 
+                                          borderRadius: '4px',
+                                          backgroundColor: '#ffffff',
+                                          color: '#0f172a',
+                                          boxSizing: 'border-box'
+                                        }} 
+                                      />
+                                    ) : (
+                                      s.title
+                                    )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
-                                    {(cleanDesc || '-').split('\n').map((line, i) => {
-                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                      return (
-                                        <div 
-                                          key={i} 
-                                          style={{ 
-                                            paddingLeft: isBullet ? '0.65em' : '0', 
-                                            textIndent: isBullet ? '-0.65em' : '0', 
-                                            marginBottom: '3px', 
-                                            lineHeight: '1.4' 
-                                          }}
-                                        >
-                                          {line}
-                                        </div>
-                                      );
-                                    })}
+                                    {isEditingReport ? (
+                                      <textarea 
+                                        defaultValue={s.description || ''} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', e.target.value)} 
+                                        style={{ 
+                                          width: '100%', 
+                                          minHeight: '65px', 
+                                          padding: '6px 8px', 
+                                          fontSize: '13px', 
+                                          border: '1px solid #6366f1', 
+                                          borderRadius: '4px', 
+                                          lineHeight: '1.4',
+                                          backgroundColor: '#ffffff',
+                                          color: '#334155',
+                                          resize: 'vertical',
+                                          boxSizing: 'border-box'
+                                        }} 
+                                      />
+                                    ) : (
+                                      (cleanDesc || '-').split('\n').map((line, i) => {
+                                        const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                        return (
+                                          <div 
+                                            key={i} 
+                                            style={{ 
+                                              paddingLeft: isBullet ? '0.65em' : '0', 
+                                              textIndent: isBullet ? '-0.65em' : '0', 
+                                              marginBottom: '3px', 
+                                              lineHeight: '1.4' 
+                                            }}
+                                          >
+                                            {line}
+                                          </div>
+                                        );
+                                      })
+                                    )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (

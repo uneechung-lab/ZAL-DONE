@@ -3874,6 +3874,10 @@ export default function App() {
                       </thead>
                       <tbody>
                         {filteredSchedules.map((s, idx) => {
+                          const currentDateStr = `${s.month || currentMonth}/${s.date}`;
+                          const prevDateStr = idx > 0 ? `${filteredSchedules[idx - 1].month || currentMonth}/${filteredSchedules[idx - 1].date}` : null;
+                          const isFirstOfDate = currentDateStr !== prevDateStr;
+
                           const memberList = s.memberIds && s.memberIds.length > 0
                             ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
                             : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
@@ -3909,8 +3913,8 @@ export default function App() {
                                 </>
                               ) : timeViewTab === 'weekly' ? (
                                 <>
-                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '700', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
-                                    {s.month ? `${s.month}/${s.date}` : `${currentMonth}/${s.date}`}
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
+                                    {isFirstOfDate ? currentDateStr : ''}
                                   </td>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                                     {timeStr}
@@ -3930,7 +3934,11 @@ export default function App() {
                               ) : (
                                 <>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '600', fontSize: '13px' }}>
-                                    {s.month ? `${s.month}/${s.date}` : `${s.date}일`}<br/>
+                                    {isFirstOfDate && (
+                                      <div style={{ fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
+                                        {currentDateStr}
+                                      </div>
+                                    )}
                                     <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{timeStr}</span>
                                   </td>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>

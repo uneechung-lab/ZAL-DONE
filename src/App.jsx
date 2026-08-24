@@ -1886,13 +1886,20 @@ export default function App() {
                                     }
 
                                     return (
-                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: '50px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
                                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
                                           {icon}
                                           <span>{f.label}</span>
                                         </div>
                                         <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>
-                                          {renderTextWithLinks(f.text)}
+                                           {(() => {
+                                             let val = f.text;
+                                             if (f.type === 'detail' && val) {
+                                               const items = val.split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean);
+                                               if (items.length > 0) val = items.join(', ');
+                                             }
+                                             return renderTextWithLinks(val);
+                                           })()}
                                         </div>
                                       </div>
                                     );

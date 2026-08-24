@@ -462,12 +462,16 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
   results.forEach(res => {
     let memberId = 'sh';
     let isAll = false;
+    const isPersonalLeave = res.title.includes('연차') || res.title.includes('휴가') || res.title.includes('반차') || res.title.includes('병가');
     if (
-      res.line.includes('모두에게') || 
-      res.line.includes('전체에게') || 
-      res.line.includes('전원에게') || 
-      res.line.includes('모두') || 
-      res.line.includes('전체')
+      !isPersonalLeave && (
+        res.line.includes('모두에게') || 
+        res.line.includes('전체에게') || 
+        res.line.includes('전원에게') || 
+        res.line.includes('전사') ||
+        (res.line.includes('모두') && (res.line.includes('참석') || res.line.includes('회의') || res.line.includes('미팅'))) ||
+        (res.line.includes('전체') && (res.line.includes('참석') || res.line.includes('회의') || res.line.includes('미팅')))
+      )
     ) {
       isAll = true;
     } else {
@@ -1389,7 +1393,9 @@ export default function App() {
           let assignedMemberId;
           let isSelf;
 
-          if (parsed.isAll) {
+          const isPersonalLeave = (parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가');
+
+          if (parsed.isAll && !isPersonalLeave) {
             assignedMemberIds = activeTeam.map(m => m.id);
             assignedMemberId = 'sh';
             isSelf = false;

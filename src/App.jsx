@@ -732,8 +732,29 @@ export default function App() {
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isEditingReport, setIsEditingReport] = useState(false);
+  const [isSavingReport, setIsSavingReport] = useState(false);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+  const [deletingIds, setDeletingIds] = useState(new Set());
   const [reportScheduleEdits, setReportScheduleEdits] = useState({});
   const [monthlySummaryEdits, setMonthlySummaryEdits] = useState({});
+
+  const LoadingSpinner = ({ size = 16, color = 'currentColor' }) => (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      style={{ 
+        animation: 'spin 0.8s linear infinite', 
+        display: 'inline-block',
+        verticalAlign: 'middle'
+      }}
+    >
+      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeDasharray="31.4" strokeDashoffset="10" opacity="0.3" />
+      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeDasharray="31.4" strokeDashoffset="24" />
+    </svg>
+  );
 
   const handleMonthlySummaryChange = (weekIdx, field, value) => {
     setMonthlySummaryEdits(prev => ({
@@ -756,21 +777,26 @@ export default function App() {
   };
 
   const handleSaveReportEdits = async () => {
-    setIsEditingReport(false);
-    const editEntries = Object.entries(reportScheduleEdits);
-    if (editEntries.length > 0) {
-      for (const [id, changes] of editEntries) {
-        if (isConfigured) {
-          try {
-            await appwriteService.updateSchedule(id, changes);
-          } catch (err) {
-            console.error('Appwrite schedule update error:', err);
+    setIsSavingReport(true);
+    try {
+      const editEntries = Object.entries(reportScheduleEdits);
+      if (editEntries.length > 0) {
+        for (const [id, changes] of editEntries) {
+          if (isConfigured) {
+            try {
+              await appwriteService.updateSchedule(id, changes);
+            } catch (err) {
+              console.error('Appwrite schedule update error:', err);
+            }
           }
+          setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
         }
-        setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
       }
+      setReportScheduleEdits({});
+      setIsEditingReport(false);
+    } finally {
+      setIsSavingReport(false);
     }
-    setReportScheduleEdits({});
   };
 
   // Scheduler States
@@ -959,100 +985,105 @@ export default function App() {
       return;
     }
 
-    const dStart = new Date(editStartDateStr + 'T00:00:00');
-    const dEnd = new Date(editEndDateStr + 'T00:00:00');
-    
-    const dateList = [];
-    const curr = new Date(dStart.getTime());
-    while (curr <= dEnd) {
-      dateList.push({
-        year: curr.getFullYear(),
-        month: curr.getMonth() + 1,
-        date: curr.getDate()
-      });
-      curr.setDate(curr.getDate() + 1);
-    }
-
-    const prevMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
-    const hasAssigneeChanged = editMemberIds.length !== prevMemberIds.length || !editMemberIds.every(id => prevMemberIds.includes(id));
-    
-    let newStatus = selectedDetailEvent.status || 'accepted';
-    let newRequesterId = selectedDetailEvent.requesterId || 'sh';
-    
-    if (hasAssigneeChanged) {
-      const isAssignedToSelfOnly = editMemberIds.length === 1 && editMemberIds.includes('sh');
-      newStatus = isAssignedToSelfOnly ? 'accepted' : 'requested';
-      newRequesterId = 'sh';
-    }
-
-    const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-    const oldGroupId = matchGroupId ? matchGroupId[1] : null;
-    
-    let oldTargets = [];
-    if (oldGroupId) {
-      oldTargets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${oldGroupId}`));
-    }
-    if (oldTargets.length === 0) {
-      oldTargets = [selectedDetailEvent];
-    }
-
-    if (isConfigured) {
-      for (const t of oldTargets) {
-        try {
-          await appwriteService.deleteSchedule(t.id);
-        } catch (e) {
-          console.error("Appwrite delete error:", e);
-        }
+    setIsSavingEvent(true);
+    try {
+      const dStart = new Date(editStartDateStr + 'T00:00:00');
+      const dEnd = new Date(editEndDateStr + 'T00:00:00');
+      
+      const dateList = [];
+      const curr = new Date(dStart.getTime());
+      while (curr <= dEnd) {
+        dateList.push({
+          year: curr.getFullYear(),
+          month: curr.getMonth() + 1,
+          date: curr.getDate()
+        });
+        curr.setDate(curr.getDate() + 1);
       }
-    }
 
-    const newGroupId = dateList.length > 1 ? (oldGroupId || `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`) : null;
-    const colors = ['purple', 'blue', 'green', 'orange'];
-    const randomColor = selectedDetailEvent.color || colors[Math.floor(Math.random() * colors.length)];
+      const prevMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
+      const hasAssigneeChanged = editMemberIds.length !== prevMemberIds.length || !editMemberIds.every(id => prevMemberIds.includes(id));
+      
+      let newStatus = selectedDetailEvent.status || 'accepted';
+      let newRequesterId = selectedDetailEvent.requesterId || 'sh';
+      
+      if (hasAssigneeChanged) {
+        const isAssignedToSelfOnly = editMemberIds.length === 1 && editMemberIds.includes('sh');
+        newStatus = isAssignedToSelfOnly ? 'accepted' : 'requested';
+        newRequesterId = 'sh';
+      }
 
-    const createdSchedules = [];
-    for (let idx = 0; idx < dateList.length; idx++) {
-      const item = dateList[idx];
-      const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month);
-
-      const schedObj = {
-        id: `s_${Date.now()}_${idx}`,
-        year: item.year,
-        month: item.month,
-        date: item.date,
-        title: editTitle.trim(),
-        memberIds: editMemberIds,
-        memberId: editMemberIds[0],
-        startHour: parseFloat(editStartHour),
-        endHour: parseFloat(editEndHour),
-        color: randomColor,
-        description: newDesc,
-        status: newStatus,
-        requesterId: newRequesterId,
-      };
+      const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+      const oldGroupId = matchGroupId ? matchGroupId[1] : null;
+      
+      let oldTargets = [];
+      if (oldGroupId) {
+        oldTargets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${oldGroupId}`));
+      }
+      if (oldTargets.length === 0) {
+        oldTargets = [selectedDetailEvent];
+      }
 
       if (isConfigured) {
-        let dbSched = { ...schedObj };
-        if (isCurrentUserYoonhee) {
-          dbSched.memberId = schedObj.memberId === 'sh' ? 'yoonhee' : (schedObj.memberId === 'yoonhee' ? 'sh' : schedObj.memberId);
-          dbSched.memberIds = schedObj.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-          dbSched.requesterId = schedObj.requesterId === 'sh' ? 'yoonhee' : (schedObj.requesterId === 'yoonhee' ? 'sh' : schedObj.requesterId);
+        for (const t of oldTargets) {
+          try {
+            await appwriteService.deleteSchedule(t.id);
+          } catch (e) {
+            console.error("Appwrite delete error:", e);
+          }
         }
-        try {
-          const result = await appwriteService.createSchedule(dbSched);
-          createdSchedules.push(result ? { ...schedObj, id: result.id } : schedObj);
-        } catch (e) {
-          console.error("Appwrite create error:", e);
+      }
+
+      const newGroupId = dateList.length > 1 ? (oldGroupId || `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`) : null;
+      const colors = ['purple', 'blue', 'green', 'orange'];
+      const randomColor = selectedDetailEvent.color || colors[Math.floor(Math.random() * colors.length)];
+
+      const createdSchedules = [];
+      for (let idx = 0; idx < dateList.length; idx++) {
+        const item = dateList[idx];
+        const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month);
+
+        const schedObj = {
+          id: `s_${Date.now()}_${idx}`,
+          year: item.year,
+          month: item.month,
+          date: item.date,
+          title: editTitle.trim(),
+          memberIds: editMemberIds,
+          memberId: editMemberIds[0],
+          startHour: parseFloat(editStartHour),
+          endHour: parseFloat(editEndHour),
+          color: randomColor,
+          description: newDesc,
+          status: newStatus,
+          requesterId: newRequesterId,
+        };
+
+        if (isConfigured) {
+          let dbSched = { ...schedObj };
+          if (isCurrentUserYoonhee) {
+            dbSched.memberId = schedObj.memberId === 'sh' ? 'yoonhee' : (schedObj.memberId === 'yoonhee' ? 'sh' : schedObj.memberId);
+            dbSched.memberIds = schedObj.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+            dbSched.requesterId = schedObj.requesterId === 'sh' ? 'yoonhee' : (schedObj.requesterId === 'yoonhee' ? 'sh' : schedObj.requesterId);
+          }
+          try {
+            const result = await appwriteService.createSchedule(dbSched);
+            createdSchedules.push(result ? { ...schedObj, id: result.id } : schedObj);
+          } catch (e) {
+            console.error("Appwrite create error:", e);
+            createdSchedules.push(schedObj);
+          }
+        } else {
           createdSchedules.push(schedObj);
         }
-      } else {
-        createdSchedules.push(schedObj);
       }
-    }
 
-    const oldIds = oldTargets.map(t => t.id);
-    setSchedules(prev => [...prev.filter(s => !oldIds.includes(s.id)), ...createdSchedules]);
-    setIsDetailModalOpen(false);
+      const oldIds = oldTargets.map(t => t.id);
+      setSchedules(prev => [...prev.filter(s => !oldIds.includes(s.id)), ...createdSchedules]);
+      setIsDetailModalOpen(false);
+    } finally {
+      setIsSavingEvent(false);
+    }
   };
 
   const getEndHourOptions = () => {
@@ -3711,36 +3742,85 @@ export default function App() {
                 <>
                   <button 
                     className="modal-btn" 
-                    style={{ backgroundColor: 'var(--accent-red)', color: '#ffffff', borderColor: 'var(--accent-red)', padding: '9px 18px', fontSize: '15px', fontWeight: '600' }}
+                    disabled={isDeletingEvent || isSavingEvent}
+                    style={{ 
+                      backgroundColor: 'var(--accent-red)', 
+                      color: '#ffffff', 
+                      borderColor: 'var(--accent-red)', 
+                      padding: '9px 18px', 
+                      fontSize: '15px', 
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
+                      opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
+                    }}
                     onClick={async () => {
                       const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                       const groupId = matchGroupId ? matchGroupId[1] : null;
                       if (groupId) {
                         if (confirm(`"${selectedDetailEvent.title}"은 그룹 일정입니다. 연결된 모든 일정을 함께 삭제하시겠습니까?`)) {
-                          const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                          if (isConfigured) {
-                            for (const t of targets) {
-                              await appwriteService.deleteSchedule(t.id);
+                          setIsDeletingEvent(true);
+                          try {
+                            const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                            if (isConfigured) {
+                              for (const t of targets) {
+                                await appwriteService.deleteSchedule(t.id);
+                              }
                             }
+                            const targetIds = targets.map(t => t.id);
+                            setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
+                            setIsDetailModalOpen(false);
+                          } finally {
+                            setIsDeletingEvent(false);
                           }
-                          const targetIds = targets.map(t => t.id);
-                          setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-                          setIsDetailModalOpen(false);
                         }
                       } else {
                         if (confirm(`"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`)) {
-                          if (isConfigured) {
-                            await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                          setIsDeletingEvent(true);
+                          try {
+                            if (isConfigured) {
+                              await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                            }
+                            setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                            setIsDetailModalOpen(false);
+                          } finally {
+                            setIsDeletingEvent(false);
                           }
-                          setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                          setIsDetailModalOpen(false);
                         }
                       }
                     }}
                   >
-                    삭제
+                    {isDeletingEvent ? (
+                      <>
+                        <LoadingSpinner size={16} color="#ffffff" />
+                        삭제 중...
+                      </>
+                    ) : '삭제'}
                   </button>
-                  <button className="modal-btn primary" style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} onClick={saveEventEdits}>저장</button>
+                  <button 
+                    className="modal-btn primary" 
+                    disabled={isDeletingEvent || isSavingEvent}
+                    style={{ 
+                      padding: '9px 18px', 
+                      fontSize: '15px', 
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
+                      opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
+                    }} 
+                    onClick={saveEventEdits}
+                  >
+                    {isSavingEvent ? (
+                      <>
+                        <LoadingSpinner size={16} color="#ffffff" />
+                        저장 중...
+                      </>
+                    ) : '저장'}
+                  </button>
                 </>
               )}
             </div>
@@ -4402,6 +4482,7 @@ export default function App() {
             >
               <button 
                 className="modal-btn" 
+                disabled={isSavingReport}
                 style={{ 
                   padding: '9px 20px', 
                   fontSize: '15px', 
@@ -4410,15 +4491,21 @@ export default function App() {
                   color: isEditingReport ? '#000000' : '#1e293b', 
                   border: isEditingReport ? '1px solid #000000' : '1px solid #cbd5e1', 
                   borderRadius: '6px', 
-                  cursor: 'pointer', 
+                  cursor: isSavingReport ? 'not-allowed' : 'pointer', 
                   display: 'inline-flex', 
                   alignItems: 'center', 
                   gap: '6px',
+                  opacity: isSavingReport ? 0.7 : 1,
                   transition: 'all 0.15s' 
                 }} 
                 onClick={() => isEditingReport ? handleSaveReportEdits() : setIsEditingReport(true)}
               >
-                {isEditingReport ? (
+                {isSavingReport ? (
+                  <>
+                    <LoadingSpinner size={16} color="#000000" />
+                    저장 중...
+                  </>
+                ) : isEditingReport ? (
                   <>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>

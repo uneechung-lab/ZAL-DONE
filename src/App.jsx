@@ -1460,7 +1460,7 @@ export default function App() {
             dateStr = `${single.year}.${m}.${d}`;
           }
 
-          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세내용: ${group.description || '-'}\n담당자: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜: ${dateStr}\n시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세: ${group.description || '-'}\n담당: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜: ${dateStr}\n시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -1813,11 +1813,11 @@ export default function App() {
                                 if (trimmed.includes('일정') && (trimmed.includes('📅') || trimmed.includes('일정 '))) return;
                                 if (trimmed.startsWith('"') || trimmed.includes(parsed.title)) return;
 
-                                if (trimmed.includes('상세내용:')) {
-                                  currentField = { type: 'detail', label: '상세내용:', text: trimmed.replace(/.*상세내용:\s*/, '') };
+                                if (trimmed.includes('상세내용:') || trimmed.includes('상세:')) {
+                                  currentField = { type: 'detail', label: '상세:', text: trimmed.replace(/.*(?:상세내용|상세):\s*/, '') };
                                   fields.push(currentField);
-                                } else if (trimmed.includes('담당자:')) {
-                                  currentField = { type: 'assignee', label: '담당자:', text: trimmed.replace(/.*담당자:\s*/, '') };
+                                } else if (trimmed.includes('담당자:') || trimmed.includes('담당:')) {
+                                  currentField = { type: 'assignee', label: '담당:', text: trimmed.replace(/.*(?:담당자|담당):\s*/, '') };
                                   fields.push(currentField);
                                 } else if (trimmed.includes('날짜:')) {
                                   currentField = { type: 'date', label: '날짜:', text: trimmed.replace(/.*날짜:\s*/, '') };

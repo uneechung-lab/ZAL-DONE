@@ -2286,9 +2286,9 @@ export default function App() {
                 }}
                 style={{
                   marginLeft: '8px',
-                  padding: '3px 9px',
-                  fontSize: '11px',
-                  fontWeight: '500',
+                  padding: '5px 12px',
+                  fontSize: '12px',
+                  fontWeight: '600',
                   color: '#475569',
                   backgroundColor: 'transparent',
                   border: '1px solid #cbd5e1',

@@ -78,21 +78,40 @@ export const appwriteService = {
     if (!isConfigured) return null;
     try {
       const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
-      return response.documents.map(doc => ({
-        id: doc.$id,
-        year: doc.year || null,
-        month: doc.month || null,
-        date: doc.date,
-        title: doc.title,
-        memberId: doc.memberId,
-        memberIds: doc.memberIds || [doc.memberId],
-        startHour: doc.startHour,
-        endHour: doc.endHour,
-        color: doc.color,
-        description: doc.description || '',
-        status: doc.status || 'active',
-        requesterId: doc.requesterId || null,
-      }));
+      return response.documents.map(doc => {
+        let year = doc.year || null;
+        let month = doc.month || null;
+        if ((!year || !month) && doc.description) {
+          const ymMatch = doc.description.match(/\[YM:(\d{4})\.(\d{1,2})\]/);
+          if (ymMatch) {
+            year = parseInt(ymMatch[1]);
+            month = parseInt(ymMatch[2]);
+          }
+        }
+        let parsedMemberIds = [doc.memberId];
+        if (doc.memberIds) {
+          try {
+            parsedMemberIds = typeof doc.memberIds === 'string' ? JSON.parse(doc.memberIds) : doc.memberIds;
+          } catch (e) {
+            parsedMemberIds = [doc.memberId];
+          }
+        }
+        return {
+          id: doc.$id,
+          year,
+          month,
+          date: doc.date,
+          title: doc.title,
+          memberId: doc.memberId,
+          memberIds: parsedMemberIds,
+          startHour: doc.startHour,
+          endHour: doc.endHour,
+          color: doc.color,
+          description: doc.description || '',
+          status: doc.status || 'active',
+          requesterId: doc.requesterId || null,
+        };
+      });
     } catch (e) {
       console.error('Appwrite failed to get schedules', e);
       return null;
@@ -102,19 +121,21 @@ export const appwriteService = {
   async createSchedule(schedule) {
     if (!isConfigured) return null;
     try {
+      let desc = schedule.description || '';
+      if (schedule.year && schedule.month && !desc.includes('[YM:')) {
+        desc = `[YM:${schedule.year}.${schedule.month}] ${desc}`.trim();
+      }
       const data = {
-        year: schedule.year || null,
-        month: schedule.month || null,
         date: schedule.date,
         title: schedule.title,
         memberId: schedule.memberId,
-        memberIds: schedule.memberIds || [schedule.memberId],
+        memberIds: JSON.stringify(schedule.memberIds || [schedule.memberId]),
         startHour: schedule.startHour,
         endHour: schedule.endHour,
         color: schedule.color,
-        description: schedule.description || '',
+        description: desc,
         status: schedule.status || 'active',
-        requesterId: schedule.requesterId || null,
+        requesterId: schedule.requesterId || '',
       };
       const response = await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
       return { ...schedule, id: response.$id };

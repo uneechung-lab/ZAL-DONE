@@ -1782,9 +1782,9 @@ export default function App() {
             style={{ padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="7" y2="12" />
-              <polyline points="12 5 5 12 12 19" />
               <line x1="4" y1="5" x2="4" y2="19" />
+              <polyline points="14 6 8 12 14 18" />
+              <line x1="20" y1="12" x2="8" y2="12" />
             </svg>
           </button>
         </div>
@@ -2209,7 +2209,21 @@ export default function App() {
         <div className="top-controls">
           <div className="top-controls-row">
             {/* Left Navigations */}
-            <div className="date-navigator">
+            <div className="date-navigator" style={{ display: 'flex', alignItems: 'center' }}>
+              {!isDrawerOpen && (
+                <button 
+                  className="close-drawer-btn" 
+                  onClick={() => setIsDrawerOpen(true)}
+                  title="사이드바 열기"
+                  style={{ marginRight: '10px', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="5" x2="4" y2="19" />
+                    <polyline points="10 6 16 12 10 18" />
+                    <line x1="4" y1="12" x2="16" y2="12" />
+                  </svg>
+                </button>
+              )}
               <button 
                 className="nav-arrow-text" 
                 onClick={() => {

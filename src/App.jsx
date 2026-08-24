@@ -1958,12 +1958,12 @@ export default function App() {
                                       {matchedSchedule ? (
                                         <button
                                           style={{
-                                            padding: '4px 10px',
+                                            padding: '6px 12px',
                                             fontSize: '11.5px',
                                             backgroundColor: 'rgba(239, 68, 68, 0.08)', 
                                             color: '#ef4444', 
                                             border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                            borderRadius: '6px',
+                                            borderRadius: '8px',
                                             fontWeight: '700',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s'
@@ -2022,12 +2022,12 @@ export default function App() {
                             <button
                               style={{ 
                                 width: '100%', 
-                                padding: '8px 12px', 
+                                padding: '10px 14px', 
                                 fontSize: '12px', 
                                 backgroundColor: 'rgba(239, 68, 68, 0.08)', 
                                 color: '#ef4444', 
                                 border: '1px solid rgba(239, 68, 68, 0.25)',
-                                borderRadius: '6px', 
+                                borderRadius: '8px', 
                                 fontWeight: '700',
                                 cursor: 'pointer',
                                 marginTop: '4px',

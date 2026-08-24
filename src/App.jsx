@@ -756,6 +756,38 @@ export default function App() {
     }
   }, [selectedDate, timeViewTab, currentMonth, currentYear]);
 
+  const handlePrevReportDate = () => {
+    if (timeViewTab === 'daily') {
+      const dt = new Date(currentYear, currentMonth - 1, selectedDate - 1);
+      setCurrentYear(dt.getFullYear());
+      setCurrentMonth(dt.getMonth() + 1);
+      setSelectedDate(dt.getDate());
+    } else {
+      if (currentMonth === 1) {
+        setCurrentYear(prev => prev - 1);
+        setCurrentMonth(12);
+      } else {
+        setCurrentMonth(prev => prev - 1);
+      }
+    }
+  };
+
+  const handleNextReportDate = () => {
+    if (timeViewTab === 'daily') {
+      const dt = new Date(currentYear, currentMonth - 1, selectedDate + 1);
+      setCurrentYear(dt.getFullYear());
+      setCurrentMonth(dt.getMonth() + 1);
+      setSelectedDate(dt.getDate());
+    } else {
+      if (currentMonth === 12) {
+        setCurrentYear(prev => prev + 1);
+        setCurrentMonth(1);
+      } else {
+        setCurrentMonth(prev => prev + 1);
+      }
+    }
+  };
+
   // Schedule Data
   const [schedules, setSchedules] = useState(() => {
     const savedSched = localStorage.getItem('zal_schedules');
@@ -3666,12 +3698,68 @@ export default function App() {
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header (Fixed Top) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-color)', padding: '24px 28px 16px 28px', backgroundColor: '#fff' }}>
-              <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                {timeViewTab === 'daily' && `📋 일일 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate})`}
-                {timeViewTab === 'weekly' && `📋 주간 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
-                {timeViewTab === 'monthly' && `📋 월간 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
-                {timeViewTab === 'list' && `📋 전체 업무 보고서 목록`}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-color)', padding: '20px 28px 16px 28px', backgroundColor: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '21px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                <span>
+                  {timeViewTab === 'daily' && '📋 일일 업무 보고서'}
+                  {timeViewTab === 'weekly' && '📋 주간 업무 보고서'}
+                  {timeViewTab === 'monthly' && '📋 월간 업무 보고서'}
+                  {timeViewTab === 'list' && '📋 전체 업무 보고서 목록'}
+                </span>
+
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '8px', marginLeft: '6px' }}>
+                  <button 
+                    onClick={handlePrevReportDate} 
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '2px 4px', 
+                      borderRadius: '4px', 
+                      color: '#475569',
+                      transition: 'background-color 0.15s'
+                    }}
+                    title="이전 날짜 이동"
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#cbd5e1'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                  </button>
+
+                  <span style={{ fontSize: '17px', fontWeight: '700', color: '#1e293b', padding: '0 4px', userSelect: 'none' }}>
+                    {timeViewTab === 'daily' && `(${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate})`}
+                    {timeViewTab === 'weekly' && `(${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
+                    {timeViewTab === 'monthly' && `(${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
+                  </span>
+
+                  <button 
+                    onClick={handleNextReportDate} 
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '2px 4px', 
+                      borderRadius: '4px', 
+                      color: '#475569',
+                      transition: 'background-color 0.15s'
+                    }}
+                    title="다음 날짜 이동"
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#cbd5e1'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               <button 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-tertiary)' }}

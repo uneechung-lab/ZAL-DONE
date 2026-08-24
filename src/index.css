@@ -829,7 +829,7 @@ button, input, select, textarea {
 }
 
 .close-drawer-btn {
-  background: #ffffff;
+  background: transparent;
   border: none;
   font-size: 16px;
   cursor: pointer;
@@ -837,11 +837,14 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition);
+  transition: all var(--transition);
+  border-radius: 6px;
+  padding: 4px;
 }
 
 .close-drawer-btn:hover {
   color: var(--text-primary);
+  background: #f1f5f9;
 }
 
 .chat-messages {

@@ -3419,31 +3419,67 @@ export default function App() {
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정 기간 (날짜)</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input 
-                    type="date" 
-                    className="modal-input" 
-                    value={editStartDateStr} 
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1.4', minWidth: '260px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정 기간 (날짜)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="date" 
+                      className="modal-input" 
+                      value={editStartDateStr} 
+                      onChange={(e) => {
+                        setEditStartDateStr(e.target.value);
+                        if (!editEndDateStr || e.target.value > editEndDateStr) {
+                          setEditEndDateStr(e.target.value);
+                        }
+                      }} 
+                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      disabled={!isDetailEditable}
+                    />
+                    <span style={{ fontWeight: '700', color: 'var(--text-tertiary)' }}>~</span>
+                    <input 
+                      type="date" 
+                      className="modal-input" 
+                      value={editEndDateStr} 
+                      onChange={(e) => setEditEndDateStr(e.target.value)} 
+                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      disabled={!isDetailEditable}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ flex: '1', minWidth: '130px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>시작 시간</label>
+                  <select 
+                    value={editStartHour} 
                     onChange={(e) => {
-                      setEditStartDateStr(e.target.value);
-                      if (!editEndDateStr || e.target.value > editEndDateStr) {
-                        setEditEndDateStr(e.target.value);
+                      const newStart = parseFloat(e.target.value);
+                      setEditStartHour(newStart);
+                      if (editEndHour <= newStart) {
+                        setEditEndHour(newStart + 1);
                       }
-                    }} 
-                    style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14.5px', background: '#fff' }}
+                    }}
+                    style={{ width: '100%', padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
                     disabled={!isDetailEditable}
-                  />
-                  <span style={{ fontWeight: '700', color: 'var(--text-tertiary)' }}>~</span>
-                  <input 
-                    type="date" 
-                    className="modal-input" 
-                    value={editEndDateStr} 
-                    onChange={(e) => setEditEndDateStr(e.target.value)} 
-                    style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14.5px', background: '#fff' }}
+                  >
+                    {hourSlots.map(h => (
+                      <option key={h} value={h}>{formatHour(h)}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ flex: '1', minWidth: '130px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>종료 시간</label>
+                  <select 
+                    value={editEndHour} 
+                    onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
+                    style={{ width: '100%', padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
                     disabled={!isDetailEditable}
-                  />
+                  >
+                    {getEndHourOptions().map(h => (
+                      <option key={h} value={h}>{formatHour(h)}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -3501,42 +3537,6 @@ export default function App() {
                       </label>
                     );
                   })}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>시작 시간</label>
-                  <select 
-                    value={editStartHour} 
-                    onChange={(e) => {
-                      const newStart = parseFloat(e.target.value);
-                      setEditStartHour(newStart);
-                      if (editEndHour <= newStart) {
-                        setEditEndHour(newStart + 1);
-                      }
-                    }}
-                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '15px' }}
-                    disabled={!isDetailEditable}
-                  >
-                    {hourSlots.map(h => (
-                      <option key={h} value={h}>{formatHour(h)}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>종료 시간</label>
-                  <select 
-                    value={editEndHour} 
-                    onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
-                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '15px' }}
-                    disabled={!isDetailEditable}
-                  >
-                    {getEndHourOptions().map(h => (
-                      <option key={h} value={h}>{formatHour(h)}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 

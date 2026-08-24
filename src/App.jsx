@@ -140,8 +140,8 @@ function parseSchedulesFromText(text) {
   let currentChunk = null;
   const chunks = [];
 
-  const isHeaderLine = (line) => /^📅?\s*일정 \d+/i.test(line);
-  const isDetailLine = (line) => /^(?:상세내용|상세):?/i.test(line);
+  const isHeaderLine = (line) => /^📅?\s*일정 \d+/iu.test(line);
+  const isDetailLine = (line) => /^(?:상세내용|상세):?/iu.test(line);
 
   lines.forEach(line => {
     const trimmed = line.trim();
@@ -174,27 +174,27 @@ function parseSchedulesFromText(text) {
     if (titleMatch) {
       title = titleMatch[1].replace(/^["']|["']$/g, '').trim();
     } else {
-      const detailLine = chunkLines.find(l => /^(?:상세내용|상세):?/i.test(l.trim()));
+      const detailLine = chunkLines.find(l => /^(?:상세내용|상세):?/iu.test(l.trim()));
       if (detailLine) {
-        const cleanVal = detailLine.replace(/.*(?:상세내용|상세):?\s*/i, '').replace(/^[-•*\s]+/, '').split(',')[0].trim();
+        const cleanVal = detailLine.replace(/.*(?:상세내용|상세):?\s*/iu, '').replace(/^[-•*\s]+/, '').split(',')[0].trim();
         title = cleanVal || `일정 ${idx + 1}`;
       } else {
         title = `일정 ${idx + 1}`;
       }
     }
 
-    const dateRangeMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})\s*[-~–]\s*(?:\d{4}\.\d{2}\.)?(\d{2})/);
+    const dateRangeMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})\s*[-~–]\s*(?:\d{4}\.\d{2}\.)?(\d{2})/u);
     let dates = [];
     if (dateRangeMatch) {
       const startD = parseInt(dateRangeMatch[1]);
       const endD = parseInt(dateRangeMatch[2]);
       for (let d = startD; d <= endD; d++) dates.push(d);
     } else {
-      const dateMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})/);
+      const dateMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})/u);
       if (dateMatch) dates.push(parseInt(dateMatch[1]));
     }
 
-    const timeMatch = blockText.match(/⏰?\s*시간:?\s*(\d{1,2}):\d{2}\s*[-~–]\s*(\d{1,2}):\d{2}/);
+    const timeMatch = blockText.match(/⏰?\s*시간:?\s*(\d{1,2}):\d{2}\s*[-~–]\s*(\d{1,2}):\d{2}/u);
     const startHour = timeMatch ? parseInt(timeMatch[1]) : null;
     const endHour = timeMatch ? parseInt(timeMatch[2]) : null;
 
@@ -1857,7 +1857,7 @@ export default function App() {
                               lines.forEach(line => {
                                 const trimmed = line.trim();
                                 if (!trimmed) return;
-                                if (/^📅?\s*일정 \d+/.test(trimmed)) return;
+                                if (/^📅?\s*일정 \d+/iu.test(trimmed)) return;
                                 if (trimmed.startsWith('"') && trimmed.endsWith('"')) return;
 
                                 if (trimmed.includes('상세내용:') || trimmed.includes('상세:') || trimmed.includes('상세')) {

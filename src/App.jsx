@@ -150,12 +150,14 @@ function parseSchedulesFromText(text) {
     if (isHeaderLine(trimmed)) {
       if (currentChunk) chunks.push(currentChunk);
       currentChunk = [line];
-    } else if (isDetailLine(trimmed) && (!currentChunk || currentChunk.some(l => /^(?:상세내용|상세):?/i.test(l.trim())))) {
+    } else if (isDetailLine(trimmed) && (!currentChunk || currentChunk.some(l => isDetailLine(l.trim())))) {
       if (currentChunk) chunks.push(currentChunk);
       currentChunk = [line];
     } else {
       if (currentChunk) {
-        currentChunk.push(line);
+        if (!isHeaderLine(trimmed)) {
+          currentChunk.push(line);
+        }
       } else {
         introLines.push(line);
       }

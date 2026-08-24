@@ -1787,9 +1787,11 @@ export default function App() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {parsedSchedules.map((parsed, idx) => {
                               let matchedSchedule = null;
+                              const normalizeStr = str => (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
                               for (const d of parsed.dates) {
                                 const match = schedules.find(s => 
-                                  s.title === parsed.title &&
+                                  normalizeStr(s.title) === normalizeStr(parsed.title) &&
                                   s.date === d &&
                                   (!parsed.year || !s.year || s.year === parsed.year) &&
                                   (!parsed.month || !s.month || s.month === parsed.month)
@@ -1800,7 +1802,37 @@ export default function App() {
                                 }
                               }
                               
-                              const blockLines = (blocks[idx + 1] || '').trim().split('\n');
+                              const rawBlockText = (blocks[idx + 1] || '').trim();
+                              const lines = rawBlockText.split('\n');
+                              const fields = [];
+                              let currentField = null;
+
+                              lines.forEach(line => {
+                                const trimmed = line.trim();
+                                if (!trimmed) return;
+                                if (trimmed.includes('일정') && (trimmed.includes('📅') || trimmed.includes('일정 '))) return;
+                                if (trimmed.startsWith('"') || trimmed.includes(parsed.title)) return;
+
+                                if (trimmed.includes('상세내용:')) {
+                                  currentField = { type: 'detail', label: '상세내용:', text: trimmed.replace(/.*상세내용:\s*/, '') };
+                                  fields.push(currentField);
+                                } else if (trimmed.includes('담당자:')) {
+                                  currentField = { type: 'assignee', label: '담당자:', text: trimmed.replace(/.*담당자:\s*/, '') };
+                                  fields.push(currentField);
+                                } else if (trimmed.includes('날짜:')) {
+                                  currentField = { type: 'date', label: '날짜:', text: trimmed.replace(/.*날짜:\s*/, '') };
+                                  fields.push(currentField);
+                                } else if (trimmed.includes('시간:')) {
+                                  currentField = { type: 'time', label: '시간:', text: trimmed.replace(/.*시간:\s*/, '') };
+                                  fields.push(currentField);
+                                } else {
+                                  if (currentField) {
+                                    currentField.text += '\n' + trimmed;
+                                  } else {
+                                    fields.push({ type: 'other', label: '', text: trimmed });
+                                  }
+                                }
+                              });
                               
                               return (
                                 <div key={idx} style={{ 
@@ -1813,81 +1845,57 @@ export default function App() {
                                   gap: '3px'
                                 }}>
                                   <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', marginBottom: '2px' }}>일정 {idx + 1}: "{parsed.title}"</div>
-                                  {blockLines.map((line, lIdx) => {
-                                    if (line.includes('일정') && (line.includes('📅') || line.includes('일정 '))) return null;
-                                    if (line.startsWith('"') || line.includes(parsed.title)) return null;
-
-                                    if (line.includes('상세내용:')) {
-                                      const cleanText = line.replace(/.*상세내용:\s*/, '');
-                                      return (
-                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                              <polyline points="14 2 14 8 20 8"/>
-                                              <line x1="16" y1="13" x2="8" y2="13"/>
-                                              <line x1="16" y1="17" x2="8" y2="17"/>
-                                            </svg>
-                                            <span>상세내용:</span>
-                                          </div>
-                                          <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>
-                                            {renderTextWithLinks(cleanText)}
-                                          </div>
-                                        </div>
+                                  {fields.map((f, fIdx) => {
+                                    let icon = null;
+                                    if (f.type === 'detail') {
+                                      icon = (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                          <polyline points="14 2 14 8 20 8"/>
+                                          <line x1="16" y1="13" x2="8" y2="13"/>
+                                          <line x1="16" y1="17" x2="8" y2="17"/>
+                                        </svg>
                                       );
-                                    } else if (line.includes('담당자:')) {
-                                      const cleanText = line.replace(/.*담당자:\s*/, '');
-                                      return (
-                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                              <circle cx="12" cy="7" r="4"/>
-                                            </svg>
-                                            <span>담당자:</span>
-                                          </div>
-                                          <div style={{ wordBreak: 'break-all' }}>
-                                            {renderTextWithLinks(cleanText)}
-                                          </div>
-                                        </div>
+                                    } else if (f.type === 'assignee') {
+                                      icon = (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                          <circle cx="12" cy="7" r="4"/>
+                                        </svg>
                                       );
-                                    } else if (line.includes('날짜:')) {
-                                      const cleanText = line.replace(/.*날짜:\s*/, '');
-                                      return (
-                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                              <line x1="16" y1="2" x2="16" y2="6"/>
-                                              <line x1="8" y1="2" x2="8" y2="6"/>
-                                              <line x1="3" y1="10" x2="21" y2="10"/>
-                                            </svg>
-                                            <span>날짜:</span>
-                                          </div>
-                                          <div style={{ wordBreak: 'break-all' }}>
-                                            {renderTextWithLinks(cleanText)}
-                                          </div>
-                                        </div>
+                                    } else if (f.type === 'date') {
+                                      icon = (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                          <line x1="16" y1="2" x2="16" y2="6"/>
+                                          <line x1="8" y1="2" x2="8" y2="6"/>
+                                          <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
                                       );
-                                    } else if (line.includes('시간:')) {
-                                      const cleanText = line.replace(/.*시간:\s*/, '');
-                                      return (
-                                        <div key={lIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                              <circle cx="12" cy="12" r="10"/>
-                                              <polyline points="12 6 12 12 16 14"/>
-                                            </svg>
-                                            <span>시간:</span>
-                                          </div>
-                                          <div style={{ wordBreak: 'break-all' }}>
-                                            {renderTextWithLinks(cleanText)}
-                                          </div>
-                                        </div>
+                                    } else if (f.type === 'time') {
+                                      icon = (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                          <circle cx="12" cy="12" r="10"/>
+                                          <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
                                       );
                                     }
 
-                                    return <div key={lIdx} style={{ fontSize: '12.5px', opacity: 0.9 }}>{renderTextWithLinks(line)}</div>;
+                                    if (f.type === 'other') {
+                                      return <div key={fIdx} style={{ fontSize: '12.5px', opacity: 0.9 }}>{renderTextWithLinks(f.text)}</div>;
+                                    }
+
+                                    return (
+                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                          {icon}
+                                          <span>{f.label}</span>
+                                        </div>
+                                        <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>
+                                          {renderTextWithLinks(f.text)}
+                                        </div>
+                                      </div>
+                                    );
                                   })}
                                   
                                   <div style={{ marginTop: '8px' }}>

@@ -133,40 +133,80 @@ function isTodayMessage(msg) {
 
 // Helper to parse schedules from AI text reply for cancel buttons
 function parseSchedulesFromText(text) {
-  if (!text) return [];
-  const schedulesList = [];
-  const blocks = text.split(/(?=📅?\s*일정 \d+:?\s*)/);
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i];
-    if (!/📅?\s*일정 \d+/.test(block)) continue;
+  if (!text) return { introText: '', schedules: [] };
 
-    const titleMatch = block.match(/"([^"]+)"/) || block.match(/일정 \d+:?\s*([^\n]+)/);
-    const title = titleMatch ? titleMatch[1].trim() : '';
+  const lines = text.split('\n');
+  let introLines = [];
+  let currentChunk = null;
+  const chunks = [];
+
+  const isHeaderLine = (line) => /^📅?\s*일정 \d+/i.test(line);
+  const isDetailLine = (line) => /^(?:상세내용|상세):?/i.test(line);
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (isHeaderLine(trimmed)) {
+      if (currentChunk) chunks.push(currentChunk);
+      currentChunk = [line];
+    } else if (isDetailLine(trimmed) && (!currentChunk || currentChunk.some(l => /^(?:상세내용|상세):?/i.test(l.trim())))) {
+      if (currentChunk) chunks.push(currentChunk);
+      currentChunk = [line];
+    } else {
+      if (currentChunk) {
+        currentChunk.push(line);
+      } else {
+        introLines.push(line);
+      }
+    }
+  });
+  if (currentChunk) chunks.push(currentChunk);
+
+  const schedulesList = [];
+  chunks.forEach((chunkLines, idx) => {
+    const blockText = chunkLines.join('\n');
+    const titleMatch = blockText.match(/"([^"]+)"/) || blockText.match(/일정 \d+:?\s*([^\n]+)/);
     
-    const dateRangeMatch = block.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})\s*[-~–]\s*(?:\d{4}\.\d{2}\.)?(\d{2})/);
+    let title = '';
+    if (titleMatch) {
+      title = titleMatch[1].replace(/^["']|["']$/g, '').trim();
+    } else {
+      const detailLine = chunkLines.find(l => /^(?:상세내용|상세):?/i.test(l.trim()));
+      if (detailLine) {
+        const cleanVal = detailLine.replace(/.*(?:상세내용|상세):?\s*/i, '').replace(/^[-•*\s]+/, '').split(',')[0].trim();
+        title = cleanVal || `일정 ${idx + 1}`;
+      } else {
+        title = `일정 ${idx + 1}`;
+      }
+    }
+
+    const dateRangeMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})\s*[-~–]\s*(?:\d{4}\.\d{2}\.)?(\d{2})/);
     let dates = [];
     if (dateRangeMatch) {
       const startD = parseInt(dateRangeMatch[1]);
       const endD = parseInt(dateRangeMatch[2]);
-      for (let d = startD; d <= endD; d++) {
-        dates.push(d);
-      }
+      for (let d = startD; d <= endD; d++) dates.push(d);
     } else {
-      const dateMatch = block.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})/);
-      if (dateMatch) {
-        dates.push(parseInt(dateMatch[1]));
-      }
+      const dateMatch = blockText.match(/📅?\s*날짜:?\s*\d{4}\.\d{2}\.(\d{2})/);
+      if (dateMatch) dates.push(parseInt(dateMatch[1]));
     }
-    
-    const timeMatch = block.match(/⏰?\s*시간:?\s*(\d{1,2}):\d{2}\s*[-~–]\s*(\d{1,2}):\d{2}/);
+
+    const timeMatch = blockText.match(/⏰?\s*시간:?\s*(\d{1,2}):\d{2}\s*[-~–]\s*(\d{1,2}):\d{2}/);
     const startHour = timeMatch ? parseInt(timeMatch[1]) : null;
     const endHour = timeMatch ? parseInt(timeMatch[2]) : null;
-    
-    if (title) {
-      schedulesList.push({ title, dates, startHour, endHour });
-    }
-  }
-  return schedulesList;
+
+    schedulesList.push({
+      title,
+      dates,
+      startHour,
+      endHour,
+      lines: chunkLines,
+      rawText: blockText
+    });
+  });
+
+  return { introText: introLines.join('\n').trim(), schedules: schedulesList };
 }
 
 function getTimeSlot() {
@@ -1768,21 +1808,8 @@ export default function App() {
               return (
                 <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
                   <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line' }}>
-                    {!isUser && (msg.text.includes('일정') || msg.text.includes('상세') || msg.text.includes('날짜')) && parseSchedulesFromText(msg.text).length > 0 ? (() => {
-                      const parsedSchedules = parseSchedulesFromText(msg.text);
-                      const rawBlocks = msg.text.split(/(?=📅?\s*일정 \d+:?\s*)/);
-                      let introText = '';
-                      let scheduleBlocks = [];
-
-                      if (rawBlocks.length > 0) {
-                        if (/^📅?\s*일정 \d+/.test(rawBlocks[0].trim())) {
-                          introText = '';
-                          scheduleBlocks = rawBlocks;
-                        } else {
-                          introText = rawBlocks[0].trim();
-                          scheduleBlocks = rawBlocks.slice(1);
-                        }
-                      }
+                    {!isUser && parseSchedulesFromText(msg.text).schedules.length > 0 ? (() => {
+                      const { introText, schedules: parsedSchedules } = parseSchedulesFromText(msg.text);
 
                       const existingSchedules = [];
                       parsedSchedules.forEach(p => {
@@ -1821,8 +1848,7 @@ export default function App() {
                                 }
                               }
                               
-                              const rawBlockText = (scheduleBlocks[idx] || '').trim();
-                              const lines = rawBlockText.split('\n');
+                              const lines = parsed.lines || [];
                               const fields = [];
                               let currentField = null;
 

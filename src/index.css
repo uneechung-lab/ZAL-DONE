@@ -758,19 +758,19 @@ button, input, select, textarea {
 /* Floating AI toggle button */
 .ai-toggle-floating-btn {
   position: fixed;
-  left: 16px;
-  bottom: 16px;
+  right: 24px;
+  bottom: 24px;
   background: transparent !important;
   border: none !important;
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: none !important;
-  z-index: 99;
+  z-index: 999;
   padding: 0;
   transition: transform var(--transition);
 }
@@ -1326,5 +1326,34 @@ button, input, select, textarea {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Print Style for Work Report Modal */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .printable-report-modal, .printable-report-modal * {
+    visibility: visible !important;
+  }
+  .printable-report-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 20px !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+  }
+  .modal-overlay {
+    position: absolute !important;
+    background: #fff !important;
+  }
+  .modal-actions, button {
+    display: none !important;
   }
 }

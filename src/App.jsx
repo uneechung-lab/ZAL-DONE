@@ -728,8 +728,9 @@ export default function App() {
   });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true); // Default to expanded/open
+  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Scheduler States
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
@@ -3160,16 +3161,18 @@ export default function App() {
           })()}
         </div>
 
-        {/* Floating AI Panel Button (Shown ONLY when chat drawer is closed) */}
-        {!isDrawerOpen && (
-          <button 
-            className="ai-toggle-floating-btn"
-            onClick={() => setIsDrawerOpen(true)}
-            title="AI 비서 열기"
-          >
-            <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </button>
-        )}
+        {/* Floating Report Character Button (Always visible on bottom right) */}
+        <button 
+          className="ai-toggle-floating-btn"
+          onClick={() => setIsReportModalOpen(true)}
+          title={
+            timeViewTab === 'daily' ? '일일 업무 보고서 생성' :
+            timeViewTab === 'weekly' ? '주간 업무 보고서 생성' :
+            timeViewTab === 'monthly' ? '월간 업무 보고서 생성' : '업무 보고서 생성'
+          }
+        >
+          <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </button>
       </main>
 
       {/* ──── ADD SCHEDULE MODAL ─────────────────── */}
@@ -3640,6 +3643,143 @@ export default function App() {
                   <button className="modal-btn primary" style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} onClick={saveEventEdits}>저장</button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── WORK REPORT GENERATION MODAL (Printable) ─────────────────── */}
+      {isReportModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsReportModalOpen(false)}>
+          <div 
+            className="modal-content printable-report-modal" 
+            style={{ width: '100%', maxWidth: '720px', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '14px' }}>
+              <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                {timeViewTab === 'daily' && `📋 일일 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate})`}
+                {timeViewTab === 'weekly' && `📋 주간 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
+                {timeViewTab === 'monthly' && `📋 월간 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
+                {timeViewTab === 'list' && `📋 전체 업무 보고서 목록`}
+              </div>
+              <button 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-tertiary)' }}
+                onClick={() => setIsReportModalOpen(false)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Printable Document Body */}
+            <div id="printable-report-area" style={{ fontFamily: 'sans-serif', color: '#1e293b', lineHeight: '1.6' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div>
+                  <div style={{ fontSize: '13px', color: '#64748b' }}>작성자 / 부서</div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{ME.name} ({ME.role || '팀원'})</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '13px', color: '#64748b' }}>보고 일자</div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{new Date().toLocaleDateString('ko-KR')}</div>
+                </div>
+              </div>
+
+              {/* Schedules Table / Section */}
+              {(() => {
+                let filteredSchedules = [];
+                if (timeViewTab === 'daily') {
+                  filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
+                } else if (timeViewTab === 'weekly' || timeViewTab === 'monthly') {
+                  filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth));
+                } else {
+                  filteredSchedules = [...schedules];
+                }
+
+                if (filteredSchedules.length === 0) {
+                  return (
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '15px' }}>
+                      해당 기간에 등록된 업무 일정이 없습니다.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#334155' }}>
+                      📌 주요 수행 업무 및 일정 목록 ({filteredSchedules.length}건)
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '15%' }}>날짜/시간</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '25%' }}>일정명</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '40%' }}>상세내용</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center', width: '20%' }}>담당자</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSchedules.map((s, idx) => {
+                          const assignedNames = s.memberIds 
+                            ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean).join(', ')
+                            : (activeTeam.find(m => m.id === s.memberId)?.name || '전체');
+
+                          const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
+                          const cleanDesc = (s.description || '').replace(/\[YM:\d{4}\.\d{2}\]/g, '').replace(/\[그룹 ID\]\s*g_\w+/g, '').trim();
+
+                          return (
+                            <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '600' }}>
+                                {s.month ? `${s.month}/${s.date}` : `${s.date}일`}<br/>
+                                <span style={{ fontSize: '12px', color: '#64748b' }}>{timeStr}</span>
+                              </td>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                {s.title}
+                              </td>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap' }}>
+                                {cleanDesc || '-'}
+                              </td>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                {assignedNames}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#94a3b8', textAlign: 'right' }}>
+                ZAL:잘됨 업무관리 시스템 자동생성 보고서
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="modal-actions" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                className="modal-btn" 
+                style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} 
+                onClick={() => setIsReportModalOpen(false)}
+              >
+                닫기
+              </button>
+              <button 
+                className="modal-btn primary" 
+                style={{ padding: '9px 20px', fontSize: '15px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }} 
+                onClick={() => window.print()}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"/>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                  <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                인쇄 / PDF 출력
+              </button>
             </div>
           </div>
         </div>

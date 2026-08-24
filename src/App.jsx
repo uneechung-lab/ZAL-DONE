@@ -3648,16 +3648,25 @@ export default function App() {
         </div>
       )}
 
-      {/* ──── WORK REPORT GENERATION MODAL (Printable) ─────────────────── */}
+      {/* ──── WORK REPORT GENERATION MODAL (Printable & Fixed Floating Actions) ─────────────────── */}
       {isReportModalOpen && (
         <div className="modal-overlay" onClick={() => setIsReportModalOpen(false)}>
           <div 
             className="modal-content printable-report-modal" 
-            style={{ width: '100%', maxWidth: '720px', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }} 
+            style={{ 
+              width: '100%', 
+              maxWidth: '720px', 
+              padding: 0, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden', 
+              position: 'relative' 
+            }} 
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '14px' }}>
+            {/* Modal Header (Fixed Top) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-color)', padding: '24px 28px 16px 28px', backgroundColor: '#fff' }}>
               <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>
                 {timeViewTab === 'daily' && `📋 일일 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate})`}
                 {timeViewTab === 'weekly' && `📋 주간 업무 보고서 (${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월)`}
@@ -3675,8 +3684,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* Printable Document Body */}
-            <div id="printable-report-area" style={{ fontFamily: 'sans-serif', color: '#1e293b', lineHeight: '1.6' }}>
+            {/* Scrollable Document Body */}
+            <div id="printable-report-area" style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', fontFamily: 'sans-serif', color: '#1e293b', lineHeight: '1.6' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <div>
                   <div style={{ fontSize: '13px', color: '#64748b' }}>작성자 / 부서</div>
@@ -3801,8 +3810,21 @@ export default function App() {
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="modal-actions" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            {/* Floating Actions Footer (Always Visible at Bottom) */}
+            <div 
+              className="modal-actions" 
+              style={{ 
+                padding: '16px 28px', 
+                backgroundColor: '#ffffff', 
+                borderTop: '1px solid #e2e8f0', 
+                display: 'flex', 
+                justify: 'flex-end', 
+                gap: '10px', 
+                boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.05)',
+                zIndex: 10,
+                marginTop: 0
+              }}
+            >
               <button 
                 className="modal-btn" 
                 style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} 

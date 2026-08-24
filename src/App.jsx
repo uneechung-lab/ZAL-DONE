@@ -3844,11 +3844,7 @@ export default function App() {
                 outline: 'none'
               }}
             >
-              {isEditingReport && (
-                <div style={{ backgroundColor: '#eef2ff', color: '#4338ca', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '14px', border: '1px solid #c7d2fe', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>✏️ <strong>보고서 편집 모드:</strong> 표 내부의 텍스트를 직접 클릭하여 자유롭게 수정한 후, 하단의 [수정 완료] 버튼을 누르세요.</span>
-                </div>
-              )}
+
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <div>

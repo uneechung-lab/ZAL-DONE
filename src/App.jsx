@@ -4352,12 +4352,12 @@ export default function App() {
               <button 
                 className="modal-btn" 
                 style={{ 
-                  padding: isEditingReport ? '8px 19px' : '9px 20px', 
+                  padding: '9px 20px', 
                   fontSize: '15px', 
                   fontWeight: '700', 
                   backgroundColor: isEditingReport ? '#ffffff' : '#f1f5f9', 
                   color: isEditingReport ? '#000000' : '#1e293b', 
-                  border: isEditingReport ? '2px solid #000000' : '1px solid #cbd5e1', 
+                  border: isEditingReport ? '1px solid #000000' : '1px solid #cbd5e1', 
                   borderRadius: '6px', 
                   cursor: 'pointer', 
                   display: 'inline-flex', 

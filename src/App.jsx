@@ -3841,113 +3841,81 @@ export default function App() {
                 }
 
                 if (timeViewTab === 'monthly') {
-                  const lastDayInMonth = new Date(currentYear, currentMonth, 0).getDate();
-                  const weekDefinitions = [
-                    { name: '1주차', min: 1, max: 7, label: `${currentMonth}.01 ~ ${currentMonth}.07` },
-                    { name: '2주차', min: 8, max: 14, label: `${currentMonth}.08 ~ ${currentMonth}.14` },
-                    { name: '3주차', min: 15, max: 21, label: `${currentMonth}.15 ~ ${currentMonth}.21` },
-                    { name: '4주차', min: 22, max: 28, label: `${currentMonth}.22 ~ ${currentMonth}.28` },
-                  ];
-                  if (lastDayInMonth > 28) {
-                    weekDefinitions.push({
-                      name: '5주차',
-                      min: 29,
-                      max: lastDayInMonth,
-                      label: `${currentMonth}.29 ~ ${currentMonth}.${lastDayInMonth}`
-                    });
-                  }
+                  const getWeekName = (dateNum) => {
+                    if (dateNum <= 7) return '1주차';
+                    if (dateNum <= 14) return '2주차';
+                    if (dateNum <= 21) return '3주차';
+                    if (dateNum <= 28) return '4주차';
+                    return '5주차';
+                  };
+
+                  const sortedMonthlySchedules = [...filteredSchedules].sort((a, b) => a.date - b.date);
 
                   return (
                     <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#334155' }}>
-                        📌 월간 주요 업무 목록 (총 {filteredSchedules.length}건)
+                      <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', color: '#334155' }}>
+                        📌 월간 주요 수행 업무 및 실적 ({sortedMonthlySchedules.length}건)
                       </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '14%' }}>주차</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '22%' }}>주요 일정</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '50%' }}>상세 내용 및 실적</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedMonthlySchedules.map((s, idx) => {
+                            const currentWeekStr = getWeekName(s.date);
+                            const prevWeekStr = idx > 0 ? getWeekName(sortedMonthlySchedules[idx - 1].date) : null;
+                            const isFirstOfWeek = currentWeekStr !== prevWeekStr;
 
-                      {weekDefinitions.map((week, wIdx) => {
-                        const weekSchedules = filteredSchedules.filter(s => s.date >= week.min && s.date <= week.max);
+                            const memberList = s.memberIds && s.memberIds.length > 0
+                              ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
+                              : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
 
-                        return (
-                          <div key={wIdx} style={{ marginBottom: '24px' }}>
-                            <div style={{ 
-                              fontSize: '15px', 
-                              fontWeight: '800', 
-                              color: '#1e293b', 
-                              backgroundColor: '#f8fafc', 
-                              padding: '8px 14px', 
-                              borderRadius: '6px', 
-                              borderLeft: '4px solid #6366f1',
-                              marginBottom: '10px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between'
-                            }}>
-                              <span>📅 {week.name} ({week.label})</span>
-                              <span style={{ fontSize: '13px', fontWeight: '600', color: weekSchedules.length > 0 ? '#6366f1' : '#94a3b8' }}>
-                                {weekSchedules.length}건
-                              </span>
-                            </div>
+                            let cleanDesc = (s.description || '')
+                              .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+                              .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+                              .replace(/\[상세\]\s*/gi, '')
+                              .replace(/^[\s|]+/, '')
+                              .trim();
 
-                            {weekSchedules.length === 0 ? (
-                              <div style={{ padding: '8px 14px 16px 14px', fontSize: '13.5px', color: '#94a3b8', fontStyle: 'italic' }}>
-                                - 해당 주차에 등록된 업무 일정이 없습니다.
-                              </div>
-                            ) : (
-                              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px', fontSize: '14px' }}>
-                                <thead>
-                                  <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
-                                    <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '12%' }}>날짜</th>
-                                    <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '16%' }}>시간</th>
-                                    <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '20%' }}>일정명</th>
-                                    <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '39%' }}>상세내용</th>
-                                    <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '13%' }}>담당자</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {weekSchedules.map((s, idx) => {
-                                    const currentDateStr = `${s.month || currentMonth}/${s.date}`;
-                                    const prevDateStr = idx > 0 ? `${weekSchedules[idx - 1].month || currentMonth}/${weekSchedules[idx - 1].date}` : null;
-                                    const isFirstOfDate = currentDateStr !== prevDateStr;
+                            if (cleanDesc) {
+                              cleanDesc = cleanDesc
+                                .split('\n')
+                                .map(line => {
+                                  const t = line.trim();
+                                  if (!t) return '';
+                                  if (t.startsWith('-') || t.startsWith('•')) return t;
+                                  return `• ${t}`;
+                                })
+                                .filter(Boolean)
+                                .join('\n');
+                            }
 
-                                    const memberList = s.memberIds && s.memberIds.length > 0
-                                      ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
-                                      : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
-
-                                    const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
-                                    const cleanDesc = (s.description || '')
-                                      .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
-                                      .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
-                                      .replace(/\[상세\]\s*/gi, '')
-                                      .replace(/^[\s|]+/, '')
-                                      .trim();
-
-                                    return (
-                                      <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                        <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
-                                          {isFirstOfDate ? currentDateStr : ''}
-                                        </td>
-                                        <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-                                          {timeStr}
-                                        </td>
-                                        <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
-                                          {s.title}
-                                        </td>
-                                        <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                                          {cleanDesc || '-'}
-                                        </td>
-                                        <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
-                                          {memberList.map((name, i) => (
-                                            <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
-                                          ))}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        );
-                      })}
+                            return (
+                              <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#6366f1', fontWeight: '800', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                  {isFirstOfWeek ? currentWeekStr : ''}
+                                </td>
+                                <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                  {s.title}
+                                </td>
+                                <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.55' }}>
+                                  {cleanDesc || '-'}
+                                </td>
+                                <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569' }}>
+                                  {memberList.map((name, i) => (
+                                    <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                  ))}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   );
                 }

@@ -3841,9 +3841,7 @@ export default function App() {
                 fontFamily: 'sans-serif', 
                 color: '#1e293b', 
                 lineHeight: '1.6',
-                outline: isEditingReport ? '2px dashed #6366f1' : 'none',
-                outlineOffset: '-4px',
-                transition: 'outline 0.15s'
+                outline: 'none'
               }}
             >
               {isEditingReport && (

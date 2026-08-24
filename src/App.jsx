@@ -4033,8 +4033,8 @@ export default function App() {
                                       <div 
                                         key={i} 
                                         style={{ 
-                                          paddingLeft: isBullet ? '1.1em' : '0', 
-                                          textIndent: isBullet ? '-1.1em' : '0', 
+                                          paddingLeft: isBullet ? '0.65em' : '0', 
+                                          textIndent: isBullet ? '-0.65em' : '0', 
                                           marginBottom: '4px', 
                                           lineHeight: '1.45' 
                                         }}
@@ -4051,8 +4051,8 @@ export default function App() {
                                       <div 
                                         key={i} 
                                         style={{ 
-                                          paddingLeft: isBullet ? '1.2em' : '0', 
-                                          textIndent: isBullet ? '-1.2em' : '0', 
+                                          paddingLeft: isBullet ? '0.65em' : '0', 
+                                          textIndent: isBullet ? '-0.65em' : '0', 
                                           marginBottom: '5px', 
                                           lineHeight: '1.5' 
                                         }}
@@ -4138,8 +4138,8 @@ export default function App() {
                                         <div 
                                           key={i} 
                                           style={{ 
-                                            paddingLeft: isBullet ? '1.2em' : '0', 
-                                            textIndent: isBullet ? '-1.2em' : '0', 
+                                            paddingLeft: isBullet ? '0.65em' : '0', 
+                                            textIndent: isBullet ? '-0.65em' : '0', 
                                             marginBottom: '3px', 
                                             lineHeight: '1.4' 
                                           }}
@@ -4173,8 +4173,8 @@ export default function App() {
                                         <div 
                                           key={i} 
                                           style={{ 
-                                            paddingLeft: isBullet ? '1.2em' : '0', 
-                                            textIndent: isBullet ? '-1.2em' : '0', 
+                                            paddingLeft: isBullet ? '0.65em' : '0', 
+                                            textIndent: isBullet ? '-0.65em' : '0', 
                                             marginBottom: '3px', 
                                             lineHeight: '1.4' 
                                           }}

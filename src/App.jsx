@@ -1466,7 +1466,7 @@ export default function App() {
             .filter(Boolean)
             .join(', ') || '없음';
 
-          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세: ${cleanDesc}\n담당: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜: ${dateStr}\n시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -1819,17 +1819,17 @@ export default function App() {
                                 if (trimmed.includes('일정') && (trimmed.includes('📅') || trimmed.includes('일정 '))) return;
                                 if (trimmed.startsWith('"') || trimmed.includes(parsed.title)) return;
 
-                                if (trimmed.includes('상세내용:') || trimmed.includes('상세:')) {
-                                  currentField = { type: 'detail', label: '상세:', text: trimmed.replace(/.*(?:상세내용|상세):\s*/, '') };
+                                if (trimmed.includes('상세내용:') || trimmed.includes('상세:') || trimmed.includes('상세')) {
+                                  currentField = { type: 'detail', label: '상세', text: trimmed.replace(/.*(?:상세내용|상세):?\s*/, '') };
                                   fields.push(currentField);
-                                } else if (trimmed.includes('담당자:') || trimmed.includes('담당:')) {
-                                  currentField = { type: 'assignee', label: '담당:', text: trimmed.replace(/.*(?:담당자|담당):\s*/, '') };
+                                } else if (trimmed.includes('담당자:') || trimmed.includes('담당:') || trimmed.includes('담당')) {
+                                  currentField = { type: 'assignee', label: '담당', text: trimmed.replace(/.*(?:담당자|담당):?\s*/, '') };
                                   fields.push(currentField);
-                                } else if (trimmed.includes('날짜:')) {
-                                  currentField = { type: 'date', label: '날짜:', text: trimmed.replace(/.*날짜:\s*/, '') };
+                                } else if (trimmed.includes('날짜:') || trimmed.includes('날짜')) {
+                                  currentField = { type: 'date', label: '날짜', text: trimmed.replace(/.*날짜:?\s*/, '') };
                                   fields.push(currentField);
-                                } else if (trimmed.includes('시간:')) {
-                                  currentField = { type: 'time', label: '시간:', text: trimmed.replace(/.*시간:\s*/, '') };
+                                } else if (trimmed.includes('시간:') || trimmed.includes('시간')) {
+                                  currentField = { type: 'time', label: '시간', text: trimmed.replace(/.*시간:?\s*/, '') };
                                   fields.push(currentField);
                                 } else {
                                   if (currentField) {
@@ -1892,7 +1892,7 @@ export default function App() {
                                     }
 
                                     return (
-                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: '50px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                      <div key={fIdx} style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
                                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
                                           {icon}
                                           <span>{f.label}</span>

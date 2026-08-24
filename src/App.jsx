@@ -3959,38 +3959,35 @@ export default function App() {
 
                     // 4. Formulate Executive Accomplishment Bullets (Column 3)
                     const execDescs = [];
+                    const filterTitle = (t) => !/데일리|스크럼|주말 멘션|업무 정리/.test(t);
 
                     if (buckets.planning.length > 0) {
-                      const items = Array.from(new Set(buckets.planning.map(p => p.title))).join(', ');
-                      execDescs.push(`• [기획/디자인] ${items} 완료 및 최종 사양 컨펌`);
+                      const items = Array.from(new Set(buckets.planning.map(p => p.title).filter(filterTitle)));
+                      const str = items.length > 0 ? items.join(', ') : '화면설계서 작성 및 기획 확정';
+                      execDescs.push(`• [기획/디자인] ${str} 완료 및 사양 컨펌`);
                     }
 
                     if (buckets.qa_testing.length > 0) {
-                      const items = Array.from(new Set(buckets.qa_testing.map(q => q.title))).join(', ');
-                      execDescs.push(`• [검수/QA] ${items} 진행 및 품질 검증`);
+                      const items = Array.from(new Set(buckets.qa_testing.map(q => q.title).filter(filterTitle)));
+                      const str = items.length > 0 ? items.join(', ') : '테스트 서버 검수 및 QA 명세';
+                      execDescs.push(`• [검수/QA] ${str} 진행 및 품질 검증 완료`);
                     }
 
                     if (buckets.dev_ops.length > 0) {
-                      const items = Array.from(new Set(buckets.dev_ops.map(d => d.title))).join(', ');
-                      execDescs.push(`• [개발/이슈] ${items} 대응, 배포 및 인수인계 완료`);
+                      const items = Array.from(new Set(buckets.dev_ops.map(d => d.title).filter(filterTitle)));
+                      const str = items.length > 0 ? items.join(', ') : '개발 정책 조율 및 배포/인수인계';
+                      execDescs.push(`• [개발/이슈] ${str} 대응 및 배포/인수인계 완료`);
                     }
 
                     if (buckets.meetings.length > 0) {
-                      const items = Array.from(new Set(buckets.meetings.map(m => m.title).filter(t => !/데일리|스크럼/.test(t)))).join(', ');
+                      const items = Array.from(new Set(buckets.meetings.map(m => m.title).filter(filterTitle))).join(', ');
                       if (items) {
                         execDescs.push(`• [회의/리뷰] ${items} 수행`);
                       }
                     }
 
-                    // Include specific detailed bullets if available
-                    rawBullets.forEach(b => {
-                      if (!execDescs.some(ed => ed.includes(b))) {
-                        execDescs.push(`  - ${b}`);
-                      }
-                    });
-
                     if (buckets.leave.length > 0) {
-                      execDescs.push(`• [기타] 일정 내 연차/휴가 포함 (${buckets.leave.join(', ')})`);
+                      execDescs.push(`• [기타] 일정 내 연차 사용 포함 (${Array.from(new Set(buckets.leave)).join(', ')})`);
                     }
 
                     const descSummary = execDescs.length > 0 ? execDescs.join('\n') : '• 주요 업무 일정 수행 완료';

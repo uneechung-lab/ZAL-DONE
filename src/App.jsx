@@ -733,6 +733,17 @@ export default function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [reportScheduleEdits, setReportScheduleEdits] = useState({});
+  const [monthlySummaryEdits, setMonthlySummaryEdits] = useState({});
+
+  const handleMonthlySummaryChange = (weekIdx, field, value) => {
+    setMonthlySummaryEdits(prev => ({
+      ...prev,
+      [weekIdx]: {
+        ...(prev[weekIdx] || {}),
+        [field]: value
+      }
+    }));
+  };
 
   const handleReportScheduleChange = (id, field, value) => {
     setReportScheduleEdits(prev => ({
@@ -4065,6 +4076,9 @@ export default function App() {
                         <tbody>
                           {weeklySummaries.map((ws, idx) => {
                             const hasData = ws.scheduleCount > 0;
+                            const displayTitles = monthlySummaryEdits[idx]?.titles !== undefined ? monthlySummaryEdits[idx].titles : ws.titles;
+                            const displayDescSummary = monthlySummaryEdits[idx]?.descSummary !== undefined ? monthlySummaryEdits[idx].descSummary : ws.descSummary;
+
                             return (
                               <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: hasData ? '#ffffff' : '#fafafa' }}>
                                 <td style={{ padding: '12px 10px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
@@ -4074,40 +4088,81 @@ export default function App() {
                                   {ws.label}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', fontSize: '13px' }}>
-                                  {ws.titles.split('\n').map((line, i) => {
-                                    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                    return (
-                                      <div 
-                                        key={i} 
-                                        style={{ 
-                                          paddingLeft: isBullet ? '0.65em' : '0', 
-                                          textIndent: isBullet ? '-0.65em' : '0', 
-                                          marginBottom: '4px', 
-                                          lineHeight: '1.45' 
-                                        }}
-                                      >
-                                        {line}
-                                      </div>
-                                    );
-                                  })}
+                                  {isEditingReport ? (
+                                    <textarea 
+                                      defaultValue={displayTitles} 
+                                      onChange={(e) => handleMonthlySummaryChange(idx, 'titles', e.target.value)} 
+                                      style={{ 
+                                        width: '100%', 
+                                        minHeight: '80px', 
+                                        padding: '6px 8px', 
+                                        fontSize: '13px', 
+                                        fontWeight: '700', 
+                                        border: '1px solid #cbd5e1', 
+                                        borderRadius: '4px', 
+                                        lineHeight: '1.45', 
+                                        backgroundColor: '#ffffff', 
+                                        color: '#0f172a', 
+                                        resize: 'vertical', 
+                                        boxSizing: 'border-box' 
+                                      }} 
+                                    />
+                                  ) : (
+                                    displayTitles.split('\n').map((line, i) => {
+                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          style={{ 
+                                            paddingLeft: isBullet ? '0.65em' : '0', 
+                                            textIndent: isBullet ? '-0.65em' : '0', 
+                                            marginBottom: '4px', 
+                                            lineHeight: '1.45' 
+                                          }}
+                                        >
+                                          {line}
+                                        </div>
+                                      );
+                                    })
+                                  )}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', color: hasData ? '#334155' : '#94a3b8', fontSize: '13px' }}>
-                                  {ws.descSummary.split('\n').map((line, i) => {
-                                    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                    return (
-                                      <div 
-                                        key={i} 
-                                        style={{ 
-                                          paddingLeft: isBullet ? '0.65em' : '0', 
-                                          textIndent: isBullet ? '-0.65em' : '0', 
-                                          marginBottom: '5px', 
-                                          lineHeight: '1.5' 
-                                        }}
-                                      >
-                                        {line}
-                                      </div>
-                                    );
-                                  })}
+                                  {isEditingReport ? (
+                                    <textarea 
+                                      defaultValue={displayDescSummary} 
+                                      onChange={(e) => handleMonthlySummaryChange(idx, 'descSummary', e.target.value)} 
+                                      style={{ 
+                                        width: '100%', 
+                                        minHeight: '110px', 
+                                        padding: '6px 8px', 
+                                        fontSize: '13px', 
+                                        border: '1px solid #cbd5e1', 
+                                        borderRadius: '4px', 
+                                        lineHeight: '1.5', 
+                                        backgroundColor: '#ffffff', 
+                                        color: '#334155', 
+                                        resize: 'vertical', 
+                                        boxSizing: 'border-box' 
+                                      }} 
+                                    />
+                                  ) : (
+                                    displayDescSummary.split('\n').map((line, i) => {
+                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          style={{ 
+                                            paddingLeft: isBullet ? '0.65em' : '0', 
+                                            textIndent: isBullet ? '-0.65em' : '0', 
+                                            marginBottom: '5px', 
+                                            lineHeight: '1.5' 
+                                          }}
+                                        >
+                                          {line}
+                                        </div>
+                                      );
+                                    })
+                                  )}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
                                   {ws.members.map((name, i) => (

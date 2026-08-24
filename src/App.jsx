@@ -3742,8 +3742,9 @@ export default function App() {
                           const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
                           const cleanDesc = (s.description || '')
                             .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
-                            .replace(/\[그룹 ID\]\s*g_\w+/g, '')
-                            .replace(/\[상세\]\s*/g, '')
+                            .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+                            .replace(/\[상세\]\s*/gi, '')
+                            .replace(/^[\s|]+/, '')
                             .trim();
 
                           return (

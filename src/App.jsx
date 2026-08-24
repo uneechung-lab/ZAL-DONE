@@ -3715,10 +3715,10 @@ export default function App() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '15%' }}>날짜/시간</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '25%' }}>일정명</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '40%' }}>상세내용</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'center', width: '20%' }}>담당자</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '22%' }}>날짜/시간</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '22%' }}>일정명</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'left', width: '42%' }}>상세내용</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3728,18 +3728,21 @@ export default function App() {
                             : (activeTeam.find(m => m.id === s.memberId)?.name || '전체');
 
                           const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
-                          const cleanDesc = (s.description || '').replace(/\[YM:\d{4}\.\d{2}\]/g, '').replace(/\[그룹 ID\]\s*g_\w+/g, '').trim();
+                          const cleanDesc = (s.description || '')
+                            .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+                            .replace(/\[그룹 ID\]\s*g_\w+/g, '')
+                            .replace(/\[상세\]\s*/g, '')
+                            .trim();
 
                           return (
                             <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '600' }}>
-                                {s.month ? `${s.month}/${s.date}` : `${s.date}일`}<br/>
-                                <span style={{ fontSize: '12px', color: '#64748b' }}>{timeStr}</span>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap', fontSize: '13px' }}>
+                                {s.month ? `${s.month}/${s.date}` : `${s.date}일`} <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>({timeStr})</span>
                               </td>
                               <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
                                 {s.title}
                               </td>
-                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap' }}>
+                              <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                                 {cleanDesc || '-'}
                               </td>
                               <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>

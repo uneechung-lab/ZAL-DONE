@@ -2265,6 +2265,7 @@ export default function App() {
                     localStorage.setItem('zal_schedules', JSON.stringify([]));
                     localStorage.removeItem('zal_messages');
                     setSchedules([]);
+                    setShowPreviousMessages(false);
                     setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
                     alert('모든 데이터가 초기화되었습니다.');
                   }
@@ -2622,9 +2623,17 @@ export default function App() {
           })()}
 
           {timeViewTab === 'monthly' && (
-            <div style={{ width: '100%', border: 'none', borderRadius: '8px', overflow: 'hidden', background: '#ffffff' }}>
+            <div style={{ width: '100%', border: 'none', borderRadius: '8px', overflow: 'visible', background: '#ffffff' }}>
               {/* Header: Days of Week */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: 'none', borderBottom: '2px solid var(--border-light)' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(7, 1fr)', 
+                background: '#ffffff', 
+                borderBottom: '2px solid var(--border-light)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
                 <div style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>일</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>월</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>화</div>

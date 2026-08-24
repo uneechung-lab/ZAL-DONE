@@ -15,6 +15,8 @@ if (isConfigured) {
 const databases = new Databases(client);
 const account = new Account(client);
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const appwriteService = {
   isConfigured,
 
@@ -78,16 +80,18 @@ export const appwriteService = {
       const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
       return response.documents.map(doc => ({
         id: doc.$id,
-        memberId: doc.memberId,
-        memberIds: JSON.parse(doc.memberIds || '[]'),
+        year: doc.year || null,
+        month: doc.month || null,
+        date: doc.date,
         title: doc.title,
+        memberId: doc.memberId,
+        memberIds: doc.memberIds || [doc.memberId],
         startHour: doc.startHour,
         endHour: doc.endHour,
         color: doc.color,
-        status: doc.status,
-        date: doc.date,
-        requesterId: doc.requesterId,
         description: doc.description || '',
+        status: doc.status || 'active',
+        requesterId: doc.requesterId || null,
       }));
     } catch (e) {
       console.error('Appwrite failed to get schedules', e);
@@ -99,16 +103,18 @@ export const appwriteService = {
     if (!isConfigured) return null;
     try {
       const data = {
-        memberId: schedule.memberId,
-        memberIds: JSON.stringify(schedule.memberIds || []),
+        year: schedule.year || null,
+        month: schedule.month || null,
+        date: schedule.date,
         title: schedule.title,
+        memberId: schedule.memberId,
+        memberIds: schedule.memberIds || [schedule.memberId],
         startHour: schedule.startHour,
         endHour: schedule.endHour,
         color: schedule.color,
-        status: schedule.status,
-        date: schedule.date,
-        requesterId: schedule.requesterId || '',
         description: schedule.description || '',
+        status: schedule.status || 'active',
+        requesterId: schedule.requesterId || null,
       };
       const response = await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
       return { ...schedule, id: response.$id };
@@ -118,23 +124,11 @@ export const appwriteService = {
     }
   },
 
-  async updateSchedule(id, schedule) {
+  async updateSchedule(id, updates) {
     if (!isConfigured) return null;
     try {
-      const data = {
-        memberId: schedule.memberId,
-        memberIds: JSON.stringify(schedule.memberIds || []),
-        title: schedule.title,
-        startHour: schedule.startHour,
-        endHour: schedule.endHour,
-        color: schedule.color,
-        status: schedule.status,
-        date: schedule.date,
-        requesterId: schedule.requesterId || '',
-        description: schedule.description || '',
-      };
-      await databases.updateDocument(databaseId, schedulesCollectionId, id, data);
-      return true;
+      const response = await databases.updateDocument(databaseId, schedulesCollectionId, id, updates);
+      return response;
     } catch (e) {
       console.error('Appwrite failed to update schedule', e);
       return false;
@@ -155,9 +149,37 @@ export const appwriteService = {
   async clearSchedules() {
     if (!isConfigured) return null;
     try {
-      const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
-      for (const doc of response.documents) {
-        await databases.deleteDocument(databaseId, schedulesCollectionId, doc.$id);
+      let hasMore = true;
+      while (hasMore) {
+        const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
+        if (!response.documents || response.documents.length === 0) {
+          hasMore = false;
+          break;
+        }
+        let deletedInCount = 0;
+        for (const doc of response.documents) {
+          try {
+            await databases.deleteDocument(databaseId, schedulesCollectionId, doc.$id);
+            deletedInCount++;
+            await sleep(50);
+          } catch (err) {
+            if (err?.message?.includes('Rate limit')) {
+              await sleep(1000);
+              try {
+                await databases.deleteDocument(databaseId, schedulesCollectionId, doc.$id);
+                deletedInCount++;
+              } catch (e2) {
+                console.warn('Retry delete schedule failed:', doc.$id, e2);
+              }
+            } else {
+              console.warn('Could not delete schedule document:', doc.$id, err);
+            }
+          }
+        }
+        if (deletedInCount === 0) {
+          // Break loop if no documents could be deleted in this pass to prevent infinite loop
+          break;
+        }
       }
       return true;
     } catch (e) {
@@ -203,9 +225,37 @@ export const appwriteService = {
   async clearMessages() {
     if (!isConfigured) return null;
     try {
-      const response = await databases.listDocuments(databaseId, messagesCollectionId, [Query.limit(100)]);
-      for (const doc of response.documents) {
-        await databases.deleteDocument(databaseId, messagesCollectionId, doc.$id);
+      let hasMore = true;
+      while (hasMore) {
+        const response = await databases.listDocuments(databaseId, messagesCollectionId, [Query.limit(100)]);
+        if (!response.documents || response.documents.length === 0) {
+          hasMore = false;
+          break;
+        }
+        let deletedInCount = 0;
+        for (const doc of response.documents) {
+          try {
+            await databases.deleteDocument(databaseId, messagesCollectionId, doc.$id);
+            deletedInCount++;
+            await sleep(50);
+          } catch (err) {
+            if (err?.message?.includes('Rate limit')) {
+              await sleep(1000);
+              try {
+                await databases.deleteDocument(databaseId, messagesCollectionId, doc.$id);
+                deletedInCount++;
+              } catch (e2) {
+                console.warn('Retry delete message failed:', doc.$id, e2);
+              }
+            } else {
+              console.warn('Could not delete message document:', doc.$id, err);
+            }
+          }
+        }
+        if (deletedInCount === 0) {
+          // Break loop if no documents could be deleted in this pass to prevent infinite loop
+          break;
+        }
       }
       return true;
     } catch (e) {

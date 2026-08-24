@@ -1460,7 +1460,13 @@ export default function App() {
             dateStr = `${single.year}.${m}.${d}`;
           }
 
-          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세: ${group.description || '-'}\n담당: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜: ${dateStr}\n시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          const cleanDesc = (group.description || '')
+            .split('\n')
+            .map(l => l.replace(/^[-•*\s]+/, '').trim())
+            .filter(Boolean)
+            .join(', ') || '없음';
+
+          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세: ${cleanDesc}\n담당: ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜: ${dateStr}\n시간: ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -1896,7 +1902,9 @@ export default function App() {
                                              let val = f.text;
                                              if (f.type === 'detail' && val) {
                                                const items = val.split('\n').map(l => l.replace(/^[-•*\s]+/, '').trim()).filter(Boolean);
-                                               if (items.length > 0) val = items.join(', ');
+                                               val = items.join(', ');
+                                               val = val.replace(/^[-•*\s]+/, '').trim();
+                                               if (!val || val === '-') val = '없음';
                                              }
                                              return renderTextWithLinks(val);
                                            })()}

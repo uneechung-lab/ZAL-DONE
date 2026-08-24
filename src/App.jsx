@@ -3725,7 +3725,7 @@ export default function App() {
                     </div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                       <thead>
-                        <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                        <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
                           {isDailyReport ? (
                             <>
                               <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>

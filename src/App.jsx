@@ -3445,7 +3445,19 @@ export default function App() {
                           setEditEndHour(newStart + 1);
                         }
                       }}
-                      style={{ width: 'auto', minWidth: '105px', padding: '9px 24px 9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
+                      style={{ 
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        width: 'auto', 
+                        minWidth: '105px', 
+                        padding: '9px 28px 9px 12px', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
                       disabled={!isDetailEditable}
                     >
                       {hourSlots.map(h => (
@@ -3468,7 +3480,19 @@ export default function App() {
                     <select 
                       value={editEndHour} 
                       onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
-                      style={{ width: 'auto', minWidth: '105px', padding: '9px 24px 9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
+                      style={{ 
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        width: 'auto', 
+                        minWidth: '105px', 
+                        padding: '9px 28px 9px 12px', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
                       disabled={!isDetailEditable}
                     >
                       {getEndHourOptions().map(h => (

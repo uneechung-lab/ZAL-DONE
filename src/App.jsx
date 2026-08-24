@@ -3719,7 +3719,7 @@ export default function App() {
                         <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                           {isDailyReport ? (
                             <>
-                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>일정 및 일시</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
                               <th style={{ padding: '10px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
                               <th style={{ padding: '10px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
                             </>
@@ -3752,7 +3752,7 @@ export default function App() {
                                 <>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
                                     <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
-                                      {s.month ? `${s.month}/${s.date}` : `${s.date}일`} <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>({timeStr})</span>
+                                      ⏰ {timeStr}
                                     </div>
                                     <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
                                       {s.title}

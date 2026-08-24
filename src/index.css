@@ -430,7 +430,7 @@ button, input, select, textarea {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 2px;
   background-color: #000000;
 }
 
@@ -532,7 +532,6 @@ button, input, select, textarea {
 .timeline-container {
   flex: 1;
   overflow: auto;
-  border-top: 1px solid var(--border-light);
   background: #ffffff;
 }
 
@@ -1055,25 +1054,27 @@ button, input, select, textarea {
 }
 
 .modal-btn.primary {
-  background: #ffffff;
-  color: var(--accent-purple);
-  border-color: var(--accent-purple);
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
 }
 
 .modal-btn:hover {
-  background: #ffffff;
+  background: #f8fafc;
   border-color: var(--text-primary);
 }
 
 .modal-btn.primary:hover {
-  background: #ffffff;
-  border-color: var(--accent-purple);
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
 }
 
 /* ===========================
    Horizontal Date Selector
 =========================== */
 .horizontal-date-selector {
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 6px;
@@ -1172,6 +1173,57 @@ button, input, select, textarea {
   color: var(--accent-purple) !important;
 }
 
+.date-item.not-in-week {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.date-item.not-in-week:hover {
+  opacity: 0.75;
+}
+
+.date-item.week-start {
+  position: relative;
+}
+
+.date-item.week-start::before {
+  content: '';
+  position: absolute;
+  left: -3.5px;
+  top: -12px;
+  bottom: -12px;
+  width: 2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--border-color) 0px,
+    var(--border-color) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+  z-index: 2;
+}
+
+.date-item.week-end {
+  position: relative;
+}
+
+.date-item.week-end::after {
+  content: '';
+  position: absolute;
+  right: -3.5px;
+  top: -12px;
+  bottom: -12px;
+  width: 2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--border-color) 0px,
+    var(--border-color) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+  z-index: 2;
+}
+
 .date-item-dot {
   position: absolute;
   bottom: -7px;
@@ -1263,5 +1315,14 @@ button, input, select, textarea {
   100% {
     opacity: 0.4;
     transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

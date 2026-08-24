@@ -34,6 +34,41 @@ function getMonthDays(year, month) {
   return days;
 }
 
+// Helpers for extracting and rendering URLs as clickable links opening in new window (target="_blank")
+const extractUrls = (text) => {
+  if (!text) return [];
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = text.match(urlRegex);
+  return matches ? Array.from(new Set(matches.map(u => u.replace(/[.,;)]$/, '')))) : [];
+};
+
+const renderTextWithLinks = (text) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(/^https?:\/\/[^\s]+$/)) {
+      const cleanUrl = part.replace(/[.,;)]$/, '');
+      const trailingPunct = part.slice(cleanUrl.length);
+      return (
+        <span key={i}>
+          <a 
+            href={cleanUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all', fontWeight: '600' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {cleanUrl}
+          </a>
+          {trailingPunct}
+        </span>
+      );
+    }
+    return part;
+  });
+};
+
 // Helper to check if a schedule belongs to the target year and month (defaults to 2026.06 for legacy data)
 function isScheduleInMonth(s, year, month) {
   if (!s) return false;
@@ -662,6 +697,15 @@ export default function App() {
   
   const [dashboardTab, setDashboardTab] = useState('members'); // members | personal
   const [timeViewTab, setTimeViewTab] = useState('daily'); // daily | weekly
+
+  useEffect(() => {
+    if (timeViewTab === 'list' && selectedDate) {
+      const el = document.getElementById(`list-day-${selectedDate}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [selectedDate, timeViewTab, currentMonth, currentYear]);
 
   // Schedule Data
   const [schedules, setSchedules] = useState(() => {
@@ -1726,8 +1770,9 @@ export default function App() {
                         p.dates.forEach(d => {
                           const match = schedules.find(s => 
                             s.title === p.title &&
-                            isScheduleInMonth(s, currentYear, currentMonth) &&
-                            s.date === d
+                            s.date === d &&
+                            (!p.year || !s.year || s.year === p.year) &&
+                            (!p.month || !s.month || s.month === p.month)
                           );
                           if (match && !existingSchedules.some(es => es.id === match.id)) {
                             existingSchedules.push(match);
@@ -1737,7 +1782,7 @@ export default function App() {
 
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                          <div style={{ fontWeight: '600' }}>{introText}</div>
+                          <div style={{ fontWeight: '600' }}>{renderTextWithLinks(introText)}</div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {parsedSchedules.map((parsed, idx) => {
@@ -1745,8 +1790,9 @@ export default function App() {
                               for (const d of parsed.dates) {
                                 const match = schedules.find(s => 
                                   s.title === parsed.title &&
-                                  isScheduleInMonth(s, currentYear, currentMonth) &&
-                                  s.date === d
+                                  s.date === d &&
+                                  (!parsed.year || !s.year || s.year === parsed.year) &&
+                                  (!parsed.month || !s.month || s.month === parsed.month)
                                 );
                                 if (match) {
                                   matchedSchedule = match;
@@ -2061,6 +2107,42 @@ export default function App() {
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
+              <button 
+                className="today-btn" 
+                onClick={() => {
+                  const today = new Date();
+                  setCurrentYear(today.getFullYear());
+                  setCurrentMonth(today.getMonth() + 1);
+                  setSelectedDate(today.getDate());
+                }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '3px 9px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  color: '#475569',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                  e.target.style.borderColor = '#94a3b8';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.borderColor = '#cbd5e1';
+                }}
+                title="오늘 날짜로 이동"
+              >
+                TODAY
+              </button>
             </div>
 
             {/* Right Tabs */}
@@ -2197,45 +2279,50 @@ export default function App() {
 
         </div>
 
-        {/* Horizontal Date Selector */}
-        <div className="horizontal-date-selector">
-          {(() => {
-            const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-            const daysArr = ['일', '월', '화', '수', '목', '금', '토'];
-            return Array.from({ length: totalDaysInMonth }, (_, i) => {
-              const dayNum = i + 1;
-              const dateObj = new Date(currentYear, currentMonth - 1, dayNum);
-              const dayOfWeek = daysArr[dateObj.getDay()];
-              const isSelected = dayNum === selectedDate;
-              const now = new Date();
-              const isToday = currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
-              const isSat = dayOfWeek === '토';
-              const isSun = dayOfWeek === '일';
-              const hasSchedules = schedules.some(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum);
-              
-              const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
-              const dayOfWeekIndex = selectedObj.getDay();
-              const startOfWeek = selectedDate - dayOfWeekIndex;
-              const endOfWeek = startOfWeek + 6;
-              const isInWeek = timeViewTab === 'weekly' && dayNum >= startOfWeek && dayNum <= endOfWeek;
+        {/* Horizontal Date Selector (Hidden in MONTH view) */}
+        {timeViewTab !== 'monthly' && (
+          <div className="horizontal-date-selector">
+            {(() => {
+              const totalDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+              const daysArr = ['일', '월', '화', '수', '목', '금', '토'];
+              return Array.from({ length: totalDaysInMonth }, (_, i) => {
+                const dayNum = i + 1;
+                const dateObj = new Date(currentYear, currentMonth - 1, dayNum);
+                const dayOfWeek = daysArr[dateObj.getDay()];
+                const isSelected = dayNum === selectedDate;
+                const now = new Date();
+                const isToday = currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
+                const isSat = dayOfWeek === '토';
+                const isSun = dayOfWeek === '일';
+                const hasSchedules = schedules.some(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum);
+                
+                const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
+                const dayOfWeekIndex = selectedObj.getDay();
+                const startOfWeek = selectedDate - dayOfWeekIndex;
+                const endOfWeek = startOfWeek + 6;
+                const isInWeek = timeViewTab === 'weekly' && dayNum >= startOfWeek && dayNum <= endOfWeek;
+                const isNotInWeek = timeViewTab === 'weekly' && !isInWeek;
+                const isWeekStart = timeViewTab === 'weekly' && dayNum === startOfWeek;
+                const isWeekEnd = timeViewTab === 'weekly' && dayNum === endOfWeek;
 
-              return (
-                <button
-                  key={dayNum}
-                  className={`date-item ${isSelected ? 'active' : ''} ${isInWeek ? 'in-week' : ''} ${isToday ? 'today' : ''} ${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                  onClick={() => setSelectedDate(dayNum)}
-                >
-                  <span className="date-item-day">{dayOfWeek}</span>
-                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="date-item-num">{dayNum}</span>
-                    {isToday && <span className="date-item-today-badge">TODAY</span>}
-                    <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
-                  </div>
-                </button>
-              );
-            });
-          })()}
-        </div>
+                return (
+                  <button
+                    key={dayNum}
+                    className={`date-item ${isSelected ? 'active' : ''} ${isInWeek ? 'in-week' : ''} ${isNotInWeek ? 'not-in-week' : ''} ${isWeekStart ? 'week-start' : ''} ${isWeekEnd ? 'week-end' : ''} ${isToday ? 'today' : ''} ${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
+                    onClick={() => setSelectedDate(dayNum)}
+                  >
+                    <span className="date-item-day">{dayOfWeek}</span>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="date-item-num">{dayNum}</span>
+                      {isToday && <span className="date-item-today-badge">TODAY</span>}
+                      <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
+                    </div>
+                  </button>
+                );
+              });
+            })()}
+          </div>
+        )}
 
         {/* Timeline Grid Table */}
         <div className="timeline-container">
@@ -2535,9 +2622,9 @@ export default function App() {
           })()}
 
           {timeViewTab === 'monthly' && (
-            <div style={{ width: '100%', border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden', background: 'var(--border-light)' }}>
+            <div style={{ width: '100%', border: 'none', borderRadius: '8px', overflow: 'hidden', background: '#ffffff' }}>
               {/* Header: Days of Week */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#f8fafc', borderBottom: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: 'none', borderBottom: '2px solid var(--border-light)' }}>
                 <div style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>일</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>월</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>화</div>
@@ -2654,7 +2741,7 @@ export default function App() {
                               style={{
                                 borderRight: dIdx < 6 ? '1px solid var(--border-light)' : 'none',
                                 padding: '6px',
-                                background: isCurrentMonth ? '#ffffff' : '#f8fafc',
+                                background: '#ffffff',
                                 opacity: isCurrentMonth ? 1 : 0.4,
                                 minHeight: `${cellMinHeight}px`,
                                 boxSizing: 'border-box',
@@ -2807,19 +2894,18 @@ export default function App() {
                   const daySchedules = grouped[d].sort((a, b) => a.startHour - b.startHour);
                   
                   return (
-                    <div key={d} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div key={d} id={`list-day-${d}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ 
                         fontSize: '15px', 
                         fontWeight: '800', 
                         color: isSun ? 'var(--accent-red)' : isSat ? 'var(--accent-blue)' : 'var(--text-primary)',
-                        borderBottom: '1px solid var(--border-light)',
-                        paddingBottom: '6px',
+                        paddingBottom: '2px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                         textAlign: 'left'
                       }}>
-                        📅 6월 {d}일 ({dow}요일)
+                        {currentMonth}월 {d}일 ({dow}요일)
                         {d === new Date().getDate() && <span style={{ fontSize: '10px', backgroundColor: 'var(--accent-purple)', color: '#fff', padding: '2px 6px', borderRadius: '10px', fontWeight: '800' }}>오늘</span>}
                       </div>
                       
@@ -2839,13 +2925,13 @@ export default function App() {
                                 position: 'static',
                                 width: '100%',
                                 padding: '12px 14px',
-                                borderRadius: '10px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '6px',
                                 boxShadow: 'var(--shadow-sm)',
-                                border: '1.5px solid transparent',
+                                border: '1px solid var(--border-light)',
                                 transition: 'all 0.2s ease',
                                 textAlign: 'left'
                               }}
@@ -2861,7 +2947,7 @@ export default function App() {
                               <div style={{ fontSize: '14px', fontWeight: '700' }}>{event.title}</div>
                               {event.description && (
                                 <div style={{ fontSize: '12px', opacity: 0.85, whiteSpace: 'pre-wrap', borderTop: '1px dashed rgba(255,255,255,0.2)', paddingTop: '4px' }}>
-                                  {event.description}
+                                  {renderTextWithLinks(event.description)}
                                 </div>
                               )}
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px' }}>

@@ -1959,7 +1959,7 @@ export default function App() {
                                         <button
                                           style={{
                                             padding: '6px 12px',
-                                            fontSize: '11.5px',
+                                            fontSize: '12.5px',
                                             backgroundColor: 'rgba(239, 68, 68, 0.08)', 
                                             color: '#ef4444', 
                                             border: '1px solid rgba(239, 68, 68, 0.25)', 
@@ -2023,7 +2023,7 @@ export default function App() {
                               style={{ 
                                 width: '100%', 
                                 padding: '10px 14px', 
-                                fontSize: '12px', 
+                                fontSize: '13px', 
                                 backgroundColor: 'rgba(239, 68, 68, 0.08)', 
                                 color: '#ef4444', 
                                 border: '1px solid rgba(239, 68, 68, 0.25)',

@@ -756,9 +756,31 @@ export default function App() {
     }
   }, [selectedDate, timeViewTab, currentMonth, currentYear]);
 
+  const getWeekRangeStr = (year, month, date) => {
+    const current = new Date(year, month - 1, date);
+    const dayOfWeek = current.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(year, month - 1, date + distToMon);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const fmt = (d) => `${d.getFullYear()}.${d.getMonth() + 1 < 10 ? '0' : ''}${d.getMonth() + 1}.${d.getDate() < 10 ? '0' : ''}${d.getDate()}`;
+    return {
+      monday,
+      sunday,
+      str: `${fmt(monday)} ~ ${fmt(sunday)}`
+    };
+  };
+
   const handlePrevReportDate = () => {
     if (timeViewTab === 'daily') {
       const dt = new Date(currentYear, currentMonth - 1, selectedDate - 1);
+      setCurrentYear(dt.getFullYear());
+      setCurrentMonth(dt.getMonth() + 1);
+      setSelectedDate(dt.getDate());
+    } else if (timeViewTab === 'weekly') {
+      const dt = new Date(currentYear, currentMonth - 1, selectedDate - 7);
       setCurrentYear(dt.getFullYear());
       setCurrentMonth(dt.getMonth() + 1);
       setSelectedDate(dt.getDate());
@@ -775,6 +797,11 @@ export default function App() {
   const handleNextReportDate = () => {
     if (timeViewTab === 'daily') {
       const dt = new Date(currentYear, currentMonth - 1, selectedDate + 1);
+      setCurrentYear(dt.getFullYear());
+      setCurrentMonth(dt.getMonth() + 1);
+      setSelectedDate(dt.getDate());
+    } else if (timeViewTab === 'weekly') {
+      const dt = new Date(currentYear, currentMonth - 1, selectedDate + 7);
       setCurrentYear(dt.getFullYear());
       setCurrentMonth(dt.getMonth() + 1);
       setSelectedDate(dt.getDate());
@@ -3733,7 +3760,7 @@ export default function App() {
 
                   <span style={{ fontSize: '18px', fontWeight: '700', color: '#1e293b', padding: '0 4px', userSelect: 'none' }}>
                     {timeViewTab === 'daily' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate}`}
-                    {timeViewTab === 'weekly' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월`}
+                    {timeViewTab === 'weekly' && getWeekRangeStr(currentYear, currentMonth, selectedDate).str}
                     {timeViewTab === 'monthly' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월`}
                   </span>
 
@@ -3790,7 +3817,16 @@ export default function App() {
                 let filteredSchedules = [];
                 if (timeViewTab === 'daily') {
                   filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
-                } else if (timeViewTab === 'weekly' || timeViewTab === 'monthly') {
+                } else if (timeViewTab === 'weekly') {
+                  const { monday, sunday } = getWeekRangeStr(currentYear, currentMonth, selectedDate);
+                  filteredSchedules = schedules.filter(s => {
+                    const sMonth = s.month || currentMonth;
+                    const sYear = s.year || currentYear;
+                    const sDate = new Date(sYear, sMonth - 1, s.date);
+                    sDate.setHours(12, 0, 0, 0);
+                    return sDate >= monday && sDate <= sunday;
+                  });
+                } else if (timeViewTab === 'monthly') {
                   filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth));
                 } else {
                   filteredSchedules = [...schedules];
@@ -3804,8 +3840,6 @@ export default function App() {
                   );
                 }
 
-                const isDailyReport = timeViewTab === 'daily';
-
                 return (
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#334155' }}>
@@ -3814,11 +3848,19 @@ export default function App() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
-                          {isDailyReport ? (
+                          {timeViewTab === 'daily' ? (
                             <>
                               <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '32%' }}>시간 및 일정명</th>
                               <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '53%' }}>상세내용</th>
                               <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '15%' }}>담당자</th>
+                            </>
+                          ) : timeViewTab === 'weekly' ? (
+                            <>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '12%' }}>날짜</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '16%' }}>시간</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '20%' }}>일정명</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '39%' }}>상세내용</th>
+                              <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '13%' }}>담당자</th>
                             </>
                           ) : (
                             <>
@@ -3846,7 +3888,7 @@ export default function App() {
 
                           return (
                             <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              {isDailyReport ? (
+                              {timeViewTab === 'daily' ? (
                                 <>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
                                     <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
@@ -3855,6 +3897,26 @@ export default function App() {
                                     <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
                                       {s.title}
                                     </div>
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                                    {cleanDesc || '-'}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
+                                    {memberList.map((name, i) => (
+                                      <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                    ))}
+                                  </td>
+                                </>
+                              ) : timeViewTab === 'weekly' ? (
+                                <>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#475569', fontWeight: '700', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
+                                    {s.month ? `${s.month}/${s.date}` : `${currentMonth}/${s.date}`}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                                    {timeStr}
+                                  </td>
+                                  <td style={{ padding: '10px 12px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a' }}>
+                                    {s.title}
                                   </td>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                                     {cleanDesc || '-'}

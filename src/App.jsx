@@ -1818,7 +1818,7 @@ export default function App() {
                                     if (line.startsWith('"') || line.includes(parsed.title)) return null;
 
                                     if (line.includes('상세내용:')) {
-                                      const cleanText = line.replace(/^[📝📑]?\s*상세내용:\s*/, '');
+                                      const cleanText = line.replace(/.*상세내용:\s*/, '');
                                       return (
                                         <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '2px' }}>
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
@@ -1834,7 +1834,7 @@ export default function App() {
                                         </div>
                                       );
                                     } else if (line.includes('담당자:')) {
-                                      const cleanText = line.replace(/^[👤]?\s*담당자:\s*/, '');
+                                      const cleanText = line.replace(/.*담당자:\s*/, '');
                                       return (
                                         <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -1848,7 +1848,7 @@ export default function App() {
                                         </div>
                                       );
                                     } else if (line.includes('날짜:')) {
-                                      const cleanText = line.replace(/^[📅]?\s*날짜:\s*/, '');
+                                      const cleanText = line.replace(/.*날짜:\s*/, '');
                                       return (
                                         <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -1864,7 +1864,7 @@ export default function App() {
                                         </div>
                                       );
                                     } else if (line.includes('시간:')) {
-                                      const cleanText = line.replace(/^[⏰]?\s*시간:\s*/, '');
+                                      const cleanText = line.replace(/.*시간:\s*/, '');
                                       return (
                                         <div key={lIdx} style={{ fontSize: '12.5px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

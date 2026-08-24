@@ -4026,11 +4026,41 @@ export default function App() {
                                   <div style={{ color: '#64748b', fontSize: '12px', fontWeight: '500', marginTop: '2px' }}>{ws.label}</div>
                                   <div style={{ color: hasData ? '#475569' : '#94a3b8', fontSize: '11.5px', marginTop: '4px', fontWeight: '600' }}>({ws.scheduleCount}건)</div>
                                 </td>
-                                <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '13px' }}>
-                                  {ws.titles}
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', fontSize: '13px' }}>
+                                  {ws.titles.split('\n').map((line, i) => {
+                                    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                    return (
+                                      <div 
+                                        key={i} 
+                                        style={{ 
+                                          paddingLeft: isBullet ? '1.1em' : '0', 
+                                          textIndent: isBullet ? '-1.1em' : '0', 
+                                          marginBottom: '4px', 
+                                          lineHeight: '1.45' 
+                                        }}
+                                      >
+                                        {line}
+                                      </div>
+                                    );
+                                  })}
                                 </td>
-                                <td style={{ padding: '12px 12px', verticalAlign: 'top', color: hasData ? '#334155' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '13px' }}>
-                                  {ws.descSummary}
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', color: hasData ? '#334155' : '#94a3b8', fontSize: '13px' }}>
+                                  {ws.descSummary.split('\n').map((line, i) => {
+                                    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                    return (
+                                      <div 
+                                        key={i} 
+                                        style={{ 
+                                          paddingLeft: isBullet ? '1.2em' : '0', 
+                                          textIndent: isBullet ? '-1.2em' : '0', 
+                                          marginBottom: '5px', 
+                                          lineHeight: '1.5' 
+                                        }}
+                                      >
+                                        {line}
+                                      </div>
+                                    );
+                                  })}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#475569', fontSize: '13px' }}>
                                   {ws.members.map((name, i) => (
@@ -4101,8 +4131,23 @@ export default function App() {
                                       {s.title}
                                     </div>
                                   </td>
-                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
-                                    {cleanDesc || '-'}
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
+                                    {(cleanDesc || '-').split('\n').map((line, i) => {
+                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          style={{ 
+                                            paddingLeft: isBullet ? '1.2em' : '0', 
+                                            textIndent: isBullet ? '-1.2em' : '0', 
+                                            marginBottom: '3px', 
+                                            lineHeight: '1.4' 
+                                          }}
+                                        >
+                                          {line}
+                                        </div>
+                                      );
+                                    })}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
@@ -4121,8 +4166,23 @@ export default function App() {
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>
                                     {s.title}
                                   </td>
-                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: '1.38', fontSize: '13px' }}>
-                                    {cleanDesc || '-'}
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
+                                    {(cleanDesc || '-').split('\n').map((line, i) => {
+                                      const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          style={{ 
+                                            paddingLeft: isBullet ? '1.2em' : '0', 
+                                            textIndent: isBullet ? '-1.2em' : '0', 
+                                            marginBottom: '3px', 
+                                            lineHeight: '1.4' 
+                                          }}
+                                        >
+                                          {line}
+                                        </div>
+                                      );
+                                    })}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (

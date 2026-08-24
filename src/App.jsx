@@ -4009,11 +4009,12 @@ export default function App() {
                       </div>
                       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                         <thead>
-                          <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '15%' }}>주차 (기간)</th>
-                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '28%' }}>주요 수행 업무 범주</th>
-                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '43%' }}>전반적 업무 및 추진 실적 요약</th>
-                            <th style={{ padding: '9px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
+                          <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '10%' }}>주차</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '14%' }}>기간</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '25%' }}>주요 수행 업무 범주</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '38%' }}>전반적 업무 및 추진 실적 요약</th>
+                            <th style={{ padding: '8px 12px 5px 12px', textAlign: 'center', width: '13%' }}>담당자</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4021,10 +4022,11 @@ export default function App() {
                             const hasData = ws.scheduleCount > 0;
                             return (
                               <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: hasData ? '#ffffff' : '#fafafa' }}>
-                                <td style={{ padding: '12px 12px', verticalAlign: 'top' }}>
-                                  <div style={{ color: '#6366f1', fontWeight: '800', fontSize: '14.5px' }}>{ws.weekName}</div>
-                                  <div style={{ color: '#64748b', fontSize: '12px', fontWeight: '500', marginTop: '2px' }}>{ws.label}</div>
-                                  <div style={{ color: hasData ? '#475569' : '#94a3b8', fontSize: '11.5px', marginTop: '4px', fontWeight: '600' }}>({ws.scheduleCount}건)</div>
+                                <td style={{ padding: '12px 10px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                  {ws.weekName}
+                                </td>
+                                <td style={{ padding: '12px 10px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                                  {ws.label}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', fontSize: '13px' }}>
                                   {ws.titles.split('\n').map((line, i) => {

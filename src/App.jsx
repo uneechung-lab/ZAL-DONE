@@ -3445,7 +3445,7 @@ export default function App() {
                           setEditEndHour(newStart + 1);
                         }
                       }}
-                      style={{ width: 'auto', minWidth: '95px', padding: '9px 8px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
+                      style={{ width: 'auto', minWidth: '105px', padding: '9px 24px 9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
                       disabled={!isDetailEditable}
                     >
                       {hourSlots.map(h => (
@@ -3468,7 +3468,7 @@ export default function App() {
                     <select 
                       value={editEndHour} 
                       onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
-                      style={{ width: 'auto', minWidth: '95px', padding: '9px 8px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
+                      style={{ width: 'auto', minWidth: '105px', padding: '9px 24px 9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', background: '#fff', fontSize: '14px' }}
                       disabled={!isDetailEditable}
                     >
                       {getEndHourOptions().map(h => (

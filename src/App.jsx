@@ -731,6 +731,7 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isEditingReport, setIsEditingReport] = useState(false);
 
   // Scheduler States
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
@@ -3799,8 +3800,29 @@ export default function App() {
               </button>
             </div>
 
-            {/* Scrollable Document Body */}
-            <div id="printable-report-area" style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', fontFamily: 'sans-serif', color: '#1e293b', lineHeight: '1.6' }}>
+            {/* Scrollable Document Body (Editable when isEditingReport is true) */}
+            <div 
+              id="printable-report-area" 
+              contentEditable={isEditingReport}
+              suppressContentEditableWarning={true}
+              style={{ 
+                flex: 1, 
+                overflowY: 'auto', 
+                padding: '20px 28px', 
+                fontFamily: 'sans-serif', 
+                color: '#1e293b', 
+                lineHeight: '1.6',
+                outline: isEditingReport ? '2px dashed #6366f1' : 'none',
+                outlineOffset: '-4px',
+                transition: 'outline 0.15s'
+              }}
+            >
+              {isEditingReport && (
+                <div style={{ backgroundColor: '#eef2ff', color: '#4338ca', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '14px', border: '1px solid #c7d2fe', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>✏️ <strong>보고서 편집 모드:</strong> 표 내부의 텍스트를 직접 클릭하여 자유롭게 수정한 후, 하단의 [수정 완료] 버튼을 누르세요.</span>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <div>
                   <div style={{ fontSize: '13px', color: '#64748b' }}>작성자 / 부서</div>
@@ -4215,7 +4237,7 @@ export default function App() {
                 backgroundColor: '#ffffff', 
                 borderTop: '1px solid #e2e8f0', 
                 display: 'flex', 
-                justify: 'flex-end', 
+                justifyContent: 'flex-end', 
                 gap: '10px', 
                 boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.05)',
                 zIndex: 10,
@@ -4224,10 +4246,38 @@ export default function App() {
             >
               <button 
                 className="modal-btn" 
-                style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} 
-                onClick={() => setIsReportModalOpen(false)}
+                style={{ 
+                  padding: '9px 20px', 
+                  fontSize: '15px', 
+                  fontWeight: '600', 
+                  backgroundColor: isEditingReport ? '#4f46e5' : '#f1f5f9', 
+                  color: isEditingReport ? '#ffffff' : '#1e293b', 
+                  border: isEditingReport ? '1px solid #4338ca' : '1px solid #cbd5e1', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  transition: 'all 0.15s' 
+                }} 
+                onClick={() => setIsEditingReport(!isEditingReport)}
               >
-                닫기
+                {isEditingReport ? (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    수정 완료
+                  </>
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    수정
+                  </>
+                )}
               </button>
               <button 
                 className="modal-btn primary" 

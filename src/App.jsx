@@ -1766,10 +1766,10 @@ export default function App() {
               return (
                 <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
                   <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line' }}>
-                    {!isUser && (msg.text.includes('📅 일정') || msg.text.includes('일정 1:') || msg.text.includes('일정 1')) ? (() => {
+                    {!isUser && (msg.text.includes('일정') || msg.text.includes('상세') || msg.text.includes('날짜')) && parseSchedulesFromText(msg.text).length > 0 ? (() => {
                       const parsedSchedules = parseSchedulesFromText(msg.text);
-                      const introText = msg.text.split(/📅?\s*일정 \d+:?/)[0].trim();
-                      const blocks = msg.text.split(/📅?\s*일정 \d+:?\s*/);
+                      const introText = msg.text.split(/(?=📅?\s*일정 \d+:?\s*)/)[0].trim();
+                      const blocks = msg.text.split(/(?=📅?\s*일정 \d+:?\s*)/);
 
                       const existingSchedules = [];
                       parsedSchedules.forEach(p => {
@@ -1788,7 +1788,7 @@ export default function App() {
 
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                          <div style={{ fontWeight: '600' }}>{renderTextWithLinks(introText)}</div>
+                          {introText && <div style={{ fontWeight: '600' }}>{renderTextWithLinks(introText)}</div>}
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {parsedSchedules.map((parsed, idx) => {
@@ -1816,8 +1816,8 @@ export default function App() {
                               lines.forEach(line => {
                                 const trimmed = line.trim();
                                 if (!trimmed) return;
-                                if (trimmed.includes('일정') && (trimmed.includes('📅') || trimmed.includes('일정 '))) return;
-                                if (trimmed.startsWith('"') || trimmed.includes(parsed.title)) return;
+                                if (/^📅?\s*일정 \d+/.test(trimmed)) return;
+                                if (trimmed.startsWith('"') && trimmed.endsWith('"')) return;
 
                                 if (trimmed.includes('상세내용:') || trimmed.includes('상세:') || trimmed.includes('상세')) {
                                   currentField = { type: 'detail', label: '상세', text: trimmed.replace(/.*(?:상세내용|상세):?\s*/, '') };

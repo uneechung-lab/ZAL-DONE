@@ -3735,9 +3735,9 @@ export default function App() {
                       </thead>
                       <tbody>
                         {filteredSchedules.map((s, idx) => {
-                          const assignedNames = s.memberIds 
-                            ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean).join(', ')
-                            : (activeTeam.find(m => m.id === s.memberId)?.name || '전체');
+                          const memberList = s.memberIds && s.memberIds.length > 0
+                            ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
+                            : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
 
                           const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
                           const cleanDesc = (s.description || '')
@@ -3752,7 +3752,7 @@ export default function App() {
                                 <>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
                                     <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '3px' }}>
-                                      ⏰ {timeStr}
+                                      {timeStr}
                                     </div>
                                     <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
                                       {s.title}
@@ -3762,7 +3762,9 @@ export default function App() {
                                     {cleanDesc || '-'}
                                   </td>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
-                                    {assignedNames}
+                                    {memberList.map((name, i) => (
+                                      <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                    ))}
                                   </td>
                                 </>
                               ) : (
@@ -3778,7 +3780,9 @@ export default function App() {
                                     {cleanDesc || '-'}
                                   </td>
                                   <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1' }}>
-                                    {assignedNames}
+                                    {memberList.map((name, i) => (
+                                      <div key={i} style={{ lineHeight: '1.45' }}>{name}</div>
+                                    ))}
                                   </td>
                                 </>
                               )}

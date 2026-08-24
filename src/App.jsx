@@ -3714,7 +3714,7 @@ export default function App() {
             className="modal-content printable-report-modal" 
             style={{ 
               width: '100%', 
-              maxWidth: '720px', 
+              maxWidth: '900px', 
               padding: 0, 
               maxHeight: '85vh', 
               display: 'flex', 

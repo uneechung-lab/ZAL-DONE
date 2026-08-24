@@ -732,6 +732,25 @@ export default function App() {
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isEditingReport, setIsEditingReport] = useState(false);
+  const [reportScheduleEdits, setReportScheduleEdits] = useState({});
+
+  const handleSaveReportEdits = async () => {
+    setIsEditingReport(false);
+    const editEntries = Object.entries(reportScheduleEdits);
+    if (editEntries.length > 0) {
+      for (const [id, changes] of editEntries) {
+        if (isConfigured) {
+          try {
+            await appwriteService.updateSchedule(id, changes);
+          } catch (err) {
+            console.error('Appwrite schedule update error:', err);
+          }
+        }
+        setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
+      }
+    }
+    setReportScheduleEdits({});
+  };
 
   // Scheduler States
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
@@ -4260,7 +4279,7 @@ export default function App() {
                   gap: '6px',
                   transition: 'all 0.15s' 
                 }} 
-                onClick={() => setIsEditingReport(!isEditingReport)}
+                onClick={() => isEditingReport ? handleSaveReportEdits() : setIsEditingReport(true)}
               >
                 {isEditingReport ? (
                   <>

@@ -3169,7 +3169,7 @@ export default function App() {
       {isDetailModalOpen && selectedDetailEvent && (
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
           <div className="modal-content" style={{ width: '100%', maxWidth: '680px', padding: '28px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-title" style={{ fontSize: '21px', marginBottom: '8px' }}>📅 일정 상세 및 수정</div>
+            <div className="modal-title" style={{ fontSize: '21px', marginBottom: '8px' }}>일정 상세 및 수정</div>
             
             {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
               const isCurrentUserRequester = selectedDetailEvent.requesterId === ME.id;
@@ -3529,7 +3529,6 @@ export default function App() {
             </div>
 
             <div className="modal-actions" style={{ marginTop: '16px', gap: '10px' }}>
-              <button className="modal-btn" style={{ padding: '9px 18px', fontSize: '15px', fontWeight: '600' }} onClick={() => setIsDetailModalOpen(false)}>닫기</button>
               {isDetailEditable && (
                 <>
                   <button 

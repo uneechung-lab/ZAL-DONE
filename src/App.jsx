@@ -1891,7 +1891,73 @@ export default function App() {
                                   flexDirection: 'column',
                                   gap: '3px'
                                 }}>
-                                  <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', marginBottom: '2px' }}>일정 {idx + 1}: "{parsed.title}"</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '8px' }}>
+                                    <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a' }}>
+                                      일정 {idx + 1}: "{parsed.title}"
+                                    </div>
+                                    <div>
+                                      {matchedSchedule ? (
+                                        <button
+                                          style={{
+                                            padding: '3px 9px',
+                                            fontSize: '11px',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                                            color: '#ef4444', 
+                                            border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                            borderRadius: '6px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            whiteSpace: 'nowrap'
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.target.style.backgroundColor = '#ef4444';
+                                            e.target.style.borderColor = '#ef4444';
+                                            e.target.style.color = '#fff';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                                            e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                            e.target.style.color = '#ef4444';
+                                          }}
+                                          onClick={async () => {
+                                            const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                                            const groupId = matchGroupId ? matchGroupId[1] : null;
+                                            if (groupId) {
+                                              const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                                              if (isConfigured) {
+                                                for (const t of targets) {
+                                                  await appwriteService.deleteSchedule(t.id);
+                                                }
+                                              }
+                                              const targetIds = targets.map(t => t.id);
+                                              setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
+                                            } else {
+                                              if (isConfigured) {
+                                                for (const d of parsed.dates) {
+                                                  const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
+                                                  if (match) {
+                                                    await appwriteService.deleteSchedule(match.id);
+                                                  }
+                                                }
+                                              }
+                                              setSchedules(prev => prev.filter(s => {
+                                                const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
+                                                return !isMatching;
+                                              }));
+                                            }
+                                          }}
+                                        >
+                                          등록취소
+                                        </button>
+                                      ) : (
+                                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                                          ✓ 취소됨
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
                                   {fields.map((f, fIdx) => {
                                     let icon = null;
                                     if (f.type === 'detail') {
@@ -1953,107 +2019,49 @@ export default function App() {
                                       </div>
                                     );
                                   })}
-                                  
-                                  <div style={{ marginTop: '8px' }}>
-                                      {matchedSchedule ? (
-                                        <button
-                                          style={{
-                                            padding: '4px 10px',
-                                            fontSize: '11.5px',
-                                            backgroundColor: 'rgba(239, 68, 68, 0.08)', 
-                                            color: '#ef4444', 
-                                            border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                            borderRadius: '6px',
-                                            fontWeight: '700',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.target.style.backgroundColor = '#ef4444';
-                                            e.target.style.borderColor = '#ef4444';
-                                            e.target.style.color = '#fff';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
-                                            e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
-                                            e.target.style.color = '#ef4444';
-                                          }}
-                                          onClick={async () => {
-                                             const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                                             const groupId = matchGroupId ? matchGroupId[1] : null;
-                                             if (groupId) {
-                                               const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                                               if (isConfigured) {
-                                                 for (const t of targets) {
-                                                   await appwriteService.deleteSchedule(t.id);
-                                                 }
-                                               }
-                                               const targetIds = targets.map(t => t.id);
-                                               setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
-                                             } else {
-                                               if (isConfigured) {
-                                                 for (const d of parsed.dates) {
-                                                   const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
-                                                   if (match) {
-                                                     await appwriteService.deleteSchedule(match.id);
-                                                   }
-                                                 }
-                                               }
-                                               setSchedules(prev => prev.filter(s => {
-                                                  const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
-                                                 return !isMatching;
-                                               }));
-                                             }
-                                           }}
-                                        >
-                                          등록취소
-                                        </button>
-                                      ) : (
-                                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
-                                          ✓ 취소됨
-                                        </span>
-                                      )}
-                                  </div>
                                 </div>
                               );
                             })}
                           </div>
                           {existingSchedules.length > 1 && (
-                            <button
-                              style={{ 
-                                width: '100%', 
-                                padding: '8px 12px', 
-                                fontSize: '12px', 
-                                backgroundColor: '#ef4444', 
-                                color: '#fff', 
-                                border: 'none',
-                                borderRadius: '4px', 
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                marginTop: '4px',
-                                transition: 'all 0.2s',
-                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = '#b91c1c';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = '#ef4444';
-                              }}
-                              onClick={async () => {
-                                if (confirm('이 메시지로 등록된 모든 일정을 취소하시겠습니까?')) {
-                                  for (const s of existingSchedules) {
-                                    if (isConfigured) {
-                                      await appwriteService.deleteSchedule(s.id);
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                              <button
+                                style={{ 
+                                  padding: '4px 10px', 
+                                  fontSize: '11.5px', 
+                                  backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                                  color: '#ef4444', 
+                                  border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                  borderRadius: '6px', 
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.backgroundColor = '#ef4444';
+                                  e.target.style.borderColor = '#ef4444';
+                                  e.target.style.color = '#fff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                                  e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                  e.target.style.color = '#ef4444';
+                                }}
+                                onClick={async () => {
+                                  if (confirm('이 메시지로 등록된 모든 일정을 취소하시겠습니까?')) {
+                                    for (const s of existingSchedules) {
+                                      if (isConfigured) {
+                                        await appwriteService.deleteSchedule(s.id);
+                                      }
                                     }
+                                    const ids = existingSchedules.map(s => s.id);
+                                    setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
                                   }
-                                  const ids = existingSchedules.map(s => s.id);
-                                  setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
-                                }
-                              }}
-                            >
-                              모두 등록취소
-                            </button>
+                                }}
+                              >
+                                모두 등록취소
+                              </button>
+                            </div>
                           )}
                         </div>
                       );

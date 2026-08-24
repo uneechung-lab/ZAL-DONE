@@ -3860,10 +3860,18 @@ export default function App() {
                   const weeklySummaries = weekBuckets.map(wb => {
                     const weekSchedules = filteredSchedules.filter(s => s.date >= wb.min && s.date <= wb.max);
 
-                    // Unique consolidated titles
-                    const titles = Array.from(new Set(weekSchedules.map(s => s.title))).join('\n');
+                    if (weekSchedules.length === 0) {
+                      return {
+                        weekName: wb.weekName,
+                        label: wb.label,
+                        scheduleCount: 0,
+                        titles: '-',
+                        descSummary: '- 해당 주차에 등록된 주요 업무가 없습니다.',
+                        members: ['-']
+                      };
+                    }
 
-                    // Unique consolidated member names
+                    // 1. Members consolidation
                     const memberSet = new Set();
                     weekSchedules.forEach(s => {
                       if (s.memberIds && s.memberIds.length > 0) {
@@ -3878,10 +3886,19 @@ export default function App() {
                     });
                     const members = Array.from(memberSet);
 
-                    // Consolidated bullet points of all accomplishments in this week
-                    const descLines = [];
-                    const seenLines = new Set();
+                    // 2. Group schedules into business domain buckets
+                    const buckets = {
+                      planning: [],     // 화면설계서, 스토리보드, 기획, 와이어프레임, 피그마, 디자인
+                      qa_testing: [],   // 테스트, 검수, QA, TC, API, 명세, 싱크
+                      dev_ops: [],      // 개발, 정책, 이슈, 백로그, Jira, 인수인계, 배포
+                      meetings: [],     // 회의, 미팅, 정례, 마일스톤, 리뷰, 스크럼
+                      leave: []         // 연차, 휴가, 반차, 병가
+                    };
+
+                    const rawBullets = [];
+
                     weekSchedules.forEach(s => {
+                      const t = (s.title || '').trim();
                       let d = (s.description || '')
                         .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
                         .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
@@ -3889,23 +3906,101 @@ export default function App() {
                         .replace(/^[\s|]+/, '')
                         .trim();
 
+                      if (/연차|휴가|반차|병가/.test(t)) {
+                        buckets.leave.push(t);
+                        return;
+                      }
+
+                      const fullText = (t + ' ' + d).toLowerCase();
+
+                      if (/화면설계|스토리보드|기획|와이어프레임|피그마|디자인/.test(fullText)) {
+                        buckets.planning.push({ title: t, desc: d });
+                      } else if (/테스트|검수|qa|tc|api|명세|싱크/.test(fullText)) {
+                        buckets.qa_testing.push({ title: t, desc: d });
+                      } else if (/개발|정책|이슈|백로그|jira|인수인계|배포/.test(fullText)) {
+                        buckets.dev_ops.push({ title: t, desc: d });
+                      } else {
+                        buckets.meetings.push({ title: t, desc: d });
+                      }
+
                       if (d) {
                         d.split('\n').forEach(line => {
-                          const t = line.replace(/^[•\-\s]+/, '').trim();
-                          if (t && !seenLines.has(t)) {
-                            seenLines.add(t);
-                            descLines.push(`• ${t}`);
+                          const clean = line.replace(/^[•\-\s]+/, '').trim();
+                          if (clean && !rawBullets.includes(clean) && !/데일리 업무|주말 멘션/.test(clean)) {
+                            rawBullets.push(clean);
                           }
                         });
                       }
                     });
 
+                    // 3. Formulate Executive Titles (Column 2)
+                    const execTitles = [];
+                    if (buckets.planning.length > 0) {
+                      execTitles.push('• 화면설계서 & 스토리보드 기획/디자인 확정');
+                    }
+                    if (buckets.qa_testing.length > 0) {
+                      execTitles.push('• 테스트 서버 검수 및 QA/API 명세 동기화');
+                    }
+                    if (buckets.dev_ops.length > 0) {
+                      execTitles.push('• 개발 정책 조율, 이슈 정리 및 배포 관리');
+                    }
+                    if (buckets.meetings.length > 0) {
+                      const mainMeetings = Array.from(new Set(buckets.meetings.map(m => m.title).filter(t => !/데일리|스크럼/.test(t))));
+                      if (mainMeetings.length > 0) {
+                        execTitles.push(`• 정례 미팅 및 리뷰 (${mainMeetings.join(', ')})`);
+                      } else {
+                        execTitles.push('• 주간 정례 회의 및 리뷰 진행');
+                      }
+                    }
+
+                    const titles = execTitles.length > 0 
+                      ? execTitles.join('\n') 
+                      : Array.from(new Set(weekSchedules.map(s => s.title))).join('\n');
+
+                    // 4. Formulate Executive Accomplishment Bullets (Column 3)
+                    const execDescs = [];
+
+                    if (buckets.planning.length > 0) {
+                      const items = Array.from(new Set(buckets.planning.map(p => p.title))).join(', ');
+                      execDescs.push(`• [기획/디자인] ${items} 완료 및 최종 사양 컨펌`);
+                    }
+
+                    if (buckets.qa_testing.length > 0) {
+                      const items = Array.from(new Set(buckets.qa_testing.map(q => q.title))).join(', ');
+                      execDescs.push(`• [검수/QA] ${items} 진행 및 품질 검증`);
+                    }
+
+                    if (buckets.dev_ops.length > 0) {
+                      const items = Array.from(new Set(buckets.dev_ops.map(d => d.title))).join(', ');
+                      execDescs.push(`• [개발/이슈] ${items} 대응, 배포 및 인수인계 완료`);
+                    }
+
+                    if (buckets.meetings.length > 0) {
+                      const items = Array.from(new Set(buckets.meetings.map(m => m.title).filter(t => !/데일리|스크럼/.test(t)))).join(', ');
+                      if (items) {
+                        execDescs.push(`• [회의/리뷰] ${items} 수행`);
+                      }
+                    }
+
+                    // Include specific detailed bullets if available
+                    rawBullets.forEach(b => {
+                      if (!execDescs.some(ed => ed.includes(b))) {
+                        execDescs.push(`  - ${b}`);
+                      }
+                    });
+
+                    if (buckets.leave.length > 0) {
+                      execDescs.push(`• [기타] 일정 내 연차/휴가 포함 (${buckets.leave.join(', ')})`);
+                    }
+
+                    const descSummary = execDescs.length > 0 ? execDescs.join('\n') : '• 주요 업무 일정 수행 완료';
+
                     return {
                       weekName: wb.weekName,
                       label: wb.label,
                       scheduleCount: weekSchedules.length,
-                      titles: titles || '-',
-                      descSummary: descLines.length > 0 ? descLines.join('\n') : '-',
+                      titles,
+                      descSummary,
                       members: members.length > 0 ? members : ['-']
                     };
                   });
@@ -3919,8 +4014,8 @@ export default function App() {
                         <thead>
                           <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
                             <th style={{ padding: '9px 12px', textAlign: 'left', width: '15%' }}>주차 (기간)</th>
-                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '25%' }}>주요 수행 일정</th>
-                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '46%' }}>전반적 업무 및 추진 실적 요약</th>
+                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '28%' }}>주요 수행 업무 범주</th>
+                            <th style={{ padding: '9px 12px', textAlign: 'left', width: '43%' }}>전반적 업무 및 추진 실적 요약</th>
                             <th style={{ padding: '9px 12px', textAlign: 'center', width: '14%' }}>담당자</th>
                           </tr>
                         </thead>
@@ -3934,7 +4029,7 @@ export default function App() {
                                   <div style={{ color: '#64748b', fontSize: '12px', fontWeight: '500', marginTop: '2px' }}>{ws.label}</div>
                                   <div style={{ color: hasData ? '#475569' : '#94a3b8', fontSize: '11.5px', marginTop: '4px', fontWeight: '600' }}>({ws.scheduleCount}건)</div>
                                 </td>
-                                <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.45', fontSize: '13.5px' }}>
+                                <td style={{ padding: '12px 12px', verticalAlign: 'top', fontWeight: '700', color: hasData ? '#0f172a' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '13px' }}>
                                   {ws.titles}
                                 </td>
                                 <td style={{ padding: '12px 12px', verticalAlign: 'top', color: hasData ? '#334155' : '#94a3b8', whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '13px' }}>

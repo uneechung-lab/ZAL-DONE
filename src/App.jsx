@@ -1080,6 +1080,26 @@ export default function App() {
   const [authError, setAuthError] = useState('');
 
   const selectContainerRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Close user profile menu layer when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    if (isUserMenuOpen) {
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleOutsideClick);
+      }, 0);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handleOutsideClick);
+      };
+    }
+  }, [isUserMenuOpen]);
 
   // Close custom dropdown layers when clicking outside
   useEffect(() => {
@@ -3923,32 +3943,191 @@ export default function App() {
             
             {/* User Session & Reset Controls (Right aligned) */}
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
-              {/* User Avatar & Name & Role */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  backgroundColor: ME.color || '#000000',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  overflow: 'hidden',
-                  padding: 0
-                }}>
-                  {getMemberAvatarPic(ME) ? (
-                    <img src={getMemberAvatarPic(ME)} alt={ME.name} style={getMemberAvatarStyle(ME, 0)} />
-                  ) : (
-                    ME.avatar
-                  )}
+              
+              {/* User Profile Trigger & Floating Dropdown Menu */}
+              <div ref={userMenuRef} style={{ position: 'relative' }}>
+                <div 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsUserMenuOpen(prev => !prev);
+                  }}
+                  style={{ 
+                    height: '32px',
+                    backgroundColor: '#ffffff',
+                    border: isUserMenuOpen ? '1.5px solid #000000' : '1.5px solid #cbd5e1',
+                    borderRadius: '10px',
+                    padding: '0 10px',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = '#f8fafc';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = '#ffffff';
+                  }}
+                  title="사용자 메뉴 열기"
+                >
+                  {/* Avatar Circle */}
+                  <div style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    backgroundColor: ME.color || '#000000',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10.5px',
+                    fontWeight: '600',
+                    overflow: 'hidden',
+                    padding: 0,
+                    flexShrink: 0
+                  }}>
+                    {getMemberAvatarPic(ME) ? (
+                      <img src={getMemberAvatarPic(ME)} alt={ME.name} style={getMemberAvatarStyle(ME, 0)} />
+                    ) : (
+                      ME.avatar
+                    )}
+                  </div>
+                  
+                  {/* User Name & Role */}
+                  <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap' }}>
+                    {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''}
+                  </span>
+
+                  {/* Chevron Arrow */}
+                  <svg 
+                    width="13" 
+                    height="13" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="#64748b" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                      flexShrink: 0,
+                      marginLeft: '2px'
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
-                
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', marginRight: '2px' }}>
-                  {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''}
-                </span>
+
+                {/* Floating Profile Dropdown Layer */}
+                {isUserMenuOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    minWidth: '150px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1.5px solid #e2e8f0',
+                    boxShadow: '0 12px 30px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05)',
+                    zIndex: 9999,
+                    padding: '5px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                  }}>
+                    {/* Logout Menu Item */}
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsUserMenuOpen(false);
+                        if (isConfigured) {
+                          handleLogOut();
+                        } else {
+                          showLayerAlert('로그아웃 되었습니다.', '알림', 'info');
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'background-color 0.12s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      <span>로그아웃</span>
+                    </div>
+
+                    {/* Reset Data Menu Item */}
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsUserMenuOpen(false);
+                        showLayerConfirm(
+                          '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
+                          '데이터 초기화 확인',
+                          async () => {
+                            if (isConfigured) {
+                              await appwriteService.clearSchedules();
+                              await appwriteService.clearMessages();
+                            }
+                            localStorage.setItem('zal_schedules', JSON.stringify([]));
+                            localStorage.removeItem('zal_messages');
+                            setSchedules([]);
+                            setShowPreviousMessages(false);
+                            setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+                            showLayerAlert('모든 데이터가 초기화되었습니다.', '초기화 완료', 'success');
+                          }
+                        );
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#ef4444',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'background-color 0.12s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <polyline points="23 20 23 14 17 14"></polyline>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                      </svg>
+                      <span>데이터 초기화</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Department Badge Card */}
@@ -4002,114 +4181,6 @@ export default function App() {
                 <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
                 <option value="해당없음">해당없음</option>
               </select>
-
-              {/* Logout Button Card */}
-              {isConfigured ? (
-                <button
-                  onClick={handleLogOut}
-                  style={{
-                    height: '32px',
-                    backgroundColor: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '0 12px',
-                    fontSize: '12.5px',
-                    fontWeight: '700',
-                    color: '#475569',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.15s ease',
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                    e.currentTarget.style.borderColor = '#000000';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.borderColor = '#cbd5e1';
-                  }}
-                >
-                  로그아웃
-                </button>
-              ) : (
-                <select
-                  value={virtualUser.id}
-                  onChange={(e) => {
-                    const target = activeTeam.find(m => m.id === e.target.value);
-                    if (target) setVirtualUser(target);
-                  }}
-                  style={{
-                    height: '32px',
-                    backgroundColor: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '0 10px',
-                    fontSize: '12.5px',
-                    fontWeight: '700',
-                    color: '#475569',
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  {activeTeam.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              )}
-
-              {/* Reset Button Card */}
-              <button 
-                style={{ 
-                  height: '32px',
-                  backgroundColor: '#ffffff',
-                  border: '1.5px solid #cbd5e1',
-                  borderRadius: '10px',
-                  padding: '0 12px',
-                  fontSize: '12.5px',
-                  fontWeight: '700',
-                  color: '#ef4444',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                  e.currentTarget.style.borderColor = '#ef4444';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                }}
-                onClick={() => {
-                  showLayerConfirm(
-                    '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
-                    '데이터 초기화 확인',
-                    async () => {
-                      if (isConfigured) {
-                        await appwriteService.clearSchedules();
-                        await appwriteService.clearMessages();
-                      }
-                      localStorage.setItem('zal_schedules', JSON.stringify([]));
-                      localStorage.removeItem('zal_messages');
-                      setSchedules([]);
-                      setShowPreviousMessages(false);
-                      setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
-                      showLayerAlert('모든 데이터가 초기화되었습니다.', '초기화 완료', 'success');
-                    }
-                  );
-                }}
-                title="데이터 초기화"
-              >
-                초기화
-              </button>
             </div>
           </div>
 

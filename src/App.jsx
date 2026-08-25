@@ -283,15 +283,13 @@ function getMemberAvatarPic(member, index) {
 
 function getMemberRoleText(member, index, parsedUser) {
   if (!member) return '나';
-  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '정다음(사원)';
-  if (member.id === 'sh' && parsedUser) {
-    const r = parsedUser.role || '상무';
-    const n = parsedUser.name || '조상무';
-    return `${n}(${r})`;
+  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음') return '정다음(사원)';
+  if (member.id === 'sh') {
+    const r = parsedUser?.role || member.role || '상무';
+    const n = parsedUser?.name || member.name || '조상무';
+    return `${n}(나/${r})`;
   }
-  if (member.role && member.role !== '나(부장)') return member.role;
-  if (member.name && member.name !== '정윤희') return `${member.name}`;
-  return '조상무(상무)';
+  return `${member.name}(${member.role || '사원'})`;
 }
 
 function getMemberAvatarStyle(member, index) {
@@ -1938,14 +1936,34 @@ export default function App() {
             const loggedInMember = {
               id: 'sh',
               name: parsed.name || '조상무',
-              role: `나(${parsed.role || '상무'})`,
+              role: parsed.role || '상무',
               avatar: parsed.name ? parsed.name.slice(0, 2) : '조상무',
               avatarPic: '/pic1_thumb.png',
               color: userColor || '#000000',
               subtext: `${parsed.department || '개발'} 일정`
             };
 
-            setActiveTeam([loggedInMember, memberDaeum]);
+            const otherMember = isCurrentUserYoonhee ? {
+              id: 'sangmu',
+              name: '조상무',
+              role: '상무',
+              avatar: '상무',
+              avatarPic: '/pic3_thumb.png',
+              color: '#000000',
+              subtext: '개발 일정'
+            } : {
+              id: 'yoonhee',
+              name: '정윤희',
+              role: '부장',
+              avatar: '윤희',
+              avatarPic: '/pic3_thumb.png',
+              color: '#4f8ef7',
+              subtext: '기획 일정'
+            };
+
+            const fullTeamList = [loggedInMember, otherMember, memberDaeum];
+
+            setActiveTeam(fullTeamList);
             
             // Fetch database records
             const dbSchedules = await appwriteService.getSchedules();
@@ -2012,7 +2030,7 @@ export default function App() {
                 }
               }
 
-              setActiveTeam([loggedInMember, memberDaeum]);
+              setActiveTeam(fullTeamList);
 
               const actualSchedules = mapped.filter(s => s.title !== '__PROFILE__');
               setSchedules(actualSchedules);

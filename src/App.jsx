@@ -1057,6 +1057,7 @@ export default function App() {
   const [authProject, setAuthProject] = useState([]);
   const [activeSelectLayer, setActiveSelectLayer] = useState(null); // 'department' | 'role' | 'project' | null
   const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpStep, setSignUpStep] = useState(1); // 1 | 2
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
 
@@ -1977,6 +1978,17 @@ export default function App() {
     return msg; // Fallback to raw message if translation is unavailable
   };
 
+  // Step 1 Validation & Next Step Transition
+  const handleNextSignUpStep = (e) => {
+    if (e) e.preventDefault();
+    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim()) {
+      setAuthError('이름, 이메일 아이디, 비밀번호를 모두 입력해 주세요.');
+      return;
+    }
+    setAuthError('');
+    setSignUpStep(2);
+  };
+
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -2724,8 +2736,14 @@ export default function App() {
                 <button 
                   type="button" 
                   onClick={() => {
-                    setIsSignUp(false);
-                    setAuthError('');
+                    if (signUpStep === 2) {
+                      setSignUpStep(1);
+                      setAuthError('');
+                    } else {
+                      setIsSignUp(false);
+                      setSignUpStep(1);
+                      setAuthError('');
+                    }
                   }}
                   style={{ 
                     background: 'none', 
@@ -2738,7 +2756,7 @@ export default function App() {
                     color: '#0f172a',
                     transition: 'transform 0.15s ease'
                   }}
-                  title="로그인으로 돌아가기"
+                  title={signUpStep === 2 ? "1단계로 돌아가기" : "로그인으로 돌아가기"}
                 >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -2763,9 +2781,9 @@ export default function App() {
                   </span>
                 </h2>
 
-                {/* Subtitle: 회사 이메일 계정을 연결합니다. */}
+                {/* Subtitle */}
                 <p style={{ fontSize: '16px', color: '#64748b', fontWeight: '500', marginTop: '6px', margin: 0, letterSpacing: '-0.3px' }}>
-                  회사 이메일 계정을 연결합니다.
+                  {signUpStep === 1 ? '회사 이메일 계정을 연결합니다.' : '소속 및 프로젝트 정보를 선택합니다.'}
                 </p>
               </div>
             ) : (
@@ -2795,13 +2813,13 @@ export default function App() {
               </div>
             )}
 
-            {/* Login / Sign Up Form (Tighter Top Margin) */}
-            <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Login / Sign Up Form */}
+            <form onSubmit={isSignUp ? (signUpStep === 1 ? handleNextSignUpStep : handleSignUp) : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
-              {/* Sign Up Name, Department & Rank, and Project Fields */}
-              {isSignUp && (
+              {/* ──── SIGN UP STEP 1: Name, Email, Password ──── */}
+              {isSignUp && signUpStep === 1 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                  {/* Row 1: Name Input Field */}
+                  {/* Name Input Field */}
                   <div style={{ height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
                     <input 
                       type="text" 
@@ -2813,9 +2831,59 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) Custom Dropdowns in ONE Row */}
+                  {/* Email Input Field */}
+                  <div style={{ 
+                    height: '60px',
+                    backgroundColor: '#ffffff', 
+                    border: '1.5px solid #e2e8f0', 
+                    borderRadius: '16px', 
+                    padding: '0 18px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    transition: 'border-color 0.15s ease'
+                  }}>
+                    <input 
+                      type="text" 
+                      placeholder="회사메일 아이디 입력" 
+                      value={authEmailId} 
+                      onChange={(e) => setAuthEmailId(e.target.value)} 
+                      style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                      required
+                    />
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', marginLeft: '8px' }}>
+                      @daumit.net
+                    </span>
+                  </div>
+
+                  {/* Password Input Field */}
+                  <div style={{ 
+                    height: '60px',
+                    backgroundColor: '#ffffff', 
+                    border: '1.5px solid #e2e8f0', 
+                    borderRadius: '16px', 
+                    padding: '0 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'border-color 0.15s ease'
+                  }}>
+                    <input 
+                      type="password" 
+                      placeholder="패스워드입력" 
+                      value={authPassword} 
+                      onChange={(e) => setAuthPassword(e.target.value)} 
+                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ──── SIGN UP STEP 2: Department, Rank, Project Button List ──── */}
+              {isSignUp && signUpStep === 2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                  {/* Row 1: Department & Rank Custom Dropdowns */}
                   <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                    {/* Department Custom Dropdown */}
                     <CustomDropdown
                       placeholder="부서 선택"
                       value={authDepartment}
@@ -2823,7 +2891,6 @@ export default function App() {
                       onChange={(dept) => setAuthDepartment(dept)}
                     />
 
-                    {/* Rank/Role Custom Dropdown */}
                     <CustomDropdown
                       placeholder="직급 선택"
                       value={authRole}
@@ -2833,89 +2900,143 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 3: Project Selection (프로젝트 선택) Custom Dropdown in Separate Row */}
-                  <CustomDropdown
-                    placeholder="프로젝트 선택"
-                    value={authProject}
-                    options={[
-                      '신영증권 외화표시펀드 매매 시스템 구축',
-                      '삼성증권 연금 고객중심 서비스 개선',
-                      'NH투자증권 퇴직연금시스템 운영',
-                      '경찰공제회 시스템 유지보수',
-                      '대신증권 연금 경쟁력 강화',
-                      '다음 D-RPS 고도화',
-                      '해당없음'
-                    ]}
-                    onChange={(proj) => setAuthProject(proj)}
-                    isMulti
-                  />
+                  {/* Row 2: Project Selection Button List */}
+                  <div style={{ marginTop: '2px', width: '100%' }}>
+                    <p style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', margin: '0 0 8px 2px', textAlign: 'left' }}>
+                      프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxHeight: '210px', overflowY: 'auto', paddingRight: '2px' }}>
+                      {[
+                        '신영증권 외화표시펀드 매매 시스템 구축',
+                        '삼성증권 연금 고객중심 서비스 개선',
+                        'NH투자증권 퇴직연금시스템 운영',
+                        '경찰공제회 시스템 유지보수',
+                        '대신증권 연금 경쟁력 강화',
+                        '다음 D-RPS 고도화',
+                        '해당없음'
+                      ].map((proj) => {
+                        const isSelected = authProject.includes(proj);
+                        return (
+                          <button
+                            key={proj}
+                            type="button"
+                            onClick={() => {
+                              if (proj === '해당없음') {
+                                setAuthProject(authProject.includes('해당없음') ? [] : ['해당없음']);
+                              } else {
+                                const filtered = authProject.filter(p => p !== proj && p !== '해당없음');
+                                if (authProject.includes(proj)) {
+                                  setAuthProject(filtered);
+                                } else {
+                                  setAuthProject([...filtered, proj]);
+                                }
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '13px 16px',
+                              borderRadius: '14px',
+                              border: isSelected ? '2px solid #000000' : '1.5px solid #e2e8f0',
+                              backgroundColor: isSelected ? '#0f172a' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#334155',
+                              fontSize: '13.5px',
+                              fontWeight: isSelected ? '800' : '600',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              transition: 'all 0.15s ease',
+                              boxSizing: 'border-box'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.backgroundColor = '#ffffff';
+                            }}
+                          >
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginRight: '8px' }}>
+                              {proj}
+                            </span>
+                            {isSelected && (
+                              <span style={{ fontWeight: '900', color: '#facc15', fontSize: '15px', flexShrink: 0 }}>✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Email Input Field (Height 60px) */}
-              <div style={{ 
-                height: '60px',
-                backgroundColor: '#ffffff', 
-                border: '1.5px solid #e2e8f0', 
-                borderRadius: '16px', 
-                padding: '0 18px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                transition: 'border-color 0.15s ease'
-              }}>
-                <input 
-                  type="text" 
-                  placeholder={isSignUp ? "회사메일 아이디 입력" : "아이디 입력"} 
-                  value={authEmailId} 
-                  onChange={(e) => setAuthEmailId(e.target.value)} 
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
-                  required
-                />
-                <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', marginLeft: '8px' }}>
-                  @daumit.net
-                </span>
-              </div>
-
-              {/* Password Input Field (Height 60px) */}
-              <div style={{ 
-                height: '60px',
-                backgroundColor: '#ffffff', 
-                border: '1.5px solid #e2e8f0', 
-                borderRadius: '16px', 
-                padding: '0 18px',
-                display: 'flex',
-                alignItems: 'center',
-                transition: 'border-color 0.15s ease'
-              }}>
-                <input 
-                  type="password" 
-                  placeholder="패스워드입력" 
-                  value={authPassword} 
-                  onChange={(e) => setAuthPassword(e.target.value)} 
-                  style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
-                  required
-                />
-              </div>
-
-              {/* Auto Login Checkbox (Only in Login Mode) */}
+              {/* ──── LOGIN MODE FIELDS ──── */}
               {!isSignUp && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', paddingLeft: '2px' }}>
-                  <input 
-                    type="checkbox" 
-                    id="auto-login" 
-                    defaultChecked 
-                    style={{ 
-                      width: '18px', 
-                      height: '18px', 
-                      accentColor: '#000000', 
-                      cursor: 'pointer' 
-                    }} 
-                  />
-                  <label htmlFor="auto-login" style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700', cursor: 'pointer', userSelect: 'none' }}>
-                    자동로그인
-                  </label>
-                </div>
+                <>
+                  {/* Email Input Field */}
+                  <div style={{ 
+                    height: '60px',
+                    backgroundColor: '#ffffff', 
+                    border: '1.5px solid #e2e8f0', 
+                    borderRadius: '16px', 
+                    padding: '0 18px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    transition: 'border-color 0.15s ease'
+                  }}>
+                    <input 
+                      type="text" 
+                      placeholder="아이디 입력" 
+                      value={authEmailId} 
+                      onChange={(e) => setAuthEmailId(e.target.value)} 
+                      style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                      required
+                    />
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', marginLeft: '8px' }}>
+                      @daumit.net
+                    </span>
+                  </div>
+
+                  {/* Password Input Field */}
+                  <div style={{ 
+                    height: '60px',
+                    backgroundColor: '#ffffff', 
+                    border: '1.5px solid #e2e8f0', 
+                    borderRadius: '16px', 
+                    padding: '0 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'border-color 0.15s ease'
+                  }}>
+                    <input 
+                      type="password" 
+                      placeholder="패스워드입력" 
+                      value={authPassword} 
+                      onChange={(e) => setAuthPassword(e.target.value)} 
+                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                      required
+                    />
+                  </div>
+
+                  {/* Auto Login Checkbox */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', paddingLeft: '2px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="auto-login" 
+                      defaultChecked 
+                      style={{ 
+                        width: '18px', 
+                        height: '18px', 
+                        accentColor: '#000000', 
+                        cursor: 'pointer' 
+                      }} 
+                    />
+                    <label htmlFor="auto-login" style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700', cursor: 'pointer', userSelect: 'none' }}>
+                      자동로그인
+                    </label>
+                  </div>
+                </>
               )}
 
               {/* Error Message */}
@@ -2925,31 +3046,86 @@ export default function App() {
                 </p>
               )}
 
-              {/* Primary Action Button (Solid Black - Height 68px) */}
-              <button 
-                type="submit" 
-                style={{ 
-                  width: '100%', 
-                  height: '68px', 
-                  backgroundColor: '#000000', 
-                  color: '#ffffff', 
-                  border: 'none', 
-                  borderRadius: '16px', 
-                  fontSize: '18px', 
-                  fontWeight: '800', 
-                  cursor: 'pointer', 
-                  marginTop: '6px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
-              >
-                {isSignUp ? '인증 메일 발송하기' : '로그인'}
-              </button>
+              {/* Primary Action Button */}
+              {isSignUp ? (
+                signUpStep === 1 ? (
+                  <button 
+                    type="button" 
+                    onClick={handleNextSignUpStep}
+                    style={{ 
+                      width: '100%', 
+                      height: '68px', 
+                      backgroundColor: '#000000', 
+                      color: '#ffffff', 
+                      border: 'none', 
+                      borderRadius: '16px', 
+                      fontSize: '18px', 
+                      fontWeight: '800', 
+                      cursor: 'pointer', 
+                      marginTop: '6px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
+                  >
+                    다음
+                  </button>
+                ) : (
+                  <button 
+                    type="submit" 
+                    style={{ 
+                      width: '100%', 
+                      height: '68px', 
+                      backgroundColor: '#000000', 
+                      color: '#ffffff', 
+                      border: 'none', 
+                      borderRadius: '16px', 
+                      fontSize: '18px', 
+                      fontWeight: '800', 
+                      cursor: 'pointer', 
+                      marginTop: '6px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
+                  >
+                    인증 메일 발송하기
+                  </button>
+                )
+              ) : (
+                <button 
+                  type="submit" 
+                  style={{ 
+                    width: '100%', 
+                    height: '68px', 
+                    backgroundColor: '#000000', 
+                    color: '#ffffff', 
+                    border: 'none', 
+                    borderRadius: '16px', 
+                    fontSize: '18px', 
+                    fontWeight: '800', 
+                    cursor: 'pointer', 
+                    marginTop: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
+                >
+                  로그인
+                </button>
+              )}
 
               {/* Secondary Action Button (Only in Login Mode) */}
               {!isSignUp && (
@@ -2957,6 +3133,7 @@ export default function App() {
                   type="button" 
                   onClick={() => {
                     setIsSignUp(true);
+                    setSignUpStep(1);
                     setAuthError('');
                   }}
                   style={{ 

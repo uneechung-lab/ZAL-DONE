@@ -1154,8 +1154,13 @@ export default function App() {
       }
     }
 
+    let cleanName = str || '사용자';
+    if (/^[가-힣]\s+[가-힣]{1,3}$/.test(cleanName)) {
+      cleanName = cleanName.replace(/\s+/g, '');
+    }
+
     return {
-      name: str || '사용자',
+      name: cleanName,
       role: foundRole,
       department: department,
       project: project
@@ -3942,7 +3947,7 @@ export default function App() {
                 </div>
                 
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                  {parsedUser.name} {parsedUser.role !== '나(부장)' ? parsedUser.role : ''} [{parsedUser.department || '개발'} / 
+                  {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''} {parsedUser.department || '개발'} / 
                 </span>
 
                 <select
@@ -3973,8 +3978,6 @@ export default function App() {
                   <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
                   <option value="해당없음">해당없음</option>
                 </select>
-
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>]</span>
               </div>
 
               {/* Logout button (if configured) or local user switcher */}

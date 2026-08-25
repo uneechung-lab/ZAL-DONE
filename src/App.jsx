@@ -1791,7 +1791,7 @@ export default function App() {
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !authProject) {
+    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !authProject || !authRole) {
       setAuthError('이름, 직급, 부서, 프로젝트 등 모든 필드를 입력해 주세요.');
       return;
     }
@@ -2628,7 +2628,16 @@ export default function App() {
                     <div style={{ position: 'relative', flex: 1 }}>
                       <button
                         type="button"
-                        onClick={() => setActiveSelectLayer(activeSelectLayer === 'department' ? null : 'department')}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveSelectLayer(activeSelectLayer === 'department' ? null : 'department');
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveSelectLayer(activeSelectLayer === 'department' ? null : 'department');
+                        }}
                         style={{
                           width: '100%',
                           height: '60px',
@@ -2686,7 +2695,14 @@ export default function App() {
                           {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
                             <div
                               key={dept}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setAuthDepartment(dept);
+                                setActiveSelectLayer(null);
+                              }}
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 setAuthDepartment(dept);
                                 setActiveSelectLayer(null);
@@ -2726,7 +2742,16 @@ export default function App() {
                     <div style={{ position: 'relative', width: '120px' }}>
                       <button
                         type="button"
-                        onClick={() => setActiveSelectLayer(activeSelectLayer === 'role' ? null : 'role')}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveSelectLayer(activeSelectLayer === 'role' ? null : 'role');
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveSelectLayer(activeSelectLayer === 'role' ? null : 'role');
+                        }}
                         style={{
                           width: '100%',
                           height: '60px',
@@ -2784,7 +2809,14 @@ export default function App() {
                           {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
                             <div
                               key={rank}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setAuthRole(rank);
+                                setActiveSelectLayer(null);
+                              }}
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 setAuthRole(rank);
                                 setActiveSelectLayer(null);
@@ -2825,7 +2857,16 @@ export default function App() {
                   <div style={{ position: 'relative', width: '100%', zIndex: activeSelectLayer === 'project' ? 100 : 1 }}>
                     <button
                       type="button"
-                      onClick={() => setActiveSelectLayer(activeSelectLayer === 'project' ? null : 'project')}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveSelectLayer(activeSelectLayer === 'project' ? null : 'project');
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveSelectLayer(activeSelectLayer === 'project' ? null : 'project');
+                      }}
                       style={{
                         width: '100%',
                         height: '60px',
@@ -2886,7 +2927,14 @@ export default function App() {
                         {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
                           <div
                             key={proj}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAuthProject(proj);
+                              setActiveSelectLayer(null);
+                            }}
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               setAuthProject(proj);
                               setActiveSelectLayer(null);

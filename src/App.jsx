@@ -866,10 +866,10 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
       }
     };
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, [isOpen, onToggle]);
 
@@ -885,13 +885,7 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
     >
       {/* Trigger Box */}
       <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onToggle(!isOpen);
-        }}
         onClick={(e) => {
-          e.preventDefault();
           e.stopPropagation();
           onToggle(!isOpen);
         }}
@@ -964,14 +958,7 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
             return (
               <div
                 key={option}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onChange(option);
-                  onToggle(false);
-                }}
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                   onChange(option);
                   onToggle(false);

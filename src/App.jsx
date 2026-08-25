@@ -2908,47 +2908,51 @@ export default function App() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
               >
-                {isSignUp ? '회원가입' : '로그인'}
+                {isSignUp ? '인증 메일 발송하기' : '로그인'}
               </button>
 
-              {/* Secondary Action Button (Outline Pill - Height 68px) */}
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setAuthError('');
-                }}
-                style={{ 
-                  width: '100%', 
-                  height: '68px', 
-                  backgroundColor: '#ffffff', 
-                  color: '#0f172a', 
-                  border: '1.5px solid #000000', 
-                  borderRadius: '16px', 
-                  fontSize: '18px', 
-                  fontWeight: '800', 
-                  cursor: 'pointer', 
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-              >
-                {isSignUp ? '이미 계정이 있으신가요? (로그인)' : '오늘 처음이신가요?'}
-              </button>
+              {/* Secondary Action Button (Only in Login Mode) */}
+              {!isSignUp && (
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setAuthError('');
+                  }}
+                  style={{ 
+                    width: '100%', 
+                    height: '68px', 
+                    backgroundColor: '#ffffff', 
+                    color: '#0f172a', 
+                    border: '1.5px solid #000000', 
+                    borderRadius: '16px', 
+                    fontSize: '18px', 
+                    fontWeight: '800', 
+                    cursor: 'pointer', 
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                >
+                  오늘 처음이신가요?
+                </button>
+              )}
             </form>
 
-            {/* Find Password Link */}
-            <div style={{ marginTop: '24px', textAlign: 'center' }}>
-              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', cursor: 'pointer', textDecoration: 'none' }}
-                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-              >
-                비밀번호 찾기
-              </span>
-            </div>
+            {/* Find Password Link (Only in Login Mode) */}
+            {!isSignUp && (
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', cursor: 'pointer', textDecoration: 'none' }}
+                  onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  비밀번호 찾기
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Copyright */}

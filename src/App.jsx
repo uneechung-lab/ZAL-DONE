@@ -2938,8 +2938,8 @@ export default function App() {
                               padding: '0 18px',
                               borderRadius: '16px',
                               border: isSelected ? '2px solid #000000' : '1.5px solid #e2e8f0',
-                              backgroundColor: isSelected ? '#0f172a' : '#ffffff',
-                              color: isSelected ? '#ffffff' : '#334155',
+                              backgroundColor: '#ffffff',
+                              color: isSelected ? '#0f172a' : '#334155',
                               fontSize: '14.5px',
                               fontWeight: isSelected ? '800' : '600',
                               textAlign: 'left',
@@ -2961,7 +2961,7 @@ export default function App() {
                               {proj}
                             </span>
                             {isSelected && (
-                              <span style={{ fontWeight: '900', color: '#facc15', fontSize: '15px', flexShrink: 0 }}>✓</span>
+                              <span style={{ fontWeight: '900', color: '#000000', fontSize: '16px', flexShrink: 0 }}>✓</span>
                             )}
                           </button>
                         );

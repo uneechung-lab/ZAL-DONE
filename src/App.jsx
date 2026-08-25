@@ -2568,7 +2568,7 @@ export default function App() {
           {/* Center Main Copy & Features (Shifted 110px right, 185px upwards) */}
           <div style={{ maxWidth: '520px', width: '100%', margin: 'auto 0', transform: 'translate(110px, -185px)', position: 'relative', zIndex: 10 }}>
             <h1 style={{ fontSize: '56px', fontWeight: '900', lineHeight: '1.20', color: '#0f172a', letterSpacing: '-1.8px', margin: 0 }}>
-              업무 공유,<br />
+              업무 보고,<br />
               <span style={{ position: 'relative', display: 'inline-block', zIndex: 1 }}>
                 10초에
                 <span style={{ 

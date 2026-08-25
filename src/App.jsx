@@ -1157,11 +1157,12 @@ export default function App() {
 
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
-    if (!rawFullName) return { name: '정윤희', role: '부장', department: '개발', project: '전체' };
+    if (!rawFullName) return { name: '정윤희', role: '부장', department: '기획', project: '대신증권 연금 경쟁력 강화' };
 
     let str = rawFullName.trim();
-    let department = '개발';
-    let project = '전체';
+    const isYoonhee = str.includes('정윤희');
+    let department = isYoonhee ? '기획' : '개발';
+    let project = isYoonhee ? '대신증권 연금 경쟁력 강화' : '전체';
 
     // Remove trailing '사원' if string contains brackets or another role before it
     if (str.includes('[') && str.endsWith('사원')) {
@@ -1174,8 +1175,8 @@ export default function App() {
       const inside = bracketMatch[1];
       if (inside.includes('/')) {
         const parts = inside.split('/');
-        department = parts[0].trim() || '개발';
-        project = parts[1].trim() || '전체';
+        department = parts[0].trim() || (isYoonhee ? '기획' : '개발');
+        project = parts[1].trim() || (isYoonhee ? '대신증권 연금 경쟁력 강화' : '전체');
       }
       str = str.replace(/\[.*?\]/, '').trim();
     }
@@ -1199,11 +1200,11 @@ export default function App() {
         foundRole = '사원';
         str = str.replace(/사원$/, '').trim();
       } else {
-        foundRole = rawFullName.includes('정윤희') ? '부장' : '사원';
+        foundRole = isYoonhee ? '부장' : '사원';
       }
     }
 
-    let cleanName = str || '사용자';
+    let cleanName = str || (isYoonhee ? '정윤희' : '사용자');
     if (/^[가-힣]\s+[가-힣]{1,3}$/.test(cleanName)) {
       cleanName = cleanName.replace(/\s+/g, '');
     }
@@ -1216,7 +1217,7 @@ export default function App() {
     };
   };
 
-  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '나(부장)' };
+  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '부장', department: '기획', project: '대신증권 연금 경쟁력 강화' };
   const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
 
   const [greetingEmoji] = useState(() => {
@@ -1910,6 +1911,9 @@ export default function App() {
             };
 
             const parsed = parseStoredName(currentUser.name);
+            if (parsed.project) {
+              setHeaderSelectedProject(parsed.project);
+            }
             const userColor = getDeterministicColor(parsed.name);
             const isCurrentUserYoonhee = parsed.name === '정윤희';
 

@@ -1981,8 +1981,8 @@ export default function App() {
   // Step 1 Validation & Next Step Transition
   const handleNextSignUpStep = (e) => {
     if (e) e.preventDefault();
-    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim()) {
-      setAuthError('이름, 이메일 아이디, 비밀번호를 모두 입력해 주세요.');
+    if (!authName.trim() || !authDepartment || !authRole || !authEmailId.trim() || !authPassword.trim()) {
+      setAuthError('이름, 부서, 직급, 이메일 아이디, 비밀번호를 모두 입력해 주세요.');
       return;
     }
     setAuthError('');
@@ -2783,7 +2783,7 @@ export default function App() {
 
                 {/* Subtitle */}
                 <p style={{ fontSize: '16px', color: '#64748b', fontWeight: '500', marginTop: '6px', margin: 0, letterSpacing: '-0.3px' }}>
-                  {signUpStep === 1 ? '회사 이메일 계정을 연결합니다.' : '소속 및 프로젝트 정보를 선택합니다.'}
+                  {signUpStep === 1 ? '회사 이메일 계정 및 소속 정보를 입력합니다.' : '참여 프로젝트를 선택해 주세요.'}
                 </p>
               </div>
             ) : (
@@ -2816,7 +2816,7 @@ export default function App() {
             {/* Login / Sign Up Form */}
             <form onSubmit={isSignUp ? (signUpStep === 1 ? handleNextSignUpStep : handleSignUp) : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
-              {/* ──── SIGN UP STEP 1: Name, Email, Password ──── */}
+              {/* ──── SIGN UP STEP 1: Name, Department & Rank, Email, Password ──── */}
               {isSignUp && signUpStep === 1 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                   {/* Name Input Field */}
@@ -2828,6 +2828,24 @@ export default function App() {
                       onChange={(e) => setAuthName(e.target.value)} 
                       style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
                       required
+                    />
+                  </div>
+
+                  {/* Department & Rank Custom Dropdowns in ONE Row */}
+                  <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                    <CustomDropdown
+                      placeholder="부서 선택"
+                      value={authDepartment}
+                      options={['관리', '개발', '신사업']}
+                      onChange={(dept) => setAuthDepartment(dept)}
+                    />
+
+                    <CustomDropdown
+                      placeholder="직급 선택"
+                      value={authRole}
+                      options={['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표']}
+                      onChange={(rank) => setAuthRole(rank)}
+                      width="120px"
                     />
                   </div>
 
@@ -2879,28 +2897,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* ──── SIGN UP STEP 2: Department, Rank, Project Button List ──── */}
+              {/* ──── SIGN UP STEP 2: Project Button List ──── */}
               {isSignUp && signUpStep === 2 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                  {/* Row 1: Department & Rank Custom Dropdowns */}
-                  <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                    <CustomDropdown
-                      placeholder="부서 선택"
-                      value={authDepartment}
-                      options={['관리', '개발', '신사업']}
-                      onChange={(dept) => setAuthDepartment(dept)}
-                    />
-
-                    <CustomDropdown
-                      placeholder="직급 선택"
-                      value={authRole}
-                      options={['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표']}
-                      onChange={(rank) => setAuthRole(rank)}
-                      width="120px"
-                    />
-                  </div>
-
-                  {/* Row 2: Project Selection Button List */}
+                  {/* Project Selection Button List */}
                   <div style={{ marginTop: '2px', width: '100%' }}>
                     <p style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', margin: '0 0 8px 2px', textAlign: 'left' }}>
                       프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>

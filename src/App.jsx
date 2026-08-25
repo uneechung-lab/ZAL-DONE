@@ -856,22 +856,35 @@ function normalizeRangeSchedules(rawSchedules) {
 }
 
 // ─── Custom Dropdown Select Component ──────────────────────────────────────────
-function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggle, width }) {
+function CustomDropdown({ placeholder, value, options, onChange, width }) {
+  const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        if (isOpen) onToggle(false);
+        setIsOpen(false);
       }
     };
     if (isOpen) {
-      document.addEventListener('click', handleClickOutside);
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handleClickOutside);
+      };
     }
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isOpen, onToggle]);
+  }, [isOpen]);
+
+  const handleSelectOption = (option, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    onChange(option);
+    setIsOpen(false);
+  };
 
   return (
     <div 
@@ -886,8 +899,9 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
       {/* Trigger Box */}
       <div
         onClick={(e) => {
+          e.preventDefault();
           e.stopPropagation();
-          onToggle(!isOpen);
+          setIsOpen(prev => !prev);
         }}
         style={{
           width: '100%',
@@ -935,7 +949,7 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
         </svg>
       </div>
 
-      {/* Custom Floating Options Layer */}
+      {/* Floating Options Layer */}
       {isOpen && (
         <div 
           style={{
@@ -958,11 +972,7 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
             return (
               <div
                 key={option}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onChange(option);
-                  onToggle(false);
-                }}
+                onClick={(e) => handleSelectOption(option, e)}
                 style={{
                   width: '100%',
                   padding: '12px 14px',
@@ -2774,8 +2784,6 @@ export default function App() {
                       value={authDepartment}
                       options={['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소']}
                       onChange={(dept) => setAuthDepartment(dept)}
-                      isOpen={activeSelectLayer === 'department'}
-                      onToggle={(open) => setActiveSelectLayer(open ? 'department' : null)}
                     />
 
                     {/* Rank/Role Custom Dropdown */}
@@ -2784,8 +2792,6 @@ export default function App() {
                       value={authRole}
                       options={['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표']}
                       onChange={(rank) => setAuthRole(rank)}
-                      isOpen={activeSelectLayer === 'role'}
-                      onToggle={(open) => setActiveSelectLayer(open ? 'role' : null)}
                       width="120px"
                     />
                   </div>
@@ -2796,8 +2802,6 @@ export default function App() {
                     value={authProject}
                     options={['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발']}
                     onChange={(proj) => setAuthProject(proj)}
-                    isOpen={activeSelectLayer === 'project'}
-                    onToggle={(open) => setActiveSelectLayer(open ? 'project' : null)}
                   />
                 </div>
               )}

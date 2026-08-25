@@ -855,6 +855,147 @@ function normalizeRangeSchedules(rawSchedules) {
   return result;
 }
 
+// ─── Custom Dropdown Select Component ──────────────────────────────────────────
+function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggle, width }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        if (isOpen) onToggle(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onToggle]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      style={{ 
+        position: 'relative', 
+        flex: width ? 'none' : 1, 
+        width: width || '100%', 
+        zIndex: isOpen ? 1000 : 1 
+      }}
+    >
+      {/* Trigger Box */}
+      <div
+        onClick={() => onToggle(!isOpen)}
+        style={{
+          width: '100%',
+          height: '60px',
+          backgroundColor: '#ffffff',
+          border: isOpen ? '2px solid #000000' : '1.5px solid #e2e8f0',
+          borderRadius: '16px',
+          padding: '0 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          userSelect: 'none',
+          boxSizing: 'border-box',
+          transition: 'all 0.15s ease'
+        }}
+      >
+        <span style={{ 
+          fontSize: width === '120px' ? '14px' : '14.5px', 
+          fontWeight: value ? '700' : '600', 
+          color: value ? '#0f172a' : '#94a3b8',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
+          {value || placeholder}
+        </span>
+        <svg 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="#64748b" 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          style={{ 
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
+            transition: 'transform 0.2s ease',
+            flexShrink: 0,
+            marginLeft: '6px'
+          }}
+        >
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
+      {/* Custom Floating Options Layer */}
+      {isOpen && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            border: '1.5px solid #e2e8f0',
+            boxShadow: '0 16px 36px -6px rgba(15, 23, 42, 0.2), 0 4px 12px rgba(0, 0, 0, 0.05)',
+            zIndex: 9999,
+            padding: '6px',
+            maxHeight: '230px',
+            overflowY: 'auto'
+          }}
+        >
+          {options.map((option) => {
+            const isSelected = value === option;
+            return (
+              <div
+                key={option}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange(option);
+                  onToggle(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: isSelected ? '#f1f5f9' : '#ffffff',
+                  color: isSelected ? '#000000' : '#334155',
+                  fontWeight: isSelected ? '800' : '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'background-color 0.12s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
+                <span>{option}</span>
+                {isSelected && (
+                  <span style={{ fontWeight: '900', color: '#000000', fontSize: '15px' }}>✓</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const slot = getTimeSlot();
 
@@ -2622,122 +2763,39 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) in ONE Row */}
+                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) Custom Dropdowns in ONE Row */}
                   <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                    {/* Department Select Box */}
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <select
-                        value={authDepartment}
-                        onChange={(e) => setAuthDepartment(e.target.value)}
-                        style={{
-                          width: '100%',
-                          height: '60px',
-                          backgroundColor: '#ffffff',
-                          border: '1.5px solid #e2e8f0',
-                          borderRadius: '16px',
-                          padding: '0 38px 0 16px',
-                          fontSize: '14.5px',
-                          fontWeight: '600',
-                          color: authDepartment ? '#0f172a' : '#94a3b8',
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'border-color 0.15s ease'
-                        }}
-                        required
-                      >
-                        <option value="" disabled hidden>부서 선택</option>
-                        {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
-                          <option key={dept} value={dept} style={{ color: '#0f172a', fontWeight: '600' }}>{dept}</option>
-                        ))}
-                      </select>
-                      {/* SVG Chevron Arrow Icon */}
-                      <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      </div>
-                    </div>
+                    {/* Department Custom Dropdown */}
+                    <CustomDropdown
+                      placeholder="부서 선택"
+                      value={authDepartment}
+                      options={['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소']}
+                      onChange={(dept) => setAuthDepartment(dept)}
+                      isOpen={activeSelectLayer === 'department'}
+                      onToggle={(open) => setActiveSelectLayer(open ? 'department' : null)}
+                    />
 
-                    {/* Rank/Role Select Box */}
-                    <div style={{ position: 'relative', width: '120px' }}>
-                      <select
-                        value={authRole}
-                        onChange={(e) => setAuthRole(e.target.value)}
-                        style={{
-                          width: '100%',
-                          height: '60px',
-                          backgroundColor: '#ffffff',
-                          border: '1.5px solid #e2e8f0',
-                          borderRadius: '16px',
-                          padding: '0 32px 0 14px',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          color: authRole ? '#0f172a' : '#94a3b8',
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          cursor: 'pointer',
-                          outline: 'none',
-                          transition: 'border-color 0.15s ease'
-                        }}
-                        required
-                      >
-                        <option value="" disabled hidden>직급 선택</option>
-                        {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
-                          <option key={rank} value={rank} style={{ color: '#0f172a', fontWeight: '600' }}>{rank}</option>
-                        ))}
-                      </select>
-                      {/* SVG Chevron Arrow Icon */}
-                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      </div>
-                    </div>
+                    {/* Rank/Role Custom Dropdown */}
+                    <CustomDropdown
+                      placeholder="직급 선택"
+                      value={authRole}
+                      options={['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표']}
+                      onChange={(rank) => setAuthRole(rank)}
+                      isOpen={activeSelectLayer === 'role'}
+                      onToggle={(open) => setActiveSelectLayer(open ? 'role' : null)}
+                      width="120px"
+                    />
                   </div>
 
-                  {/* Row 3: Project Selection (프로젝트 선택) Select Box */}
-                  <div style={{ position: 'relative', width: '100%' }}>
-                    <select
-                      value={authProject}
-                      onChange={(e) => setAuthProject(e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '60px',
-                        backgroundColor: '#ffffff',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: '16px',
-                        padding: '0 38px 0 16px',
-                        fontSize: '14.5px',
-                        fontWeight: '600',
-                        color: authProject ? '#0f172a' : '#94a3b8',
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        cursor: 'pointer',
-                        outline: 'none',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        transition: 'border-color 0.15s ease'
-                      }}
-                      required
-                    >
-                      <option value="" disabled hidden>프로젝트 선택</option>
-                      {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
-                        <option key={proj} value={proj} style={{ color: '#0f172a', fontWeight: '600' }}>{proj}</option>
-                      ))}
-                    </select>
-                    {/* SVG Chevron Arrow Icon */}
-                    <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    </div>
-                  </div>
+                  {/* Row 3: Project Selection (프로젝트 선택) Custom Dropdown in Separate Row */}
+                  <CustomDropdown
+                    placeholder="프로젝트 선택"
+                    value={authProject}
+                    options={['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발']}
+                    onChange={(proj) => setAuthProject(proj)}
+                    isOpen={activeSelectLayer === 'project'}
+                    onToggle={(open) => setActiveSelectLayer(open ? 'project' : null)}
+                  />
                 </div>
               )}
 

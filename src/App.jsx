@@ -885,7 +885,16 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
     >
       {/* Trigger Box */}
       <div
-        onClick={() => onToggle(!isOpen)}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle(!isOpen);
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle(!isOpen);
+        }}
         style={{
           width: '100%',
           height: '60px',
@@ -955,7 +964,14 @@ function CustomDropdown({ placeholder, value, options, onChange, isOpen, onToggl
             return (
               <div
                 key={option}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChange(option);
+                  onToggle(false);
+                }}
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onChange(option);
                   onToggle(false);

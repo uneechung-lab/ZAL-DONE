@@ -3922,8 +3922,8 @@ export default function App() {
             </div>
             
             {/* User Session & Reset Controls (Right aligned) */}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
-              {/* User Avatar & Name & Role & Interactive Project Select */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
+              {/* User Avatar & Name & Role */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{
                   width: '26px',
@@ -3946,54 +3946,91 @@ export default function App() {
                   )}
                 </div>
                 
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                  {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''} {parsedUser.department || '개발'} / 
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', marginRight: '2px' }}>
+                  {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''}
                 </span>
-
-                <select
-                  value={headerSelectedProject}
-                  onChange={(e) => setHeaderSelectedProject(e.target.value)}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '2px 6px',
-                    fontSize: '12px',
-                    fontWeight: '800',
-                    color: '#0f172a',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    maxWidth: '180px',
-                    textOverflow: 'ellipsis',
-                    transition: 'all 0.15s ease',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  <option value="전체">전체</option>
-                  <option value="신영증권 외화표시펀드 매매 시스템 구축">신영증권 외화표시펀드 매매 시스템 구축</option>
-                  <option value="삼성증권 연금 고객중심 서비스 개선">삼성증권 연금 고객중심 서비스 개선</option>
-                  <option value="NH투자증권 퇴직연금시스템 운영">NH투자증권 퇴직연금시스템 운영</option>
-                  <option value="경찰공제회 시스템 유지보수">경찰공제회 시스템 유지보수</option>
-                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
-                  <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
-                  <option value="해당없음">해당없음</option>
-                </select>
               </div>
 
-              {/* Logout button (if configured) or local user switcher */}
+              {/* Department Badge Card */}
+              <div style={{
+                height: '32px',
+                backgroundColor: '#f1f5f9',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '0 12px',
+                fontSize: '12.5px',
+                fontWeight: '800',
+                color: '#0f172a',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxSizing: 'border-box',
+                whiteSpace: 'nowrap'
+              }}>
+                {parsedUser.department || '개발'}
+              </div>
+
+              {/* Interactive Project Select Dropdown Card */}
+              <select
+                value={headerSelectedProject}
+                onChange={(e) => setHeaderSelectedProject(e.target.value)}
+                style={{
+                  height: '32px',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '0 10px',
+                  fontSize: '12.5px',
+                  fontWeight: '800',
+                  color: '#0f172a',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  maxWidth: '180px',
+                  textOverflow: 'ellipsis',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <option value="전체">전체</option>
+                <option value="신영증권 외화표시펀드 매매 시스템 구축">신영증권 외화표시펀드 매매 시스템 구축</option>
+                <option value="삼성증권 연금 고객중심 서비스 개선">삼성증권 연금 고객중심 서비스 개선</option>
+                <option value="NH투자증권 퇴직연금시스템 운영">NH투자증권 퇴직연금시스템 운영</option>
+                <option value="경찰공제회 시스템 유지보수">경찰공제회 시스템 유지보수</option>
+                <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
+                <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
+                <option value="해당없음">해당없음</option>
+              </select>
+
+              {/* Logout Button Card */}
               {isConfigured ? (
                 <button
                   onClick={handleLogOut}
                   style={{
+                    height: '32px',
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '10px',
+                    padding: '0 12px',
                     fontSize: '12.5px',
-                    color: 'var(--text-secondary)',
-                    background: '#ffffff',
-                    border: '1px solid var(--border-color)',
-                    padding: '4px 10px',
-                    borderRadius: 'var(--radius-sm)',
+                    fontWeight: '700',
+                    color: '#475569',
                     cursor: 'pointer',
-                    fontWeight: '500',
-                    transition: 'var(--transition)'
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.borderColor = '#000000';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
                   }}
                 >
                   로그아웃
@@ -4006,12 +4043,16 @@ export default function App() {
                     if (target) setVirtualUser(target);
                   }}
                   style={{
-                    fontSize: '12px',
-                    padding: '3px 6px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-color)',
-                    background: '#ffffff',
-                    color: 'var(--text-secondary)'
+                    height: '32px',
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '10px',
+                    padding: '0 10px',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    color: '#475569',
+                    cursor: 'pointer',
+                    outline: 'none'
                   }}
                 >
                   {activeTeam.map(m => (
@@ -4020,19 +4061,32 @@ export default function App() {
                 </select>
               )}
 
-              {/* Reset Button */}
+              {/* Reset Button Card */}
               <button 
-                className="modal-btn" 
                 style={{ 
-                  fontSize: '12.5px', 
-                  fontWeight: '500', 
-                  color: '#ef4444', 
-                  borderColor: 'var(--border-color)',
+                  height: '32px',
                   backgroundColor: '#ffffff',
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-sm)',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '0 12px',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  color: '#ef4444',
                   cursor: 'pointer',
-                  transition: 'var(--transition)'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                  e.currentTarget.style.borderColor = '#ef4444';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
                 }}
                 onClick={() => {
                   showLayerConfirm(

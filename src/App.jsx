@@ -90,6 +90,103 @@ function isScheduleInMonth(s, year, month) {
   return schedYear === year && schedMonth === month;
 }
 
+function getProgressBgStyle(colorName, progress) {
+  if (!progress || progress <= 0) return {};
+  const map = {
+    purple: 'rgba(79, 70, 229, 0.15)',
+    orange: 'rgba(217, 119, 6, 0.15)',
+    green: 'rgba(5, 150, 105, 0.15)',
+    blue: 'rgba(37, 99, 235, 0.15)',
+  };
+  const bgTint = map[colorName] || 'rgba(79, 70, 229, 0.15)';
+  if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
+  return {
+    background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)`
+  };
+}
+
+function getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules) {
+  const sample = evt.sampleEvent;
+  if (!sample) return {};
+  const progress = sample.progress !== undefined ? sample.progress : (parseScheduleDescription(sample.description || '').progress || 0);
+  if (!progress || progress <= 0) return {};
+
+  const map = {
+    purple: 'rgba(79, 70, 229, 0.15)',
+    orange: 'rgba(217, 119, 6, 0.15)',
+    green: 'rgba(5, 150, 105, 0.15)',
+    blue: 'rgba(37, 99, 235, 0.15)',
+  };
+  const bgTint = map[evt.color] || 'rgba(79, 70, 229, 0.15)';
+
+  if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
+
+  const groupId = sample.description && sample.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+  let groupScheds = [];
+  if (groupId) {
+    groupScheds = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+  } else if (sample.title) {
+    groupScheds = schedules.filter(s => s.title === sample.title);
+  }
+  if (groupScheds.length === 0) {
+    groupScheds = [sample];
+  }
+
+  groupScheds.sort((a, b) => {
+    const ya = a.year || currentYear, yb = b.year || currentYear;
+    if (ya !== yb) return ya - yb;
+    const ma = a.month || currentMonth, mb = b.month || currentMonth;
+    if (ma !== mb) return ma - mb;
+    return a.date - b.date;
+  });
+
+  const first = groupScheds[0];
+  const last = groupScheds[groupScheds.length - 1];
+
+  const firstDate = new Date(first.year || currentYear, (first.month || currentMonth) - 1, first.date);
+  firstDate.setHours(0, 0, 0, 0);
+
+  const lastDate = new Date(last.year || currentYear, (last.month || currentMonth) - 1, last.date);
+  lastDate.setHours(0, 0, 0, 0);
+
+  const totalDays = Math.max(1, Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  const completedDays = totalDays * (progress / 100);
+
+  const segStartDay = evt.rowDays ? evt.rowDays[evt.startCol] : null;
+  const segEndDay = evt.rowDays ? evt.rowDays[evt.endCol] : null;
+
+  if (!segStartDay || !segEndDay) {
+    return { background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)` };
+  }
+
+  const segStartDate = new Date(segStartDay.year || currentYear, (segStartDay.month || currentMonth) - 1, segStartDay.dayNum);
+  segStartDate.setHours(0, 0, 0, 0);
+
+  const segEndDate = new Date(segEndDay.year || currentYear, (segEndDay.month || currentMonth) - 1, segEndDay.dayNum);
+  segEndDate.setHours(0, 0, 0, 0);
+
+  const segmentDays = Math.max(1, Math.round((segEndDate.getTime() - segStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  const daysBeforeSegment = Math.max(0, Math.round((segStartDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+  const remainingCompletedDays = completedDays - daysBeforeSegment;
+
+  if (remainingCompletedDays <= 0) {
+    return { background: '#ffffff' };
+  }
+  if (remainingCompletedDays >= segmentDays) {
+    return { background: bgTint, backgroundColor: bgTint };
+  }
+
+  const fillPct = Math.min(100, Math.max(0, (remainingCompletedDays / segmentDays) * 100));
+  return {
+    background: `linear-gradient(to right, ${bgTint} ${fillPct.toFixed(1)}%, #ffffff ${fillPct.toFixed(1)}%)`
+  };
+}
+
+function getListCardProgressStyle(event, cardDateNum, currentYear, currentMonth, schedules) {
+  return { background: '#ffffff', backgroundColor: '#ffffff' };
+}
+
 function getMemberAvatarPic(member, index) {
   if (!member) return '/pic1_thumb.png';
   if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '/pic2_thumb.png';
@@ -550,15 +647,22 @@ function parseScheduleDescription(description = '') {
   let groupId = '';
   let detail = '';
   let memo = '';
+  let progress = 0;
 
   const groupMatch = description.match(/\[그룹 ID\]\s*(g_\w+)/);
   if (groupMatch) {
     groupId = groupMatch[1];
   }
 
+  const progressMatch = description.match(/\[진척률\]\s*(\d+)%/);
+  if (progressMatch) {
+    progress = parseInt(progressMatch[1]);
+  }
+
   let remaining = description
     .replace(/\[YM:\d{4}\.\d{2}\]\s*\|?\s*/g, '')
     .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/g, '')
+    .replace(/\[진척률\]\s*\d+%\s*\|?\s*/g, '')
     .trim();
 
   const detailMatch = remaining.match(/\[상세\]\s*(.*?)(?=\s*\|\s*\[메모\]|\s*\[메모\]|$)/s);
@@ -575,16 +679,19 @@ function parseScheduleDescription(description = '') {
     detail = remaining;
   }
 
-  return { groupId, detail, memo };
+  return { groupId, detail, memo, progress };
 }
 
-function formatScheduleDescription(groupId, detail, memo, year = null, month = null) {
+function formatScheduleDescription(groupId, detail, memo, year = null, month = null, progress = 0) {
   let parts = [];
   if (year && month) {
     parts.push(`[YM:${year}.${month < 10 ? '0' : ''}${month}]`);
   }
   if (groupId) {
     parts.push(`[그룹 ID] ${groupId}`);
+  }
+  if (progress > 0) {
+    parts.push(`[진척률] ${progress}%`);
   }
   if (detail) {
     parts.push(`[상세] ${detail}`);
@@ -892,8 +999,15 @@ export default function App() {
   // Event modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMember, setModalMember] = useState(null);
-  const [modalStartHour, setModalStartHour] = useState(9);
-  const [newTitle, setNewTitle] = useState('');
+  const [addTitle, setAddTitle] = useState('');
+  const [addMemberIds, setAddMemberIds] = useState([]);
+  const [addStartHour, setAddStartHour] = useState(9);
+  const [addEndHour, setAddEndHour] = useState(11);
+  const [addStartDateStr, setAddStartDateStr] = useState('');
+  const [addEndDateStr, setAddEndDateStr] = useState('');
+  const [addDetail, setAddDetail] = useState('');
+  const [addMemo, setAddMemo] = useState('');
+  const [addProgress, setAddProgress] = useState(0);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
@@ -905,6 +1019,7 @@ export default function App() {
   const [editDescription, setEditDescription] = useState('');
   const [editDetail, setEditDetail] = useState('');
   const [editMemo, setEditMemo] = useState('');
+  const [editProgress, setEditProgress] = useState(0);
   const [editStartDateStr, setEditStartDateStr] = useState('');
   const [editEndDateStr, setEditEndDateStr] = useState('');
 
@@ -929,6 +1044,7 @@ export default function App() {
     const parsedDesc = parseScheduleDescription(event.description || '');
     setEditDetail(parsedDesc.detail);
     setEditMemo(parsedDesc.memo);
+    setEditProgress(event.progress !== undefined ? event.progress : parsedDesc.progress);
 
     const matchGroupId = event.description && event.description.match(/\[그룹 ID\]\s*(g_\w+)/);
     const groupId = matchGroupId ? matchGroupId[1] : null;
@@ -1043,7 +1159,7 @@ export default function App() {
       const createdSchedules = [];
       for (let idx = 0; idx < dateList.length; idx++) {
         const item = dateList[idx];
-        const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month);
+        const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month, editProgress);
 
         const schedObj = {
           id: `s_${Date.now()}_${idx}`,
@@ -1057,6 +1173,7 @@ export default function App() {
           endHour: parseFloat(editEndHour),
           color: randomColor,
           description: newDesc,
+          progress: editProgress,
           status: newStatus,
           requesterId: newRequesterId,
         };
@@ -1736,48 +1853,126 @@ export default function App() {
     }
   };
 
-  const openAddModal = (member, hour) => {
-    setModalMember(member);
-    setModalStartHour(hour);
-    setNewTitle('');
+  const openAddModal = (member = null, hour = 9, date = null, month = null, year = null) => {
+    const targetYear = year || currentYear;
+    const targetMonth = month || currentMonth;
+    const targetDate = date || selectedDate;
+    const targetMember = member || (activeTeam.length > 0 ? activeTeam[0] : ME);
+
+    setModalMember(targetMember);
+    setAddTitle('');
+    setAddMemberIds(targetMember ? [targetMember.id] : ['sh']);
+    setAddStartHour(hour);
+    setAddEndHour(Math.min(hour + 1, 19.5));
+
+    const fmt = (y, m, d) => `${y}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
+    const dateStr = fmt(targetYear, targetMonth, targetDate);
+    setAddStartDateStr(dateStr);
+    setAddEndDateStr(dateStr);
+    setAddDetail('');
+    setAddMemo('');
+    setAddProgress(0);
+
     setIsModalOpen(true);
   };
 
   const saveManualSchedule = async () => {
-    if (!newTitle.trim()) return;
-    const colors = ['purple', 'blue', 'green', 'orange'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    const isSelf = modalMember.id === 'sh';
-    const newSchedule = {
-      id: `s_${Date.now()}`,
-      year: currentYear,
-      month: currentMonth,
-      memberId: modalMember.id,
-      memberIds: [modalMember.id],
-      title: newTitle.trim(),
-      startHour: modalStartHour,
-      endHour: Math.min(modalStartHour + 2, 19.5),
-      color: randomColor,
-      status: isSelf ? 'accepted' : 'requested',
-      date: selectedDate,
-      requesterId: 'sh',
-      description: `[YM:${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}]`,
-    };
-
-    if (isConfigured) {
-      let dbSched = { ...newSchedule };
-      if (isCurrentUserYoonhee) {
-        dbSched.memberId = newSchedule.memberId === 'sh' ? 'yoonhee' : (newSchedule.memberId === 'yoonhee' ? 'sh' : newSchedule.memberId);
-        dbSched.memberIds = newSchedule.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-        dbSched.requesterId = newSchedule.requesterId === 'sh' ? 'yoonhee' : (newSchedule.requesterId === 'yoonhee' ? 'sh' : newSchedule.requesterId);
-      }
-      const dbSchedResult = await appwriteService.createSchedule(dbSched);
-      setSchedules(prev => [...prev, dbSchedResult ? { ...newSchedule, id: dbSchedResult.id } : newSchedule]);
-    } else {
-      setSchedules(prev => [...prev, newSchedule]);
+    if (!addTitle.trim()) {
+      alert('일정명을 입력해 주세요.');
+      return;
     }
-    setIsModalOpen(false);
+    if (addMemberIds.length === 0) {
+      alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
+      return;
+    }
+    if (!addStartDateStr || !addEndDateStr) {
+      alert('시작일과 종료일을 지정해야 합니다.');
+      return;
+    }
+    if (addStartDateStr > addEndDateStr) {
+      alert('시작일은 종료일보다 이전이어야 합니다.');
+      return;
+    }
+
+    setIsSavingEvent(true);
+    try {
+      await new Promise(r => setTimeout(r, 450));
+      const dStart = new Date(addStartDateStr + 'T00:00:00');
+      const dEnd = new Date(addEndDateStr + 'T00:00:00');
+      
+      const dateList = [];
+      const curr = new Date(dStart.getTime());
+      while (curr <= dEnd) {
+        dateList.push({
+          year: curr.getFullYear(),
+          month: curr.getMonth() + 1,
+          date: curr.getDate()
+        });
+        curr.setDate(curr.getDate() + 1);
+      }
+
+      const isAssignedToSelfOnly = addMemberIds.length === 1 && addMemberIds.includes('sh');
+      const newStatus = isAssignedToSelfOnly ? 'accepted' : 'requested';
+      const newRequesterId = 'sh';
+
+      const newGroupId = dateList.length > 1 ? `g_${Date.now()}_${Math.floor(Math.random() * 1000)}` : null;
+      const colors = ['purple', 'blue', 'green', 'orange'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+      const createdSchedules = [];
+      for (let idx = 0; idx < dateList.length; idx++) {
+        const item = dateList[idx];
+        const newDesc = formatScheduleDescription(newGroupId, addDetail.trim(), addMemo.trim(), item.year, item.month, addProgress);
+
+        const schedObj = {
+          id: `s_${Date.now()}_${idx}`,
+          year: item.year,
+          month: item.month,
+          date: item.date,
+          title: addTitle.trim(),
+          memberIds: addMemberIds,
+          memberId: addMemberIds[0],
+          startHour: parseFloat(addStartHour),
+          endHour: parseFloat(addEndHour),
+          color: randomColor,
+          description: newDesc,
+          progress: addProgress,
+          status: newStatus,
+          requesterId: newRequesterId,
+        };
+
+        if (isConfigured) {
+          let dbSched = { ...schedObj };
+          if (isCurrentUserYoonhee) {
+            dbSched.memberId = schedObj.memberId === 'sh' ? 'yoonhee' : (schedObj.memberId === 'yoonhee' ? 'sh' : schedObj.memberId);
+            dbSched.memberIds = schedObj.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+            dbSched.requesterId = schedObj.requesterId === 'sh' ? 'yoonhee' : (schedObj.requesterId === 'yoonhee' ? 'sh' : schedObj.requesterId);
+          }
+          try {
+            const result = await appwriteService.createSchedule(dbSched);
+            createdSchedules.push(result ? { ...schedObj, id: result.id } : schedObj);
+          } catch (e) {
+            console.error("Appwrite create error:", e);
+            createdSchedules.push(schedObj);
+          }
+        } else {
+          createdSchedules.push(schedObj);
+        }
+      }
+
+      setSchedules(prev => [...prev, ...createdSchedules]);
+      setIsModalOpen(false);
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
+  const getAddEndHourOptions = () => {
+    const options = [];
+    for (let h = parseFloat(addStartHour) + 0.5; h <= 19.5; h += 0.5) {
+      options.push(h);
+    }
+    return options;
   };
 
   const filteredMembers = activeTeam.filter(m => {
@@ -2678,7 +2873,7 @@ export default function App() {
                           <td 
                             key={h} 
                             className="time-grid-cell"
-                            onClick={() => openAddModal(member, h)}
+                            onClick={() => openAddModal(member, h, selectedDate, currentMonth, currentYear)}
                           >
                             {currentEvents.map(currentEvent => {
                               const trackIndex = trackMap[currentEvent.id] ?? 0;
@@ -2687,15 +2882,19 @@ export default function App() {
                               const isRejected = currentEvent.status === 'rejected' || currentEvent.status === `rejected_${member.id}`;
                               const displayStart = currentEvent.startHour < 8 ? 8 : currentEvent.startHour;
                               const displayEnd = currentEvent.endHour > 19.5 ? 19.5 : currentEvent.endHour;
+                              const eventProgress = currentEvent.progress !== undefined ? currentEvent.progress : (parseScheduleDescription(currentEvent.description || '').progress);
+                              const isCompleted = eventProgress === 100;
+
                               return (
                                 <div 
                                   key={currentEvent.id}
-                                  className={`schedule-block ${currentEvent.color} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
+                                  className={`schedule-block ${currentEvent.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
                                   style={{ 
                                     width: `calc(${(displayEnd - displayStart) * 2 * 100}% - 8px)`,
                                     top: `${topOffset}px`,
                                     height: '26px',
-                                    bottom: 'auto'
+                                    bottom: 'auto',
+                                    ...getProgressBgStyle(currentEvent.color, eventProgress)
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -2867,7 +3066,7 @@ export default function App() {
                                 backgroundColor: info.month === 6 && info.dayNum === new Date().getDate() ? 'rgba(99, 102, 241, 0.01)' : '',
                                 opacity: info.month === 6 ? 1 : 0.5
                               }}
-                              onClick={() => openAddModal(member, h)}
+                              onClick={() => openAddModal(member, h, info.dayNum, info.month, currentYear)}
                             >
                               {currentEvents.map(event => {
                                 const isRequested = (event.status === 'requested' || (!event.status && event.memberId !== 'sh')) && member.id !== 'sh';
@@ -2876,11 +3075,13 @@ export default function App() {
                                 const displayEnd = event.endHour > 19.5 ? 19.5 : event.endHour;
                                 const duration = displayEnd - displayStart;
                                 const heightPx = Math.max(duration * 2 * 36 - 12, 20);
+                                const eventProgress = event.progress !== undefined ? event.progress : (parseScheduleDescription(event.description || '').progress);
+                                const isCompleted = eventProgress === 100;
 
                                 return (
                                   <div
                                     key={event.id}
-                                    className={`schedule-block ${event.color} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
+                                    className={`schedule-block ${event.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
                                     style={{
                                       position: 'absolute',
                                       top: '6px',
@@ -2897,7 +3098,8 @@ export default function App() {
                                       boxShadow: 'var(--shadow-sm)',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
-                                      display: 'block'
+                                      display: 'block',
+                                      ...getProgressBgStyle(event.color, eventProgress)
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2984,7 +3186,8 @@ export default function App() {
                           sampleEvent: s,
                           startCol: col,
                           endCol: col,
-                          cols: [col]
+                          cols: [col],
+                          rowDays: row
                         };
                       } else {
                         weekEventsMap[key].endCol = col;
@@ -3062,7 +3265,7 @@ export default function App() {
                               onClick={() => {
                                 if (isCurrentMonth) {
                                   setSelectedDate(dayNum);
-                                  setTimeViewTab('daily');
+                                  openAddModal(activeTeam[0] || ME, 9, dayNum, currentMonth, currentYear);
                                 }
                               }}
                             >
@@ -3105,11 +3308,13 @@ export default function App() {
                             : (evt.memberId ? [activeTeam.find(t => t.id === evt.memberId)].filter(Boolean) : [ME]);
 
                           const sample = evt.sampleEvent;
+                          const sampleProgress = sample ? (sample.progress !== undefined ? sample.progress : (parseScheduleDescription(sample.description || '').progress)) : 0;
+                          const isCompleted = sampleProgress === 100;
 
                           return (
                             <div
                               key={evt.key}
-                              className={`schedule-block ${evt.color}`}
+                              className={`schedule-block ${evt.color} ${isCompleted ? 'completed' : ''}`}
                               style={{
                                 position: 'absolute',
                                 top: `${topPx}px`,
@@ -3125,7 +3330,8 @@ export default function App() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 pointerEvents: 'auto',
-                                zIndex: 5
+                                zIndex: 5,
+                                ...getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3219,6 +3425,40 @@ export default function App() {
                       }}>
                         {currentMonth}월 {d}일 ({dow}요일)
                         {d === new Date().getDate() && <span style={{ fontSize: '10px', backgroundColor: 'var(--accent-purple)', color: '#fff', padding: '2px 6px', borderRadius: '10px', fontWeight: '800' }}>오늘</span>}
+                        <button
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: '#f8fafc',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            padding: 0,
+                            marginLeft: '2px',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--accent-purple)';
+                            e.currentTarget.style.borderColor = 'var(--accent-purple)';
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                            e.currentTarget.style.color = 'var(--text-secondary)';
+                          }}
+                          onClick={() => openAddModal(activeTeam[0] || ME, 9, d, currentMonth, currentYear)}
+                          title={`${d}일 일정 추가`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                        </button>
                       </div>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
@@ -3228,7 +3468,20 @@ export default function App() {
                             : [];
                           const isRequested = event.status === 'requested';
                           const isRejected = event.status === 'rejected' || (event.status && event.status.startsWith('rejected_'));
+                          const parsedDesc = parseScheduleDescription(event.description || '');
+                          const eventProgress = event.progress !== undefined ? event.progress : (parsedDesc.progress || 0);
+                          const isCompleted = eventProgress === 100;
                           
+                          const cleanDescText = (parsedDesc.detail || parsedDesc.memo || '')
+                            .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+                            .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+                            .replace(/\[진척률\]\s*\d+%\s*\|?\s*/gi, '')
+                            .replace(/\[상세\]\s*/gi, '')
+                            .replace(/\[메모\]\s*/gi, '')
+                            .replace(/^[\s|]+/, '')
+                            .replace(/[\s|]+$/, '')
+                            .trim();
+
                           return (
                             <div
                               key={event.id}
@@ -3245,21 +3498,25 @@ export default function App() {
                                 boxShadow: 'var(--shadow-sm)',
                                 border: '1px solid var(--border-light)',
                                 transition: 'all 0.2s ease',
-                                textAlign: 'left'
+                                textAlign: 'left',
+                                background: '#ffffff',
+                                backgroundColor: '#ffffff'
                               }}
                               onClick={() => openDetailModal(event)}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '11px', fontWeight: '700', opacity: 0.8 }}>
-                                  ⏰ {formatHour(event.startHour)} ~ {formatHour(event.endHour)}
+                                  {formatHour(event.startHour)} ~ {formatHour(event.endHour)}
                                 </span>
                                 {isRequested && <span style={{ fontSize: '10px', color: '#b45309', backgroundColor: '#fffbeb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fef3c7' }}>승인대기</span>}
                                 {isRejected && <span style={{ fontSize: '10px', color: '#b91c1c', backgroundColor: '#fef2f2', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fee2e2' }}>반려됨</span>}
                               </div>
-                              <div style={{ fontSize: '14px', fontWeight: '700' }}>{event.title}</div>
-                              {event.description && (
-                                <div style={{ fontSize: '12px', opacity: 0.85, whiteSpace: 'pre-wrap', borderTop: '1px dashed rgba(255,255,255,0.2)', paddingTop: '4px' }}>
-                                  {renderTextWithLinks(event.description)}
+                              <div style={{ fontSize: '14px', fontWeight: '700' }}>
+                                {event.title}{eventProgress > 0 ? ` ${eventProgress}%` : ''}
+                              </div>
+                              {cleanDescText && (
+                                <div style={{ fontSize: '12px', opacity: 0.85, whiteSpace: 'pre-wrap', borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '4px' }}>
+                                  {renderTextWithLinks(cleanDescText)}
                                 </div>
                               )}
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px' }}>
@@ -3311,22 +3568,275 @@ export default function App() {
       {/* ──── ADD SCHEDULE MODAL ─────────────────── */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">
-              📅 {modalMember?.name}의 {formatHour(modalStartHour)} 일정 추가
+          <div className="modal-content" style={{ width: '100%', maxWidth: '680px', padding: '28px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div className="modal-title" style={{ fontSize: '21px', marginBottom: 0 }}>일정 추가</div>
+              <button 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  padding: '4px', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--text-tertiary)',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
+                onClick={() => setIsModalOpen(false)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
             </div>
-            <input 
-              type="text" 
-              className="modal-input" 
-              placeholder="일정 제목을 입력하세요"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && saveManualSchedule()}
-              autoFocus
-            />
-            <div className="modal-actions">
-              <button className="modal-btn" onClick={() => setIsModalOpen(false)}>취소</button>
-              <button className="modal-btn primary" onClick={saveManualSchedule}>저장</button>
+
+            <div className="modal-detail-body" style={{ margin: '16px 0', fontSize: '16px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
+                <input 
+                  type="text" 
+                  className="modal-input" 
+                  placeholder="일정 제목을 입력하세요"
+                  value={addTitle} 
+                  onChange={(e) => setAddTitle(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '15.5px' }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정 기간 및 시간</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: '220px' }}>
+                    <input 
+                      type="date" 
+                      className="modal-input" 
+                      value={addStartDateStr} 
+                      onChange={(e) => {
+                        setAddStartDateStr(e.target.value);
+                        if (!addEndDateStr || e.target.value > addEndDateStr) {
+                          setAddEndDateStr(e.target.value);
+                        }
+                      }} 
+                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                    />
+                    <select 
+                      value={addStartHour} 
+                      onChange={(e) => {
+                        const newStart = parseFloat(e.target.value);
+                        setAddStartHour(newStart);
+                        if (addEndHour <= newStart) {
+                          setAddEndHour(newStart + 1);
+                        }
+                      }}
+                      style={{ 
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        width: 'auto', 
+                        minWidth: '105px', 
+                        padding: '9px 28px 9px 12px', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {hourSlots.map(h => (
+                        <option key={h} value={h}>{formatHour(h)}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <span style={{ fontWeight: '700', color: 'var(--text-tertiary)', padding: '0 2px' }}>~</span>
+
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: '220px' }}>
+                    <input 
+                      type="date" 
+                      className="modal-input" 
+                      value={addEndDateStr} 
+                      onChange={(e) => setAddEndDateStr(e.target.value)} 
+                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                    />
+                    <select 
+                      value={addEndHour} 
+                      onChange={(e) => setAddEndHour(parseFloat(e.target.value))}
+                      style={{ 
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        width: 'auto', 
+                        minWidth: '105px', 
+                        padding: '9px 28px 9px 12px', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {getAddEndHourOptions().map(h => (
+                        <option key={h} value={h}>{formatHour(h)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 진척률 바 그래프 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>진척률</label>
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: addProgress > 0 ? 'var(--accent-purple)' : 'var(--text-tertiary)' }}>
+                    {addProgress}%
+                  </span>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 0, 
+                  backgroundColor: '#f1f5f9', 
+                  padding: '3px', 
+                  borderRadius: '12px', 
+                  border: '1px solid var(--border-light)',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setAddProgress(0)}
+                    style={{
+                      padding: '0 8px',
+                      height: '30px',
+                      borderRadius: '8px 0 0 8px',
+                      border: 'none',
+                      backgroundColor: addProgress === 0 ? '#64748b' : 'transparent',
+                      color: addProgress === 0 ? '#ffffff' : '#64748b',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      flexShrink: 0
+                    }}
+                    title="0% 리셋"
+                  >
+                    0%
+                  </button>
+                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val, idx) => {
+                    const isFilled = addProgress >= val;
+                    const isCurrentTarget = addProgress === val;
+                    const isLast = idx === 9;
+                    const showText = isFilled ? isCurrentTarget : true;
+
+                    return (
+                      <div
+                        key={val}
+                        onClick={() => setAddProgress(val)}
+                        style={{
+                          flex: 1,
+                          height: '30px',
+                          borderRadius: isLast ? '0 8px 8px 0' : '0',
+                          backgroundColor: isFilled ? '#6366f1' : '#ffffff',
+                          borderRight: isLast ? 'none' : (isFilled ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e2e8f0'),
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isFilled ? '#ffffff' : '#94a3b8',
+                          fontSize: '11.5px',
+                          fontWeight: '800',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                        title={`${val}%`}
+                      >
+                        {showText ? `${val}%` : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
+                <textarea 
+                  placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
+                  value={addDetail} 
+                  onChange={(e) => setAddDetail(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
+                  {activeTeam.map(m => {
+                    const isChecked = addMemberIds.includes(m.id);
+                    return (
+                      <label 
+                        key={m.id} 
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          cursor: 'pointer', 
+                          background: isChecked ? 'rgba(99, 102, 241, 0.08)' : '#f8fafc', 
+                          padding: '8px 14px', 
+                          borderRadius: '20px', 
+                          border: `1.5px solid ${isChecked ? 'var(--accent-purple)' : 'var(--border-light)'}`, 
+                          fontSize: '14.5px', 
+                          fontWeight: '600', 
+                          transition: 'var(--transition)',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAddMemberIds(prev => [...prev, m.id]);
+                            } else {
+                              setAddMemberIds(prev => prev.filter(id => id !== m.id));
+                            }
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: m.color }} />
+                        {m.name}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                <textarea 
+                  placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
+                  value={addMemo} 
+                  onChange={(e) => setAddMemo(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
+                />
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '16px', gap: '10px' }}>
+              <button className="modal-btn" onClick={() => setIsModalOpen(false)} disabled={isSavingEvent}>취소</button>
+              <button className="modal-btn primary" onClick={saveManualSchedule} disabled={isSavingEvent}>
+                {isSavingEvent ? (
+                  <>
+                    <LoadingSpinner size={16} color="#ffffff" />
+                    저장 중...
+                  </>
+                ) : '저장'}
+              </button>
             </div>
           </div>
         </div>
@@ -3670,6 +4180,81 @@ export default function App() {
                 </div>
               </div>
 
+              {/* 진척률 바 그래프 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>진척률</label>
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: editProgress > 0 ? 'var(--accent-purple)' : 'var(--text-tertiary)' }}>
+                    {editProgress}%
+                  </span>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 0, 
+                  backgroundColor: '#f1f5f9', 
+                  padding: '3px', 
+                  borderRadius: '12px', 
+                  border: '1px solid var(--border-light)',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => isDetailEditable && setEditProgress(0)}
+                    disabled={!isDetailEditable}
+                    style={{
+                      padding: '0 8px',
+                      height: '30px',
+                      borderRadius: '8px 0 0 8px',
+                      border: 'none',
+                      backgroundColor: editProgress === 0 ? '#64748b' : 'transparent',
+                      color: editProgress === 0 ? '#ffffff' : '#64748b',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      cursor: isDetailEditable ? 'pointer' : 'default',
+                      transition: 'all 0.15s ease',
+                      flexShrink: 0
+                    }}
+                    title="0% 리셋"
+                  >
+                    0%
+                  </button>
+                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val, idx) => {
+                    const isFilled = editProgress >= val;
+                    const isCurrentTarget = editProgress === val;
+                    const isLast = idx === 9;
+                    const showText = isFilled ? isCurrentTarget : true;
+
+                    return (
+                      <div
+                        key={val}
+                        onClick={() => isDetailEditable && setEditProgress(val)}
+                        style={{
+                          flex: 1,
+                          height: '30px',
+                          borderRadius: isLast ? '0 8px 8px 0' : '0',
+                          backgroundColor: isFilled ? '#6366f1' : '#ffffff',
+                          borderRight: isLast ? 'none' : (isFilled ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e2e8f0'),
+                          cursor: isDetailEditable ? 'pointer' : 'default',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isFilled ? '#ffffff' : '#94a3b8',
+                          fontSize: '11.5px',
+                          fontWeight: '800',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                        title={`${val}%`}
+                      >
+                        {showText ? `${val}%` : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
                 <textarea 
@@ -3854,7 +4439,7 @@ export default function App() {
                   {timeViewTab === 'daily' && '📋 일일 업무 보고서'}
                   {timeViewTab === 'weekly' && '📋 주간 업무 보고서'}
                   {timeViewTab === 'monthly' && '📋 월간 업무 보고서'}
-                  {timeViewTab === 'list' && '📋 전체 업무 보고서 목록'}
+                  {timeViewTab === 'list' && `📋 ${currentMonth}월 업무 목록`}
                 </span>
 
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginLeft: '6px' }}>
@@ -3884,7 +4469,7 @@ export default function App() {
                   <span style={{ fontSize: '18px', fontWeight: '700', color: '#1e293b', padding: '0 4px', userSelect: 'none' }}>
                     {timeViewTab === 'daily' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate}`}
                     {timeViewTab === 'weekly' && getWeekRangeStr(currentYear, currentMonth, selectedDate).str}
-                    {timeViewTab === 'monthly' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월`}
+                    {(timeViewTab === 'monthly' || timeViewTab === 'list') && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월`}
                   </span>
 
                   <button 
@@ -4260,10 +4845,61 @@ export default function App() {
                   );
                 }
 
+                const reportConsolidatedRows = (() => {
+                  const rows = [];
+                  const map = {};
+
+                  filteredSchedules.forEach(s => {
+                    const groupId = s.description && s.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+                    const parsedDesc = parseScheduleDescription(s.description || '');
+                    const cleanDesc = (parsedDesc.detail || (s.description || ''))
+                      .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+                      .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+                      .replace(/\[진척률\]\s*\d+%\s*\|?\s*/gi, '')
+                      .replace(/\[상세\]\s*/gi, '')
+                      .replace(/\[메모\]\s*/gi, '')
+                      .replace(/^[\s|]+/, '')
+                      .replace(/[\s|]+$/, '')
+                      .trim();
+
+                    const key = groupId 
+                      ? `g_${groupId}`
+                      : `t_${s.title}_${s.startHour}_${s.endHour}_${cleanDesc}_${(s.memberIds || [s.memberId]).join(',')}`;
+
+                    if (!map[key]) {
+                      map[key] = {
+                        ...s,
+                        key,
+                        cleanDesc,
+                        progress: s.progress !== undefined ? s.progress : parsedDesc.progress,
+                        dates: [{ month: s.month || currentMonth, date: s.date }]
+                      };
+                      rows.push(map[key]);
+                    } else {
+                      if (!map[key].dates.some(d => d.month === (s.month || currentMonth) && d.date === s.date)) {
+                        map[key].dates.push({ month: s.month || currentMonth, date: s.date });
+                      }
+                    }
+                  });
+
+                  rows.forEach(r => {
+                    r.dates.sort((a, b) => (a.month !== b.month ? a.month - b.month : a.date - b.date));
+                    const first = r.dates[0];
+                    const last = r.dates[r.dates.length - 1];
+                    if (r.dates.length === 1) {
+                      r.dateRangeStr = `${first.month}/${first.date}`;
+                    } else {
+                      r.dateRangeStr = `${first.month}/${first.date}~${last.month}/${last.date}`;
+                    }
+                  });
+
+                  return rows;
+                })();
+
                 return (
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#334155' }}>
-                      📌 주요 수행 업무 및 일정 목록 ({filteredSchedules.length}건)
+                      📌 주요 수행 업무 및 일정 목록 ({reportConsolidatedRows.length}건)
                     </div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
                       <thead>
@@ -4276,9 +4912,9 @@ export default function App() {
                             </>
                           ) : (
                             <>
-                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '12%' }}>날짜</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '14%' }}>날짜</th>
                               <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '16%' }}>시간</th>
-                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '20%' }}>일정명</th>
+                              <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '18%' }}>일정명</th>
                               <th style={{ padding: '7px 10px 4px 10px', textAlign: 'left', width: '39%' }}>상세내용</th>
                               <th style={{ padding: '7px 10px 4px 10px', textAlign: 'center', width: '13%' }}>담당자</th>
                             </>
@@ -4286,25 +4922,17 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredSchedules.map((s, idx) => {
-                          const currentDateStr = `${s.month || currentMonth}/${s.date}`;
-                          const prevDateStr = idx > 0 ? `${filteredSchedules[idx - 1].month || currentMonth}/${filteredSchedules[idx - 1].date}` : null;
-                          const isFirstOfDate = currentDateStr !== prevDateStr;
-
+                        {reportConsolidatedRows.map((s, idx) => {
                           const memberList = s.memberIds && s.memberIds.length > 0
                             ? s.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean)
                             : [(activeTeam.find(m => m.id === s.memberId)?.name || '전체')];
 
                           const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
-                          const cleanDesc = (s.description || '')
-                            .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
-                            .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
-                            .replace(/\[상세\]\s*/gi, '')
-                            .replace(/^[\s|]+/, '')
-                            .trim();
+                          const progress = s.progress;
+                          const cleanDesc = s.cleanDesc;
 
                           return (
-                            <tr key={s.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr key={s.id || s.key || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                               {timeViewTab === 'daily' ? (
                                 <>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top' }}>
@@ -4354,22 +4982,51 @@ export default function App() {
                                         }} 
                                       />
                                     ) : (
-                                      (cleanDesc || '-').split('\n').map((line, i) => {
-                                        const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                        return (
-                                          <div 
-                                            key={i} 
-                                            style={{ 
-                                              paddingLeft: isBullet ? '0.65em' : '0', 
-                                              textIndent: isBullet ? '-0.65em' : '0', 
-                                              marginBottom: '3px', 
-                                              lineHeight: '1.4' 
-                                            }}
-                                          >
-                                            {line}
+                                      <div>
+                                        {(cleanDesc || '-').split('\n').map((line, i) => {
+                                          const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                          return (
+                                            <div 
+                                              key={i} 
+                                              style={{ 
+                                                paddingLeft: isBullet ? '0.65em' : '0', 
+                                                textIndent: isBullet ? '-0.65em' : '0', 
+                                                marginBottom: '3px', 
+                                                lineHeight: '1.4' 
+                                              }}
+                                            >
+                                              {line}
+                                            </div>
+                                          );
+                                        })}
+                                        {progress > 0 && (
+                                          <div style={{ marginTop: '6px', paddingTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f46e5', whiteSpace: 'nowrap' }}>
+                                              진척률 {progress}%
+                                            </span>
+                                            <div style={{ 
+                                              flex: 1, 
+                                              maxWidth: '140px', 
+                                              height: '8px', 
+                                              backgroundColor: '#e2e8f0', 
+                                              borderRadius: '4px', 
+                                              overflow: 'hidden',
+                                              WebkitPrintColorAdjust: 'exact',
+                                              printColorAdjust: 'exact'
+                                            }}>
+                                              <div style={{ 
+                                                width: `${progress}%`, 
+                                                height: '100%', 
+                                                backgroundColor: '#4f46e5',
+                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', 
+                                                borderRadius: '4px',
+                                                WebkitPrintColorAdjust: 'exact',
+                                                printColorAdjust: 'exact'
+                                              }} />
+                                            </div>
                                           </div>
-                                        );
-                                      })
+                                        )}
+                                      </div>
                                     )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
@@ -4381,7 +5038,7 @@ export default function App() {
                               ) : (
                                 <>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                                    {isFirstOfDate ? currentDateStr : ''}
+                                    {s.dateRangeStr}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#64748b', fontWeight: '600', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                                     {timeStr}
@@ -4428,22 +5085,51 @@ export default function App() {
                                         }} 
                                       />
                                     ) : (
-                                      (cleanDesc || '-').split('\n').map((line, i) => {
-                                        const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-                                        return (
-                                          <div 
-                                            key={i} 
-                                            style={{ 
-                                              paddingLeft: isBullet ? '0.65em' : '0', 
-                                              textIndent: isBullet ? '-0.65em' : '0', 
-                                              marginBottom: '3px', 
-                                              lineHeight: '1.4' 
-                                            }}
-                                          >
-                                            {line}
+                                      <div>
+                                        {(cleanDesc || '-').split('\n').map((line, i) => {
+                                          const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+                                          return (
+                                            <div 
+                                              key={i} 
+                                              style={{ 
+                                                paddingLeft: isBullet ? '0.65em' : '0', 
+                                                textIndent: isBullet ? '-0.65em' : '0', 
+                                                marginBottom: '3px', 
+                                                lineHeight: '1.4' 
+                                              }}
+                                            >
+                                              {line}
+                                            </div>
+                                          );
+                                        })}
+                                        {progress > 0 && (
+                                          <div style={{ marginTop: '6px', paddingTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f46e5', whiteSpace: 'nowrap' }}>
+                                              진척률 {progress}%
+                                            </span>
+                                            <div style={{ 
+                                              flex: 1, 
+                                              maxWidth: '140px', 
+                                              height: '8px', 
+                                              backgroundColor: '#e2e8f0', 
+                                              borderRadius: '4px', 
+                                              overflow: 'hidden',
+                                              WebkitPrintColorAdjust: 'exact',
+                                              printColorAdjust: 'exact'
+                                            }}>
+                                              <div style={{ 
+                                                width: `${progress}%`, 
+                                                height: '100%', 
+                                                backgroundColor: '#4f46e5',
+                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', 
+                                                borderRadius: '4px',
+                                                WebkitPrintColorAdjust: 'exact',
+                                                printColorAdjust: 'exact'
+                                              }} />
+                                            </div>
                                           </div>
-                                        );
-                                      })
+                                        )}
+                                      </div>
                                     )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>

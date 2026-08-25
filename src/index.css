@@ -741,6 +741,33 @@ button, input, select, textarea {
   color: var(--text-primary);
 }
 
+.schedule-block.blue {
+  background: #ffffff;
+  border-color: var(--border-color);
+  border-left-color: var(--accent-blue);
+  color: var(--text-primary);
+}
+
+.schedule-block.completed {
+  background: rgba(79, 70, 229, 0.1);
+}
+
+.schedule-block.purple.completed {
+  background: rgba(79, 70, 229, 0.1);
+}
+
+.schedule-block.orange.completed {
+  background: rgba(217, 119, 6, 0.1);
+}
+
+.schedule-block.green.completed {
+  background: rgba(5, 150, 105, 0.1);
+}
+
+.schedule-block.blue.completed {
+  background: rgba(37, 99, 235, 0.1);
+}
+
 .schedule-block.status-requested {
   border: 1.5px dashed var(--text-tertiary);
   opacity: 0.9;
@@ -1331,11 +1358,19 @@ button, input, select, textarea {
 
 /* Print Style for Work Report Modal */
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
   body * {
     visibility: hidden !important;
   }
   .printable-report-modal, .printable-report-modal * {
     visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
   .printable-report-modal {
     position: absolute !important;

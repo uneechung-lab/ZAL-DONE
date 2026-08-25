@@ -2782,7 +2782,7 @@ export default function App() {
                     <CustomDropdown
                       placeholder="부서 선택"
                       value={authDepartment}
-                      options={['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소']}
+                      options={['관리', '개발', '신사업']}
                       onChange={(dept) => setAuthDepartment(dept)}
                     />
 
@@ -2800,7 +2800,13 @@ export default function App() {
                   <CustomDropdown
                     placeholder="프로젝트 선택"
                     value={authProject}
-                    options={['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발']}
+                    options={[
+                      '신영증권 외화표시펀드 매매 시스템 구축',
+                      '삼성증권 연금 고객중심 서비스 개선',
+                      'NH투자증권 퇴직연금시스템 운영',
+                      '경찰공제회 시스템 유지보수',
+                      '대신증권 연금 경쟁력 강화'
+                    ]}
                     onChange={(proj) => setAuthProject(proj)}
                   />
                 </div>

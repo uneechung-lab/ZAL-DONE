@@ -3953,24 +3953,20 @@ export default function App() {
                     setIsUserMenuOpen(prev => !prev);
                   }}
                   style={{ 
-                    height: '32px',
-                    backgroundColor: '#ffffff',
-                    border: isUserMenuOpen ? '1.5px solid #000000' : '1.5px solid #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '0 10px',
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '6px',
                     cursor: 'pointer',
                     userSelect: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.15s ease'
+                    padding: '4px 6px',
+                    borderRadius: '8px',
+                    transition: 'background-color 0.15s ease'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                   title="사용자 메뉴 열기"
                 >

@@ -2905,7 +2905,7 @@ export default function App() {
                     <p style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', margin: '0 0 8px 2px', textAlign: 'left' }}>
                       프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>
                     </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxHeight: '210px', overflowY: 'auto', paddingRight: '2px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                       {[
                         '신영증권 외화표시펀드 매매 시스템 구축',
                         '삼성증권 연금 고객중심 서비스 개선',
@@ -2934,7 +2934,7 @@ export default function App() {
                             }}
                             style={{
                               width: '100%',
-                              padding: '13px 16px',
+                              padding: '11px 14px',
                               borderRadius: '14px',
                               border: isSelected ? '2px solid #000000' : '1.5px solid #e2e8f0',
                               backgroundColor: isSelected ? '#0f172a' : '#ffffff',

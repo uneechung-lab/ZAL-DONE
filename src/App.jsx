@@ -1075,6 +1075,7 @@ export default function App() {
   const [activeSelectLayer, setActiveSelectLayer] = useState(null); // 'department' | 'role' | 'project' | null
   const [isSignUp, setIsSignUp] = useState(false);
   const [signUpStep, setSignUpStep] = useState(1); // 1 | 2
+  const [headerSelectedProject, setHeaderSelectedProject] = useState('전체');
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
 
@@ -3877,6 +3878,40 @@ export default function App() {
               >
                 TODAY
               </button>
+
+              {/* User Department & Interactive Project Select Dropdown */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#475569', fontWeight: '700', marginLeft: '14px', whiteSpace: 'nowrap' }}>
+                <span>{parsedUser.name} {parsedUser.role !== '나(부장)' ? parsedUser.role : ''} [{authDepartment || '개발'} / </span>
+                <select
+                  value={headerSelectedProject}
+                  onChange={(e) => setHeaderSelectedProject(e.target.value)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '2px 8px',
+                    fontSize: '12.5px',
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    maxWidth: '220px',
+                    textOverflow: 'ellipsis',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <option value="전체">전체</option>
+                  <option value="신영증권 외화표시펀드 매매 시스템 구축">신영증권 외화표시펀드 매매 시스템 구축</option>
+                  <option value="삼성증권 연금 고객중심 서비스 개선">삼성증권 연금 고객중심 서비스 개선</option>
+                  <option value="NH투자증권 퇴직연금시스템 운영">NH투자증권 퇴직연금시스템 운영</option>
+                  <option value="경찰공제회 시스템 유지보수">경찰공제회 시스템 유지보수</option>
+                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
+                  <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
+                  <option value="해당없음">해당없음</option>
+                </select>
+                <span>]</span>
+              </div>
             </div>
 
             {/* Right Tabs */}

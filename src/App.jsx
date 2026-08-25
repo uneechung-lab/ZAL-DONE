@@ -2768,7 +2768,7 @@ export default function App() {
                   <div style={{ height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
                     <input 
                       type="text" 
-                      placeholder="이름 (예: 정다운)" 
+                      placeholder="이름 (실명입력)" 
                       value={authName} 
                       onChange={(e) => setAuthName(e.target.value)} 
                       style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
@@ -2828,7 +2828,7 @@ export default function App() {
               }}>
                 <input 
                   type="text" 
-                  placeholder="아이디 입력" 
+                  placeholder={isSignUp ? "회사메일 아이디 입력" : "아이디 입력"} 
                   value={authEmailId} 
                   onChange={(e) => setAuthEmailId(e.target.value)} 
                   style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}

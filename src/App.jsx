@@ -1157,11 +1157,11 @@ export default function App() {
 
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
-    if (!rawFullName) return { name: '정윤희', role: '부장', department: '기획', project: '대신증권 연금 경쟁력 강화' };
+    if (!rawFullName) return { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
 
     let str = rawFullName.trim();
     const isYoonhee = str.includes('정윤희');
-    let department = isYoonhee ? '기획' : '개발';
+    let department = '개발';
     let project = isYoonhee ? '대신증권 연금 경쟁력 강화' : '전체';
 
     // Remove trailing '사원' if string contains brackets or another role before it
@@ -1175,7 +1175,7 @@ export default function App() {
       const inside = bracketMatch[1];
       if (inside.includes('/')) {
         const parts = inside.split('/');
-        department = parts[0].trim() || (isYoonhee ? '기획' : '개발');
+        department = parts[0].trim() || '개발';
         project = parts[1].trim() || (isYoonhee ? '대신증권 연금 경쟁력 강화' : '전체');
       }
       str = str.replace(/\[.*?\]/, '').trim();
@@ -1217,7 +1217,7 @@ export default function App() {
     };
   };
 
-  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '부장', department: '기획', project: '대신증권 연금 경쟁력 강화' };
+  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
   const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
 
   const [greetingEmoji] = useState(() => {

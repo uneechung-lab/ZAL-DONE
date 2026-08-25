@@ -20,13 +20,21 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const appwriteService = {
   isConfigured,
 
-  async register(email, password, name) {
+  async register(email, password, name, prefs = {}) {
     if (!isConfigured) return null;
     try {
       // Create user account
       await account.create(ID.unique(), email, password, name);
       // Automatically create a session for the user after registration
-      return await this.login(email, password);
+      const session = await this.login(email, password);
+      if (prefs && Object.keys(prefs).length > 0) {
+        try {
+          await account.updatePrefs(prefs);
+        } catch (prefErr) {
+          console.warn('Appwrite failed to update user preferences:', prefErr);
+        }
+      }
+      return session;
     } catch (e) {
       console.error('Appwrite failed to register user', e);
       throw e;

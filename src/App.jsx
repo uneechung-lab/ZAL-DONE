@@ -864,6 +864,8 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authRole, setAuthRole] = useState('사원');
+  const [authDepartment, setAuthDepartment] = useState('개발팀');
+  const [authProject, setAuthProject] = useState('ZAL-DONE 업무 관리 시스템');
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
@@ -1771,16 +1773,22 @@ export default function App() {
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim()) {
-      setAuthError('모든 필드를 입력해 주세요.');
+    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !authProject) {
+      setAuthError('이름, 직급, 부서, 프로젝트 등 모든 필드를 입력해 주세요.');
       return;
     }
     setAuthLoading(true);
     setAuthError('');
     try {
       const email = `${authEmailId.trim()}@daumit.net`;
-      const fullName = `${authName.trim()} ${authRole}`;
-      const session = await appwriteService.register(email, authPassword, fullName);
+      const fullName = `${authName.trim()} ${authRole} [${authDepartment} / ${authProject}]`;
+      const prefs = {
+        department: authDepartment,
+        project: authProject,
+        role: authRole,
+        name: authName.trim()
+      };
+      const session = await appwriteService.register(email, authPassword, fullName, prefs);
       if (session) {
         const currentUser = await appwriteService.getCurrentUser();
         setUser(currentUser);
@@ -2527,31 +2535,67 @@ export default function App() {
             {/* Login / Sign Up Form (Tighter Top Margin) */}
             <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
-              {/* Sign Up Name & Role Row */}
+              {/* Sign Up Name, Role, Department & Project Fields */}
               {isSignUp && (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
-                    <input 
-                      type="text" 
-                      placeholder="이름 (예: 정다운)" 
-                      value={authName} 
-                      onChange={(e) => setAuthName(e.target.value)} 
-                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
-                      required
-                    />
+                <>
+                  {/* Name & Rank Row */}
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
+                      <input 
+                        type="text" 
+                        placeholder="이름 (예: 정다운)" 
+                        value={authName} 
+                        onChange={(e) => setAuthName(e.target.value)} 
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                        required
+                      />
+                    </div>
+                    <div style={{ width: '110px', height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
+                      <select
+                        value={authRole}
+                        onChange={(e) => setAuthRole(e.target.value)}
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '700', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
+                      >
+                        {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
+                          <option key={rank} value={rank}>{rank}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div style={{ width: '110px', height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
-                    <select
-                      value={authRole}
-                      onChange={(e) => setAuthRole(e.target.value)}
-                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '700', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
-                    >
-                      {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
-                        <option key={rank} value={rank}>{rank}</option>
-                      ))}
-                    </select>
+
+                  {/* Department & Project Row (부서 선택 & 프로젝트 선택) */}
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {/* Department Dropdown */}
+                    <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 14px', display: 'flex', alignItems: 'center' }}>
+                      <select
+                        value={authDepartment}
+                        onChange={(e) => setAuthDepartment(e.target.value)}
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14.5px', fontWeight: '600', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
+                        required
+                      >
+                        <option value="" disabled>부서 선택</option>
+                        {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Project Dropdown */}
+                    <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 14px', display: 'flex', alignItems: 'center' }}>
+                      <select
+                        value={authProject}
+                        onChange={(e) => setAuthProject(e.target.value)}
+                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14.5px', fontWeight: '600', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
+                        required
+                      >
+                        <option value="" disabled>프로젝트 선택</option>
+                        {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
+                          <option key={proj} value={proj}>{proj}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
               {/* Email Input Field (Height 60px) */}

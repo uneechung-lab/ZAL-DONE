@@ -2318,35 +2318,233 @@ export default function App() {
   // Display Login / Sign Up UI if configured but not authenticated
   if (isConfigured && !user) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', background: '#ffffff' }}>
-        <div style={{ background: '#ffffff', padding: '45px 40px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '420px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent-purple)', letterSpacing: '-0.5px' }}>ZAL : 잘됨</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>인공지능 일정 비서 및 협업 타임라인</p>
+      <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+        {/* ──── LEFT SIDE: BRANDING & FEATURE CARDS & CHARACTER ─────────────────── */}
+        <div style={{ 
+          flex: '1 1 60%', 
+          backgroundColor: '#ffffff', 
+          padding: '80px 64px 40px 64px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          position: 'relative', 
+          overflow: 'hidden' 
+        }}>
+          {/* Top Branding Header (Fixed at top-left) */}
+          <div style={{ position: 'absolute', top: '36px', left: '64px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
+            <img src="/ci.png" alt="다음정보시스템즈 CI" style={{ width: '282px', height: '64px', objectFit: 'contain', objectPosition: 'left center' }} />
           </div>
-          
-          <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {isSignUp && (
-              <>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이름</label>
+
+          {/* Center Main Copy & Features (Shifted 110px right, 185px upwards) */}
+          <div style={{ maxWidth: '520px', width: '100%', margin: 'auto 0', transform: 'translate(110px, -185px)', position: 'relative', zIndex: 10 }}>
+            <h1 style={{ fontSize: '56px', fontWeight: '900', lineHeight: '1.20', color: '#0f172a', letterSpacing: '-1.8px', margin: 0 }}>
+              업무 공유,<br />
+              <span style={{ position: 'relative', display: 'inline-block', zIndex: 1 }}>
+                10초에
+                <span style={{ 
+                  position: 'absolute', 
+                  bottom: '4px', 
+                  left: 0, 
+                  right: 0, 
+                  height: '18px', 
+                  backgroundColor: '#facc15', 
+                  zIndex: -1, 
+                  borderRadius: '3px' 
+                }}></span>
+              </span>
+              {' '}완료!
+            </h1>
+            <p style={{ fontSize: '18px', color: '#64748b', fontWeight: '600', marginTop: '16px', marginBottom: '32px' }}>
+              대화하듯 툭 던지면 보고서까지 한 번에 끝납니다.
+            </p>
+
+            {/* 3 Clean Feature Highlight Items (16px titles / 14px descriptions / Tighter Spacing) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+              {/* Feature 1 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '12px', 
+                  backgroundColor: '#f1f5f9', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  fontSize: '19px',
+                  flexShrink: 0
+                }}>
+                  💬
+                </div>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', lineHeight: '1.25' }}>AI 대화형 간편 입력</div>
+                  <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500', marginTop: '2px', lineHeight: '1.35' }}>번거로운 양식 없이 메신저 하듯 AI와 대화하면 끝</div>
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '12px', 
+                  backgroundColor: '#f1f5f9', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  fontSize: '19px',
+                  flexShrink: 0
+                }}>
+                  📊
+                </div>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', lineHeight: '1.25' }}>실시간 팀 통합 대시보드</div>
+                  <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500', marginTop: '2px', lineHeight: '1.35' }}>대화 한마디로 팀 캘린더와 업무 피드가 즉시 동기화</div>
+                </div>
+              </div>
+
+              {/* Feature 3 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '12px', 
+                  backgroundColor: '#f1f5f9', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  fontSize: '19px',
+                  flexShrink: 0
+                }}>
+                  📑
+                </div>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', lineHeight: '1.25' }}>일·주·월간 보고서 자동 생성</div>
+                  <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500', marginTop: '2px', lineHeight: '1.35' }}>대화 속 일정을 분석·등록하고, 자동 분류해 완성하는 업무 보고서</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom 3D Mascot Character Graphic with Ground Feet Shadow (Shifted 55px right) */}
+          <div style={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'flex-end',
+            transform: 'translateX(55px)',
+            pointerEvents: 'none', 
+            zIndex: 1 
+          }}>
+            {/* Soft Oval Ground Shadow under feet */}
+            <div style={{ 
+              position: 'absolute', 
+              bottom: '4px', 
+              width: '540px', 
+              height: '24px', 
+              borderRadius: '50%', 
+              backgroundColor: 'rgba(15, 23, 42, 0.22)', 
+              filter: 'blur(10px)', 
+              zIndex: 0 
+            }} />
+
+            <img 
+              src="/bi_cc.png" 
+              alt="잘됨이 마스코트" 
+              style={{ 
+                maxWidth: '640px', 
+                width: '100%',
+                height: 'auto', 
+                maxHeight: '440px', 
+                objectFit: 'contain',
+                objectPosition: 'bottom center',
+                display: 'block',
+                filter: 'drop-shadow(0 12px 14px rgba(0, 0, 0, 0.12))',
+                position: 'relative',
+                zIndex: 1
+              }} 
+            />
+          </div>
+        </div>
+
+        {/* ──── RIGHT SIDE: LOGIN PANEL (460px WIDTH, 100vh FULL HEIGHT BOX WITH SHADOW) ─────────────────── */}
+        <div style={{ 
+          flex: '1 1 40%', 
+          backgroundColor: '#ffffff', 
+          height: '100vh',
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          position: 'relative',
+          zIndex: 10
+        }}>
+          {/* Card Box (Fixed 460px width, 100vh full height, shifted 200px to the left) */}
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '460px', 
+            height: '100vh',
+            backgroundColor: '#ffffff', 
+            padding: '40px 42px', 
+            boxShadow: '0 0 50px rgba(15, 23, 42, 0.09), -12px 0 30px rgba(0, 0, 0, 0.04)', 
+            borderLeft: '1px solid #f1f5f9',
+            borderRight: '1px solid #f1f5f9',
+            transform: 'translate(-200px, -30px)',
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',
+            justifyContent: 'center' 
+          }}>
+            
+            {/* Left-Aligned Greeting Header with 194px bi_aa.png Image (10% Reduced Size) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0px', width: '100%', marginBottom: '12px', marginLeft: '-82px' }}>
+              <img 
+                src="/bi_aa.png" 
+                alt="잘됨이 로고" 
+                style={{ 
+                  width: '194px', 
+                  height: '194px', 
+                  objectFit: 'contain', 
+                  flexShrink: 0 
+                }} 
+              />
+              <div style={{ textAlign: 'left', marginLeft: '-38px' }}>
+                <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.2' }}>
+                  <span style={{ position: 'relative', display: 'inline-block' }}>
+                    반가워요!
+                    <span style={{ position: 'absolute', bottom: '2px', left: 0, right: 0, height: '8px', backgroundColor: '#facc15', zIndex: -1 }}></span>
+                  </span>
+                </h2>
+                <p style={{ fontSize: '24px', color: '#64748b', fontWeight: '500', marginTop: '4px', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.25', whiteSpace: 'nowrap' }}>
+                  잘됨이와 스마트한 하루!
+                </p>
+              </div>
+            </div>
+
+            {/* Login / Sign Up Form (Tighter Top Margin) */}
+            <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* Sign Up Name & Role Row */}
+              {isSignUp && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
                     <input 
                       type="text" 
-                      placeholder="예: 정다운" 
+                      placeholder="이름 (예: 정다운)" 
                       value={authName} 
                       onChange={(e) => setAuthName(e.target.value)} 
-                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
+                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
                       required
                     />
                   </div>
-                  
-                  <div style={{ width: '120px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>직급</label>
+                  <div style={{ width: '110px', height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
                     <select
                       value={authRole}
                       onChange={(e) => setAuthRole(e.target.value)}
-                      style={{ width: '100%', padding: '10px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none', background: '#fff' }}
+                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '700', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
                     >
                       {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
                         <option key={rank} value={rank}>{rank}</option>
@@ -2354,61 +2552,184 @@ export default function App() {
                     </select>
                   </div>
                 </div>
-              </>
-            )}
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>이메일 아이디</label>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+              )}
+
+              {/* Email Input Field (Height 60px) */}
+              <div style={{ 
+                height: '60px',
+                backgroundColor: '#ffffff', 
+                border: '1.5px solid #e2e8f0', 
+                borderRadius: '16px', 
+                padding: '0 18px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                transition: 'border-color 0.15s ease'
+              }}>
                 <input 
                   type="text" 
-                  placeholder="이메일 아이디" 
+                  placeholder="아이디 입력" 
                   value={authEmailId} 
                   onChange={(e) => setAuthEmailId(e.target.value)} 
-                  style={{ flex: 1, padding: '10px 14px', border: 'none', outline: 'none' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
                   required
                 />
-                <span style={{ padding: '10px 14px', background: '#f1f5f9', borderLeft: '1px solid var(--border-color)', fontSize: '14.5px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '700', marginLeft: '8px' }}>
                   @daumit.net
                 </span>
               </div>
+
+              {/* Password Input Field (Height 60px) */}
+              <div style={{ 
+                height: '60px',
+                backgroundColor: '#ffffff', 
+                border: '1.5px solid #e2e8f0', 
+                borderRadius: '16px', 
+                padding: '0 18px',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'border-color 0.15s ease'
+              }}>
+                <input 
+                  type="password" 
+                  placeholder="패스워드입력" 
+                  value={authPassword} 
+                  onChange={(e) => setAuthPassword(e.target.value)} 
+                  style={{ width: '100%', border: 'none', outline: 'none', fontSize: '15px', fontWeight: '600', color: '#0f172a', background: 'transparent' }}
+                  required
+                />
+              </div>
+
+              {/* Auto Login Checkbox */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', paddingLeft: '2px' }}>
+                <input 
+                  type="checkbox" 
+                  id="auto-login" 
+                  defaultChecked 
+                  style={{ 
+                    width: '18px', 
+                    height: '18px', 
+                    accentColor: '#000000', 
+                    cursor: 'pointer' 
+                  }} 
+                />
+                <label htmlFor="auto-login" style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700', cursor: 'pointer', userSelect: 'none' }}>
+                  자동로그인
+                </label>
+              </div>
+
+              {/* Error Message */}
+              {authError && (
+                <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: '600', margin: '2px 0 0 0', textAlign: 'center' }}>
+                  {authError}
+                </p>
+              )}
+
+              {/* Primary Action Button (Solid Black - Height 68px) */}
+              <button 
+                type="submit" 
+                style={{ 
+                  width: '100%', 
+                  height: '68px', 
+                  backgroundColor: '#000000', 
+                  color: '#ffffff', 
+                  border: 'none', 
+                  borderRadius: '16px', 
+                  fontSize: '18px', 
+                  fontWeight: '800', 
+                  cursor: 'pointer', 
+                  marginTop: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#18181b'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#000000'}
+              >
+                {isSignUp ? '회원가입' : '로그인'}
+              </button>
+
+              {/* Secondary Action Button (Outline Pill - Height 68px) */}
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setAuthError('');
+                }}
+                style={{ 
+                  width: '100%', 
+                  height: '68px', 
+                  backgroundColor: '#ffffff', 
+                  color: '#0f172a', 
+                  border: '1.5px solid #000000', 
+                  borderRadius: '16px', 
+                  fontSize: '18px', 
+                  fontWeight: '800', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+              >
+                {isSignUp ? '이미 계정이 있으신가요? (로그인)' : '오늘 처음이신가요?'}
+              </button>
+            </form>
+
+            {/* Find Password Link */}
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', cursor: 'pointer', textDecoration: 'none' }}
+                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              >
+                비밀번호 찾기
+              </span>
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>비밀번호</label>
-              <input 
-                type="password" 
-                placeholder="6자리 이상 비밀번호" 
-                value={authPassword} 
-                onChange={(e) => setAuthPassword(e.target.value)} 
-                style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
-                required
-              />
+          </div>
+
+          {/* Bottom Copyright */}
+          <div style={{ position: 'absolute', bottom: '24px', textAlign: 'center', fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
+            © 다음정보시스템즈. All Rights Reserved.
+          </div>
+
+          {/* Bottom Right Floating Badge Buttons (ADMIN & Chat) */}
+          <div style={{ position: 'absolute', bottom: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+            <div style={{ 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              backgroundColor: '#000000', 
+              color: '#ffffff', 
+              fontSize: '9px', 
+              fontWeight: '900', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              letterSpacing: '-0.3px'
+            }}>
+              ADMIN
             </div>
- 
-            {authError && (
-              <p style={{ color: 'var(--accent-red)', fontSize: '13px', fontWeight: '600', margin: '4px 0 0 0' }}>{authError}</p>
-            )}
- 
-            <button 
-              type="submit" 
-              style={{ width: '100%', padding: '12px 14px', backgroundColor: 'var(--accent-purple)', color: '#ffffff', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: '700', cursor: 'pointer', transition: 'var(--transition)', marginTop: '8px' }}
-            >
-              {isSignUp ? '회원가입' : '로그인'}
-            </button>
-          </form>
- 
-          <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>
-            {isSignUp ? '이미 계정이 있으신가요?' : '아직 계정이 없으신가요?'} {' '}
-            <button 
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setAuthError('');
-              }} 
-              style={{ background: 'none', border: 'none', color: 'var(--accent-purple)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
-            >
-              {isSignUp ? '로그인하기' : '회원가입하기'}
-            </button>
+            <div style={{ 
+              width: '38px', 
+              height: '38px', 
+              borderRadius: '50%', 
+              backgroundColor: '#000000', 
+              color: '#ffffff', 
+              fontSize: '18px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+            }}>
+              💬
+            </div>
           </div>
         </div>
       </div>

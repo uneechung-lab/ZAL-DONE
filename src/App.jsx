@@ -414,7 +414,24 @@ function formatHour(h) {
   return `${hr < 10 ? '0' : ''}${hr}:${min}`;
 }
 
-function getGreetingMsg(name, slot) {
+function extractOnlyName(fullName) {
+  if (!fullName) return '사용자';
+  let clean = fullName.replace(/\[.*?\]/g, '').trim();
+  clean = clean.replace(/\(.*?\)/g, '').trim();
+  const roles = [
+    '웹 기획자', '기획자', '디자이너', '개발자',
+    '사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
+  ];
+  for (const r of roles) {
+    if (clean.endsWith(r)) {
+      clean = clean.slice(0, -r.length).trim();
+    }
+  }
+  return clean.trim() || fullName;
+}
+
+function getGreetingMsg(rawName, slot) {
+  const name = extractOnlyName(rawName);
   const greets = {
     morning:   `안녕하세요, ${name}님. 😊\n좋은 아침입니다!\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요.\n(예: "오늘 14시 B사 미팅", "내일 대신증권 투입")`,
     afternoon: `안녕하세요, ${name}님. 😊\n점심은 맛있게 드셨나요?\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요. 타임라인에 자동으로 등록해 드립니다!\n(예: "오늘 14시 B사 미팅", "26일 ~ 27일 워크숍")`,

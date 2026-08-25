@@ -866,6 +866,7 @@ export default function App() {
   const [authRole, setAuthRole] = useState('사원');
   const [authDepartment, setAuthDepartment] = useState('개발팀');
   const [authProject, setAuthProject] = useState('ZAL-DONE 업무 관리 시스템');
+  const [activeSelectLayer, setActiveSelectLayer] = useState(null); // 'department' | 'role' | 'project' | null
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
@@ -2604,51 +2605,85 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) in ONE Row */}
+                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) Custom Layer Triggers in ONE Row */}
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Department Dropdown */}
-                    <div style={{ flex: 1, height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 14px', display: 'flex', alignItems: 'center' }}>
-                      <select
-                        value={authDepartment}
-                        onChange={(e) => setAuthDepartment(e.target.value)}
-                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14.5px', fontWeight: '600', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
-                        required
-                      >
-                        <option value="" disabled>부서 선택</option>
-                        {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
-                          <option key={dept} value={dept}>{dept}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Rank/Role Dropdown */}
-                    <div style={{ width: '110px', height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 12px', display: 'flex', alignItems: 'center' }}>
-                      <select
-                        value={authRole}
-                        onChange={(e) => setAuthRole(e.target.value)}
-                        style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '700', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
-                      >
-                        {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
-                          <option key={rank} value={rank}>{rank}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Row 3: Project Selection (프로젝트 선택) in Separate Full-Width Row */}
-                  <div style={{ width: '100%', height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 14px', display: 'flex', alignItems: 'center' }}>
-                    <select
-                      value={authProject}
-                      onChange={(e) => setAuthProject(e.target.value)}
-                      style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14.5px', fontWeight: '600', color: '#0f172a', background: 'transparent', cursor: 'pointer' }}
-                      required
+                    {/* Department Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveSelectLayer('department')}
+                      style={{
+                        flex: 1,
+                        height: '60px',
+                        backgroundColor: '#ffffff',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '0 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        fontSize: '14.5px',
+                        fontWeight: '600',
+                        color: authDepartment ? '#0f172a' : '#94a3b8',
+                        transition: 'border-color 0.15s ease'
+                      }}
                     >
-                      <option value="" disabled>프로젝트 선택</option>
-                      {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
-                        <option key={proj} value={proj}>{proj}</option>
-                      ))}
-                    </select>
+                      <span>{authDepartment || '부서 선택'}</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>▼</span>
+                    </button>
+
+                    {/* Rank/Role Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveSelectLayer('role')}
+                      style={{
+                        width: '110px',
+                        height: '60px',
+                        backgroundColor: '#ffffff',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '16px',
+                        padding: '0 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        color: '#0f172a',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                    >
+                      <span>{authRole}</span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>▼</span>
+                    </button>
                   </div>
+
+                  {/* Row 3: Project Selection (프로젝트 선택) Custom Layer Trigger in Separate Full-Width Row */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveSelectLayer('project')}
+                    style={{
+                      width: '100%',
+                      height: '60px',
+                      backgroundColor: '#ffffff',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '0 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontSize: '14.5px',
+                      fontWeight: '600',
+                      color: authProject ? '#0f172a' : '#94a3b8',
+                      transition: 'border-color 0.15s ease'
+                    }}
+                  >
+                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {authProject || '프로젝트 선택'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>▼</span>
+                  </button>
                 </>
               )}
 
@@ -2793,6 +2828,108 @@ export default function App() {
           <div style={{ position: 'absolute', bottom: '24px', textAlign: 'center', fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
             © 다음정보시스템즈. All Rights Reserved.
           </div>
+
+          {/* ──── CUSTOM SELECTION OPTION LAYER POPUP ─────────────────── */}
+          {activeSelectLayer && (
+            <div 
+              onClick={() => setActiveSelectLayer(null)}
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                backgroundColor: 'rgba(15, 23, 42, 0.45)', 
+                backdropFilter: 'blur(4px)',
+                zIndex: 9999, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                padding: '20px'
+              }}
+            >
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                style={{ 
+                  width: '100%', 
+                  maxWidth: '400px', 
+                  backgroundColor: '#ffffff', 
+                  borderRadius: '24px', 
+                  padding: '24px', 
+                  boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)', 
+                  border: '1px solid #f1f5f9',
+                  animation: 'fadeIn 0.18s ease-out'
+                }}
+              >
+                {/* Layer Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                    {activeSelectLayer === 'department' && '부서 선택'}
+                    {activeSelectLayer === 'role' && '직급 선택'}
+                    {activeSelectLayer === 'project' && '프로젝트 선택'}
+                  </h3>
+                  <button 
+                    type="button" 
+                    onClick={() => setActiveSelectLayer(null)}
+                    style={{ background: 'none', border: 'none', fontSize: '20px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Layer Options List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {(activeSelectLayer === 'department' ? ['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'] :
+                    activeSelectLayer === 'role' ? ['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'] :
+                    ['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발']
+                  ).map(item => {
+                    const isSelected = (
+                      (activeSelectLayer === 'department' && authDepartment === item) ||
+                      (activeSelectLayer === 'role' && authRole === item) ||
+                      (activeSelectLayer === 'project' && authProject === item)
+                    );
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                          if (activeSelectLayer === 'department') setAuthDepartment(item);
+                          if (activeSelectLayer === 'role') setAuthRole(item);
+                          if (activeSelectLayer === 'project') setAuthProject(item);
+                          setActiveSelectLayer(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '14px 16px',
+                          borderRadius: '14px',
+                          border: isSelected ? '2px solid #000000' : '1px solid #e2e8f0',
+                          backgroundColor: isSelected ? '#f8fafc' : '#ffffff',
+                          color: isSelected ? '#000000' : '#334155',
+                          fontWeight: isSelected ? '800' : '600',
+                          fontSize: '15px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.12s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) e.currentTarget.style.backgroundColor = '#ffffff';
+                        }}
+                      >
+                        <span>{item}</span>
+                        {isSelected && <span style={{ color: '#000000', fontWeight: '900', fontSize: '16px' }}>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Right Floating Badge Buttons (ADMIN & Chat) */}
           <div style={{ position: 'absolute', bottom: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>

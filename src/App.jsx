@@ -856,7 +856,7 @@ function normalizeRangeSchedules(rawSchedules) {
 }
 
 // ─── Custom Dropdown Select Component ──────────────────────────────────────────
-function CustomDropdown({ placeholder, value, options, onChange, width }) {
+function CustomDropdown({ placeholder, value, options, onChange, width, isMulti }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -877,14 +877,49 @@ function CustomDropdown({ placeholder, value, options, onChange, width }) {
     }
   }, [isOpen]);
 
+  // Compute selected items array if isMulti
+  const selectedList = isMulti 
+    ? (Array.isArray(value) ? value : (value ? [value] : []))
+    : [];
+
   const handleSelectOption = (option, e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    onChange(option);
-    setIsOpen(false);
+
+    if (isMulti) {
+      let updated;
+      if (option === '해당없음') {
+        updated = selectedList.includes('해당없음') ? [] : ['해당없음'];
+      } else {
+        const filtered = selectedList.filter(item => item !== '해당없음');
+        if (filtered.includes(option)) {
+          updated = filtered.filter(item => item !== option);
+        } else {
+          updated = [...filtered, option];
+        }
+      }
+      onChange(updated);
+    } else {
+      onChange(option);
+      setIsOpen(false);
+    }
   };
+
+  // Determine trigger display label
+  let displayLabel = placeholder;
+  if (isMulti) {
+    if (selectedList.length === 1) {
+      displayLabel = selectedList[0];
+    } else if (selectedList.length > 1) {
+      displayLabel = `${selectedList[0]} 외 ${selectedList.length - 1}개`;
+    }
+  } else {
+    if (value) displayLabel = value;
+  }
+
+  const hasValue = isMulti ? selectedList.length > 0 : Boolean(value);
 
   return (
     <div 
@@ -921,13 +956,13 @@ function CustomDropdown({ placeholder, value, options, onChange, width }) {
       >
         <span style={{ 
           fontSize: width === '120px' ? '14px' : '14.5px', 
-          fontWeight: value ? '700' : '600', 
-          color: value ? '#0f172a' : '#94a3b8',
+          fontWeight: hasValue ? '700' : '600', 
+          color: hasValue ? '#0f172a' : '#94a3b8',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis'
         }}>
-          {value || placeholder}
+          {displayLabel}
         </span>
         <svg 
           width="16" 
@@ -968,7 +1003,7 @@ function CustomDropdown({ placeholder, value, options, onChange, width }) {
           }}
         >
           {options.map((option) => {
-            const isSelected = value === option;
+            const isSelected = isMulti ? selectedList.includes(option) : value === option;
             return (
               <div
                 key={option}
@@ -1019,7 +1054,7 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [authRole, setAuthRole] = useState('');
   const [authDepartment, setAuthDepartment] = useState('');
-  const [authProject, setAuthProject] = useState('');
+  const [authProject, setAuthProject] = useState([]);
   const [activeSelectLayer, setActiveSelectLayer] = useState(null); // 'department' | 'role' | 'project' | null
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(isConfigured);
@@ -1945,7 +1980,9 @@ export default function App() {
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !authProject || !authRole) {
+    const projectStr = Array.isArray(authProject) ? authProject.join(', ') : authProject;
+    const hasProject = Array.isArray(authProject) ? authProject.length > 0 : Boolean(authProject);
+    if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !hasProject || !authRole) {
       setAuthError('이름, 직급, 부서, 프로젝트 등 모든 필드를 입력해 주세요.');
       return;
     }
@@ -1953,10 +1990,10 @@ export default function App() {
     setAuthError('');
     try {
       const email = `${authEmailId.trim()}@daumit.net`;
-      const fullName = `${authName.trim()} ${authRole} [${authDepartment} / ${authProject}]`;
+      const fullName = `${authName.trim()} ${authRole} [${authDepartment} / ${projectStr}]`;
       const prefs = {
         department: authDepartment,
-        project: authProject,
+        project: projectStr,
         role: authRole,
         name: authName.trim()
       };
@@ -2810,6 +2847,7 @@ export default function App() {
                       '해당없음'
                     ]}
                     onChange={(proj) => setAuthProject(proj)}
+                    isMulti
                   />
                 </div>
               )}

@@ -5,7 +5,7 @@ import { parseMessageWithGemini } from './gemini';
 
 const TEAM = [
   { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' },
-  { id: 'daeum', name: '정다음', role: '정다음(사원)', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
+  { id: 'daum', name: '정다음', role: '정다음(사원)', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
 ];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
@@ -277,13 +277,13 @@ function getListCardProgressStyle(event, cardDateNum, currentYear, currentMonth,
 
 function getMemberAvatarPic(member, index) {
   if (!member) return '/pic1_thumb.png';
-  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '/pic2_thumb.png';
+  if (member.id === 'daum' || member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '/pic2_thumb.png';
   return '/pic1_thumb.png';
 }
 
 function getMemberRoleText(member, index, parsedUser) {
   if (!member) return '나';
-  if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음') return '정다음(사원)';
+  if (member.id === 'daum' || member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음') return '정다음(사원)';
   if (member.id === 'sh') {
     const r = parsedUser?.role || member.role || '상무';
     const n = parsedUser?.name || member.name || '조상무';
@@ -1924,7 +1924,7 @@ export default function App() {
             };
 
             const memberDaeum = {
-              id: 'daeum',
+              id: 'daum',
               name: '정다음',
               role: '정다음(사원)',
               avatar: '다음',

@@ -2921,22 +2921,39 @@ export default function App() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                     {/* Project Selection Button List Header with Select All Checkbox */}
                     <div style={{ marginTop: '2px', width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 2px' }}>
-                        <input 
-                          type="checkbox" 
-                          id="select-all-projects" 
-                          checked={isAllSelected} 
-                          onChange={handleToggleAll} 
-                          style={{ 
-                            width: '18px', 
-                            height: '18px', 
-                            accentColor: '#000000', 
-                            cursor: 'pointer' 
-                          }} 
-                        />
-                        <label htmlFor="select-all-projects" style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', cursor: 'pointer', userSelect: 'none' }}>
+                      <div 
+                        onClick={handleToggleAll} 
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 2px', cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        {/* Custom Select All Checkbox Icon */}
+                        <div style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '6px',
+                          backgroundColor: isAllSelected ? '#000000' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}>
+                          <svg 
+                            width={isAllSelected ? "14" : "18"} 
+                            height={isAllSelected ? "14" : "18"} 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke={isAllSelected ? "#ffffff" : "#94a3b8"} 
+                            strokeWidth={isAllSelected ? "3.5" : "3"} 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
+
+                        <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155' }}>
                           프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>
-                        </label>
+                        </span>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>

@@ -1089,8 +1089,24 @@ export default function App() {
   });
 
   // Extract display name and role from the stored name format "이름 직급" or fallback
-  const parseStoredName = (fullName) => {
-    if (!fullName) return { name: '정윤희', role: '나(부장)' };
+  const parseStoredName = (rawFullName) => {
+    if (!rawFullName) return { name: '정윤희', role: '나(부장)' };
+
+    // If all 6 real projects are contained in stored name, simplify project list to '전체'
+    const ALL_PROJECT_TITLES = [
+      '신영증권 외화표시펀드 매매 시스템 구축',
+      '삼성증권 연금 고객중심 서비스 개선',
+      'NH투자증권 퇴직연금시스템 운영',
+      '경찰공제회 시스템 유지보수',
+      '대신증권 연금 경쟁력 강화',
+      '다음 D-RPS 고도화'
+    ];
+    let fullName = rawFullName;
+    const matchCount = ALL_PROJECT_TITLES.filter(p => fullName.includes(p)).length;
+    if (matchCount >= 6) {
+      fullName = fullName.replace(/\[(.*?)(\/|\s*\/).*?\]/, '[$1 / 전체]');
+    }
+
     const trimmed = fullName.trim();
     const validRoles = [
       '웹 기획자', '기획자', '디자이너', '개발자',
@@ -1992,7 +2008,16 @@ export default function App() {
   // Handle User Registration
   const handleSignUp = async (e) => {
     e.preventDefault();
-    const projectStr = Array.isArray(authProject) ? authProject.join(', ') : authProject;
+    const projectOptions = [
+      '신영증권 외화표시펀드 매매 시스템 구축',
+      '삼성증권 연금 고객중심 서비스 개선',
+      'NH투자증권 퇴직연금시스템 운영',
+      '경찰공제회 시스템 유지보수',
+      '대신증권 연금 경쟁력 강화',
+      '다음 D-RPS 고도화'
+    ];
+    const isAllProjectsSelected = Array.isArray(authProject) && projectOptions.every(p => authProject.includes(p));
+    const projectStr = isAllProjectsSelected ? '전체' : (Array.isArray(authProject) ? authProject.join(', ') : authProject);
     const hasProject = Array.isArray(authProject) ? authProject.length > 0 : Boolean(authProject);
     if (!authEmailId.trim() || !authPassword.trim() || !authName.trim() || !authDepartment || !hasProject || !authRole) {
       setAuthError('이름, 직급, 부서, 프로젝트 등 모든 필드를 입력해 주세요.');

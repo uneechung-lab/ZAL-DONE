@@ -2860,23 +2860,25 @@ export default function App() {
                 />
               </div>
 
-              {/* Auto Login Checkbox */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', paddingLeft: '2px' }}>
-                <input 
-                  type="checkbox" 
-                  id="auto-login" 
-                  defaultChecked 
-                  style={{ 
-                    width: '18px', 
-                    height: '18px', 
-                    accentColor: '#000000', 
-                    cursor: 'pointer' 
-                  }} 
-                />
-                <label htmlFor="auto-login" style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700', cursor: 'pointer', userSelect: 'none' }}>
-                  자동로그인
-                </label>
-              </div>
+              {/* Auto Login Checkbox (Only in Login Mode) */}
+              {!isSignUp && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', paddingLeft: '2px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="auto-login" 
+                    defaultChecked 
+                    style={{ 
+                      width: '18px', 
+                      height: '18px', 
+                      accentColor: '#000000', 
+                      cursor: 'pointer' 
+                    }} 
+                  />
+                  <label htmlFor="auto-login" style={{ fontSize: '13.5px', color: '#334155', fontWeight: '700', cursor: 'pointer', userSelect: 'none' }}>
+                    자동로그인
+                  </label>
+                </div>
+              )}
 
               {/* Error Message */}
               {authError && (

@@ -282,8 +282,10 @@ function getMemberAvatarPic(member, index) {
 }
 
 function getMemberRoleText(member, index) {
-  if (!member) return '나(부장)';
+  if (!member) return '나';
   if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '정다음(사원)';
+  if (member.role) return member.role;
+  if (member.name && member.name !== '정윤희') return `${member.name}`;
   return '나(부장)';
 }
 
@@ -1927,12 +1929,12 @@ export default function App() {
 
             const loggedInMember = {
               id: 'sh',
-              name: '정윤희',
-              role: '나(부장)',
-              avatar: '나',
+              name: parsed.name || '조상무',
+              role: `나(${parsed.role || '상무'})`,
+              avatar: parsed.name ? parsed.name.slice(0, 2) : '조상무',
               avatarPic: '/pic1_thumb.png',
-              color: userColor,
-              subtext: '기획 일정'
+              color: userColor || '#000000',
+              subtext: `${parsed.department || '개발'} 일정`
             };
 
             setActiveTeam([loggedInMember, memberDaeum]);

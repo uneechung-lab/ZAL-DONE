@@ -1106,40 +1106,45 @@ export default function App() {
     return isConfigured ? [] : TEAM;
   });
 
-  // Extract display name and role from the stored name format "이름 직급" or fallback
+  // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
-    if (!rawFullName) return { name: '정윤희', role: '나(부장)' };
+    if (!rawFullName) return { name: '정윤희', role: '나(부장)', department: '개발', project: '전체' };
 
-    // If all 6 real projects are contained in stored name, simplify project list to '전체'
-    const ALL_PROJECT_TITLES = [
-      '신영증권 외화표시펀드 매매 시스템 구축',
-      '삼성증권 연금 고객중심 서비스 개선',
-      'NH투자증권 퇴직연금시스템 운영',
-      '경찰공제회 시스템 유지보수',
-      '대신증권 연금 경쟁력 강화',
-      '다음 D-RPS 고도화'
-    ];
-    let fullName = rawFullName;
-    const matchCount = ALL_PROJECT_TITLES.filter(p => fullName.includes(p)).length;
-    if (matchCount >= 6) {
-      fullName = fullName.replace(/\[(.*?)(\/|\s*\/).*?\]/, '[$1 / 전체]');
+    let str = rawFullName.trim();
+    let department = '개발';
+    let project = '전체';
+
+    // Extract [부서 / 프로젝트] if present
+    const bracketMatch = str.match(/\[(.*?)\]/);
+    if (bracketMatch) {
+      const inside = bracketMatch[1];
+      if (inside.includes('/')) {
+        const parts = inside.split('/');
+        department = parts[0].trim() || '개발';
+        project = parts[1].trim() || '전체';
+      }
+      str = str.replace(/\[.*?\]/, '').trim();
     }
 
-    const trimmed = fullName.trim();
     const validRoles = [
       '웹 기획자', '기획자', '디자이너', '개발자',
       '사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
     ];
-    for (const role of validRoles) {
-      if (trimmed.endsWith(role)) {
-        const namePart = trimmed.slice(0, -role.length).trim();
-        if (namePart) {
-          return { name: namePart, role: role };
-        }
+    let role = '사원';
+    for (const r of validRoles) {
+      if (str.endsWith(r)) {
+        role = r;
+        str = str.slice(0, -r.length).trim();
+        break;
       }
     }
-    const isYoonhee = trimmed.includes('정윤희');
-    return { name: trimmed, role: isYoonhee ? '나(부장)' : '사원' };
+
+    return {
+      name: str || '사용자',
+      role: role,
+      department: department,
+      project: project
+    };
   };
 
   const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '나(부장)' };
@@ -3878,40 +3883,6 @@ export default function App() {
               >
                 TODAY
               </button>
-
-              {/* User Department & Interactive Project Select Dropdown */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#475569', fontWeight: '700', marginLeft: '14px', whiteSpace: 'nowrap' }}>
-                <span>{parsedUser.name} {parsedUser.role !== '나(부장)' ? parsedUser.role : ''} [{authDepartment || '개발'} / </span>
-                <select
-                  value={headerSelectedProject}
-                  onChange={(e) => setHeaderSelectedProject(e.target.value)}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '2px 8px',
-                    fontSize: '12.5px',
-                    fontWeight: '800',
-                    color: '#0f172a',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    maxWidth: '220px',
-                    textOverflow: 'ellipsis',
-                    transition: 'all 0.15s ease',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  <option value="전체">전체</option>
-                  <option value="신영증권 외화표시펀드 매매 시스템 구축">신영증권 외화표시펀드 매매 시스템 구축</option>
-                  <option value="삼성증권 연금 고객중심 서비스 개선">삼성증권 연금 고객중심 서비스 개선</option>
-                  <option value="NH투자증권 퇴직연금시스템 운영">NH투자증권 퇴직연금시스템 운영</option>
-                  <option value="경찰공제회 시스템 유지보수">경찰공제회 시스템 유지보수</option>
-                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
-                  <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
-                  <option value="해당없음">해당없음</option>
-                </select>
-                <span>]</span>
-              </div>
             </div>
 
             {/* Right Tabs */}
@@ -3946,7 +3917,7 @@ export default function App() {
             
             {/* User Session & Reset Controls (Right aligned) */}
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
-              {/* User Avatar & Name & Mode */}
+              {/* User Avatar & Name & Role & Interactive Project Select */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{
                   width: '26px',
@@ -3968,7 +3939,41 @@ export default function App() {
                     ME.avatar
                   )}
                 </div>
-                <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-primary)' }}>{ME.name}</span>
+                
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                  {parsedUser.name} {parsedUser.role !== '나(부장)' ? parsedUser.role : ''} [{parsedUser.department || '개발'} / 
+                </span>
+
+                <select
+                  value={headerSelectedProject}
+                  onChange={(e) => setHeaderSelectedProject(e.target.value)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '2px 6px',
+                    fontSize: '12px',
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    maxWidth: '180px',
+                    textOverflow: 'ellipsis',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <option value="전체">전체</option>
+                  <option value="신영증권 외화표시펀드 매매 시스템 구축">신영증권 외화표시펀드 매매 시스템 구축</option>
+                  <option value="삼성증권 연금 고객중심 서비스 개선">삼성증권 연금 고객중심 서비스 개선</option>
+                  <option value="NH투자증권 퇴직연금시스템 운영">NH투자증권 퇴직연금시스템 운영</option>
+                  <option value="경찰공제회 시스템 유지보수">경찰공제회 시스템 유지보수</option>
+                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
+                  <option value="다음 D-RPS 고도화">다음 D-RPS 고도화</option>
+                  <option value="해당없음">해당없음</option>
+                </select>
+
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>]</span>
               </div>
 
               {/* Logout button (if configured) or local user switcher */}

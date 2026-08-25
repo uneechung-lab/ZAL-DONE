@@ -2609,7 +2609,7 @@ export default function App() {
               
               {/* Sign Up Name, Department & Rank, and Project Fields */}
               {isSignUp && (
-                <div ref={selectContainerRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                   {/* Row 1: Name Input Field */}
                   <div style={{ height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
                     <input 
@@ -2622,352 +2622,121 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) Triggers & Dropdowns in ONE Row */}
-                  <div style={{ display: 'flex', gap: '10px', width: '100%', position: 'relative', zIndex: activeSelectLayer ? 100 : 1 }}>
-                    {/* Department Dropdown Container */}
+                  {/* Row 2: Department (부서 선택) & Rank (직급 선택) in ONE Row */}
+                  <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                    {/* Department Select Box */}
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setActiveSelectLayer(activeSelectLayer === 'department' ? null : 'department');
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setActiveSelectLayer(activeSelectLayer === 'department' ? null : 'department');
-                        }}
+                      <select
+                        value={authDepartment}
+                        onChange={(e) => setAuthDepartment(e.target.value)}
                         style={{
                           width: '100%',
                           height: '60px',
                           backgroundColor: '#ffffff',
-                          border: activeSelectLayer === 'department' ? '2px solid #000000' : '1.5px solid #e2e8f0',
+                          border: '1.5px solid #e2e8f0',
                           borderRadius: '16px',
-                          padding: '0 16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
+                          padding: '0 38px 0 16px',
                           fontSize: '14.5px',
                           fontWeight: '600',
                           color: authDepartment ? '#0f172a' : '#94a3b8',
-                          transition: 'all 0.15s ease'
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'none',
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'border-color 0.15s ease'
                         }}
+                        required
                       >
-                        <span>{authDepartment || '부서 선택'}</span>
-                        <svg 
-                          width="16" 
-                          height="16" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="#64748b" 
-                          strokeWidth="2.5" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          style={{ 
-                            transform: activeSelectLayer === 'department' ? 'rotate(180deg)' : 'rotate(0deg)', 
-                            transition: 'transform 0.2s ease',
-                            flexShrink: 0
-                          }}
-                        >
+                        <option value="" disabled hidden>부서 선택</option>
+                        {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
+                          <option key={dept} value={dept} style={{ color: '#0f172a', fontWeight: '600' }}>{dept}</option>
+                        ))}
+                      </select>
+                      {/* SVG Chevron Arrow Icon */}
+                      <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
-                      </button>
-
-                      {/* Dropdown Menu directly underneath */}
-                      {activeSelectLayer === 'department' && (
-                        <div style={{
-                          position: 'absolute',
-                          top: 'calc(100% + 6px)',
-                          left: 0,
-                          right: 0,
-                          backgroundColor: '#ffffff',
-                          borderRadius: '16px',
-                          border: '1.5px solid #e2e8f0',
-                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
-                          zIndex: 1000,
-                          padding: '6px',
-                          maxHeight: '220px',
-                          overflowY: 'auto',
-                          pointerEvents: 'auto'
-                        }}>
-                          {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
-                            <div
-                              key={dept}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAuthDepartment(dept);
-                                setActiveSelectLayer(null);
-                              }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAuthDepartment(dept);
-                                setActiveSelectLayer(null);
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '12px 14px',
-                                borderRadius: '10px',
-                                backgroundColor: authDepartment === dept ? '#f1f5f9' : '#ffffff',
-                                color: authDepartment === dept ? '#000000' : '#334155',
-                                fontWeight: authDepartment === dept ? '800' : '600',
-                                fontSize: '14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                userSelect: 'none',
-                                transition: 'background-color 0.12s ease'
-                              }}
-                              onMouseEnter={(e) => {
-                                if (authDepartment !== dept) e.currentTarget.style.backgroundColor = '#f8fafc';
-                              }}
-                              onMouseLeave={(e) => {
-                                if (authDepartment !== dept) e.currentTarget.style.backgroundColor = '#ffffff';
-                              }}
-                            >
-                              <span>{dept}</span>
-                              {authDepartment === dept && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      </div>
                     </div>
 
-                    {/* Rank/Role Dropdown Container */}
+                    {/* Rank/Role Select Box */}
                     <div style={{ position: 'relative', width: '120px' }}>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setActiveSelectLayer(activeSelectLayer === 'role' ? null : 'role');
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setActiveSelectLayer(activeSelectLayer === 'role' ? null : 'role');
-                        }}
+                      <select
+                        value={authRole}
+                        onChange={(e) => setAuthRole(e.target.value)}
                         style={{
                           width: '100%',
                           height: '60px',
                           backgroundColor: '#ffffff',
-                          border: activeSelectLayer === 'role' ? '2px solid #000000' : '1.5px solid #e2e8f0',
+                          border: '1.5px solid #e2e8f0',
                           borderRadius: '16px',
-                          padding: '0 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
+                          padding: '0 32px 0 14px',
                           fontSize: '14px',
                           fontWeight: '700',
                           color: authRole ? '#0f172a' : '#94a3b8',
-                          transition: 'all 0.15s ease'
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'none',
+                          cursor: 'pointer',
+                          outline: 'none',
+                          transition: 'border-color 0.15s ease'
                         }}
+                        required
                       >
-                        <span>{authRole || '직급 선택'}</span>
-                        <svg 
-                          width="16" 
-                          height="16" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="#64748b" 
-                          strokeWidth="2.5" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          style={{ 
-                            transform: activeSelectLayer === 'role' ? 'rotate(180deg)' : 'rotate(0deg)', 
-                            transition: 'transform 0.2s ease',
-                            flexShrink: 0
-                          }}
-                        >
+                        <option value="" disabled hidden>직급 선택</option>
+                        {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
+                          <option key={rank} value={rank} style={{ color: '#0f172a', fontWeight: '600' }}>{rank}</option>
+                        ))}
+                      </select>
+                      {/* SVG Chevron Arrow Icon */}
+                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
-                      </button>
-
-                      {/* Dropdown Menu directly underneath */}
-                      {activeSelectLayer === 'role' && (
-                        <div style={{
-                          position: 'absolute',
-                          top: 'calc(100% + 6px)',
-                          left: 0,
-                          right: 0,
-                          backgroundColor: '#ffffff',
-                          borderRadius: '16px',
-                          border: '1.5px solid #e2e8f0',
-                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
-                          zIndex: 1000,
-                          padding: '6px',
-                          maxHeight: '220px',
-                          overflowY: 'auto',
-                          pointerEvents: 'auto'
-                        }}>
-                          {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
-                            <div
-                              key={rank}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAuthRole(rank);
-                                setActiveSelectLayer(null);
-                              }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAuthRole(rank);
-                                setActiveSelectLayer(null);
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '12px 14px',
-                                borderRadius: '10px',
-                                backgroundColor: authRole === rank ? '#f1f5f9' : '#ffffff',
-                                color: authRole === rank ? '#000000' : '#334155',
-                                fontWeight: authRole === rank ? '800' : '600',
-                                fontSize: '14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                userSelect: 'none',
-                                transition: 'background-color 0.12s ease'
-                              }}
-                              onMouseEnter={(e) => {
-                                if (authRole !== rank) e.currentTarget.style.backgroundColor = '#f8fafc';
-                              }}
-                              onMouseLeave={(e) => {
-                                if (authRole !== rank) e.currentTarget.style.backgroundColor = '#ffffff';
-                              }}
-                            >
-                              <span>{rank}</span>
-                              {authRole === rank && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Row 3: Project Selection (프로젝트 선택) Dropdown Container */}
-                  <div style={{ position: 'relative', width: '100%', zIndex: activeSelectLayer === 'project' ? 100 : 1 }}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setActiveSelectLayer(activeSelectLayer === 'project' ? null : 'project');
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setActiveSelectLayer(activeSelectLayer === 'project' ? null : 'project');
-                      }}
+                  {/* Row 3: Project Selection (프로젝트 선택) Select Box */}
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <select
+                      value={authProject}
+                      onChange={(e) => setAuthProject(e.target.value)}
                       style={{
                         width: '100%',
                         height: '60px',
                         backgroundColor: '#ffffff',
-                        border: activeSelectLayer === 'project' ? '2px solid #000000' : '1.5px solid #e2e8f0',
+                        border: '1.5px solid #e2e8f0',
                         borderRadius: '16px',
-                        padding: '0 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
+                        padding: '0 38px 0 16px',
                         fontSize: '14.5px',
                         fontWeight: '600',
                         color: authProject ? '#0f172a' : '#94a3b8',
-                        transition: 'all 0.15s ease'
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        transition: 'border-color 0.15s ease'
                       }}
+                      required
                     >
-                      <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                        {authProject || '프로젝트 선택'}
-                      </span>
-                      <svg 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="#64748b" 
-                        strokeWidth="2.5" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        style={{ 
-                          transform: activeSelectLayer === 'project' ? 'rotate(180deg)' : 'rotate(0deg)', 
-                          transition: 'transform 0.2s ease',
-                          flexShrink: 0,
-                          marginLeft: '8px'
-                        }}
-                      >
+                      <option value="" disabled hidden>프로젝트 선택</option>
+                      {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
+                        <option key={proj} value={proj} style={{ color: '#0f172a', fontWeight: '600' }}>{proj}</option>
+                      ))}
+                    </select>
+                    {/* SVG Chevron Arrow Icon */}
+                    <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
                       </svg>
-                    </button>
-
-                    {/* Dropdown Menu directly underneath */}
-                    {activeSelectLayer === 'project' && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 6px)',
-                        left: 0,
-                        right: 0,
-                        backgroundColor: '#ffffff',
-                        borderRadius: '16px',
-                        border: '1.5px solid #e2e8f0',
-                        boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
-                        zIndex: 1000,
-                        padding: '6px',
-                        maxHeight: '220px',
-                        overflowY: 'auto',
-                        pointerEvents: 'auto'
-                      }}>
-                        {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
-                          <div
-                            key={proj}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setAuthProject(proj);
-                              setActiveSelectLayer(null);
-                            }}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setAuthProject(proj);
-                              setActiveSelectLayer(null);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '12px 14px',
-                              borderRadius: '10px',
-                              backgroundColor: authProject === proj ? '#f1f5f9' : '#ffffff',
-                              color: authProject === proj ? '#000000' : '#334155',
-                              fontWeight: authProject === proj ? '800' : '600',
-                              fontSize: '14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              userSelect: 'none',
-                              transition: 'background-color 0.12s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (authProject !== proj) e.currentTarget.style.backgroundColor = '#f8fafc';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (authProject !== proj) e.currentTarget.style.backgroundColor = '#ffffff';
-                            }}
-                          >
-                            <span>{proj}</span>
-                            {authProject === proj && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}

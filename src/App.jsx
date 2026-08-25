@@ -1108,11 +1108,16 @@ export default function App() {
 
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
-    if (!rawFullName) return { name: '정윤희', role: '나(부장)', department: '개발', project: '전체' };
+    if (!rawFullName) return { name: '정윤희', role: '부장', department: '개발', project: '전체' };
 
     let str = rawFullName.trim();
     let department = '개발';
     let project = '전체';
+
+    // Remove trailing '사원' if string contains brackets or another role before it
+    if (str.includes('[') && str.endsWith('사원')) {
+      str = str.replace(/\s+사원$/, '').trim();
+    }
 
     // Extract [부서 / 프로젝트] if present
     const bracketMatch = str.match(/\[(.*?)\]/);
@@ -1126,22 +1131,32 @@ export default function App() {
       str = str.replace(/\[.*?\]/, '').trim();
     }
 
-    const validRoles = [
+    // Clean up any remaining trailing '사원' if there's already another role in str
+    const validRolesExceptSawon = [
       '웹 기획자', '기획자', '디자이너', '개발자',
-      '사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
+      '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
     ];
-    let role = '사원';
-    for (const r of validRoles) {
-      if (str.endsWith(r)) {
-        role = r;
-        str = str.slice(0, -r.length).trim();
+    let foundRole = '';
+    for (const r of validRolesExceptSawon) {
+      if (str.includes(r)) {
+        foundRole = r;
+        str = str.replace(r, '').trim();
         break;
+      }
+    }
+
+    if (!foundRole) {
+      if (str.endsWith('사원')) {
+        foundRole = '사원';
+        str = str.replace(/사원$/, '').trim();
+      } else {
+        foundRole = rawFullName.includes('정윤희') ? '부장' : '사원';
       }
     }
 
     return {
       name: str || '사용자',
-      role: role,
+      role: foundRole,
       department: department,
       project: project
     };
@@ -1815,29 +1830,15 @@ export default function App() {
         try {
           let currentUser = await appwriteService.getCurrentUser();
           if (currentUser) {
-            // Auto-update check: if name does not contain a valid role, update it on Appwrite!
-            const trimmed = currentUser.name.trim();
-            const validRoles = [
-              '웹 기획자', '기획자', '디자이너', '개발자',
-              '사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
-            ];
-            let hasRole = false;
-            let baseName = trimmed;
-            for (const role of validRoles) {
-              if (trimmed.endsWith(role)) {
-                hasRole = true;
-                baseName = trimmed.slice(0, -role.length).trim();
-                break;
-              }
-            }
-            if (!hasRole || !baseName) {
-              const defaultRole = trimmed.includes('정윤희') ? '웹 기획자' : '사원';
-              const newFullName = `${trimmed} ${defaultRole}`;
+            // Auto-clean check: if Appwrite stored name has duplicate '사원' appended at the end, clean it up!
+            let trimmed = currentUser.name.trim();
+            if (trimmed.includes('[') && trimmed.endsWith('사원')) {
+              trimmed = trimmed.replace(/\s+사원$/, '').trim();
               try {
-                await appwriteService.updateName(newFullName);
+                await appwriteService.updateName(trimmed);
                 currentUser = await appwriteService.getCurrentUser();
               } catch (err) {
-                console.error('Failed to auto-update user name with role', err);
+                console.error('Failed to clean user name', err);
               }
             }
             if (!user || user.$id !== currentUser.$id || user.name !== currentUser.name) {

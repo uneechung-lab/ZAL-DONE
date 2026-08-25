@@ -871,6 +871,23 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(isConfigured);
   const [authError, setAuthError] = useState('');
 
+  const selectContainerRef = useRef(null);
+
+  // Close custom dropdown layers when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectContainerRef.current && !selectContainerRef.current.contains(event.target)) {
+        setActiveSelectLayer(null);
+      }
+    };
+    if (activeSelectLayer) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeSelectLayer]);
+
   // Fallback virtual user state for non-configured environment
   const [virtualUser, setVirtualUser] = useState(() => {
     return TEAM[0] || { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' };
@@ -2592,7 +2609,7 @@ export default function App() {
               
               {/* Sign Up Name, Department & Rank, and Project Fields */}
               {isSignUp && (
-                <>
+                <div ref={selectContainerRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                   {/* Row 1: Name Input Field */}
                   <div style={{ height: '60px', backgroundColor: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '0 18px', display: 'flex', alignItems: 'center' }}>
                     <input 
@@ -2630,7 +2647,23 @@ export default function App() {
                         }}
                       >
                         <span>{authDepartment || '부서 선택'}</span>
-                        <span style={{ fontSize: '11px', color: '#64748b', transform: activeSelectLayer === 'department' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▼</span>
+                        <svg 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="#64748b" 
+                          strokeWidth="2.5" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          style={{ 
+                            transform: activeSelectLayer === 'department' ? 'rotate(180deg)' : 'rotate(0deg)', 
+                            transition: 'transform 0.2s ease',
+                            flexShrink: 0
+                          }}
+                        >
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                       </button>
 
                       {/* Dropdown Menu directly underneath */}
@@ -2643,17 +2676,18 @@ export default function App() {
                           backgroundColor: '#ffffff',
                           borderRadius: '16px',
                           border: '1.5px solid #e2e8f0',
-                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.15)',
-                          zIndex: 100,
+                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
+                          zIndex: 1000,
                           padding: '6px',
                           maxHeight: '220px',
-                          overflowY: 'auto'
+                          overflowY: 'auto',
+                          pointerEvents: 'auto'
                         }}>
                           {['개발팀', '디자인팀', '기획팀', '영업팀', '마케팅팀', '경영지원팀', '연구소'].map(dept => (
-                            <button
+                            <div
                               key={dept}
-                              type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setAuthDepartment(dept);
                                 setActiveSelectLayer(null);
                               }}
@@ -2661,7 +2695,6 @@ export default function App() {
                                 width: '100%',
                                 padding: '12px 14px',
                                 borderRadius: '10px',
-                                border: 'none',
                                 backgroundColor: authDepartment === dept ? '#f1f5f9' : '#ffffff',
                                 color: authDepartment === dept ? '#000000' : '#334155',
                                 fontWeight: authDepartment === dept ? '800' : '600',
@@ -2671,6 +2704,7 @@ export default function App() {
                                 justifyContent: 'space-between',
                                 cursor: 'pointer',
                                 textAlign: 'left',
+                                userSelect: 'none',
                                 transition: 'background-color 0.12s ease'
                               }}
                               onMouseEnter={(e) => {
@@ -2681,8 +2715,8 @@ export default function App() {
                               }}
                             >
                               <span>{dept}</span>
-                              {authDepartment === dept && <span style={{ fontWeight: '900' }}>✓</span>}
-                            </button>
+                              {authDepartment === dept && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
+                            </div>
                           ))}
                         </div>
                       )}
@@ -2711,7 +2745,23 @@ export default function App() {
                         }}
                       >
                         <span>{authRole || '직급 선택'}</span>
-                        <span style={{ fontSize: '11px', color: '#64748b', transform: activeSelectLayer === 'role' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▼</span>
+                        <svg 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="#64748b" 
+                          strokeWidth="2.5" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          style={{ 
+                            transform: activeSelectLayer === 'role' ? 'rotate(180deg)' : 'rotate(0deg)', 
+                            transition: 'transform 0.2s ease',
+                            flexShrink: 0
+                          }}
+                        >
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                       </button>
 
                       {/* Dropdown Menu directly underneath */}
@@ -2724,17 +2774,18 @@ export default function App() {
                           backgroundColor: '#ffffff',
                           borderRadius: '16px',
                           border: '1.5px solid #e2e8f0',
-                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.15)',
-                          zIndex: 100,
+                          boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
+                          zIndex: 1000,
                           padding: '6px',
                           maxHeight: '220px',
-                          overflowY: 'auto'
+                          overflowY: 'auto',
+                          pointerEvents: 'auto'
                         }}>
                           {['사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'].map(rank => (
-                            <button
+                            <div
                               key={rank}
-                              type="button"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setAuthRole(rank);
                                 setActiveSelectLayer(null);
                               }}
@@ -2742,7 +2793,6 @@ export default function App() {
                                 width: '100%',
                                 padding: '12px 14px',
                                 borderRadius: '10px',
-                                border: 'none',
                                 backgroundColor: authRole === rank ? '#f1f5f9' : '#ffffff',
                                 color: authRole === rank ? '#000000' : '#334155',
                                 fontWeight: authRole === rank ? '800' : '600',
@@ -2752,6 +2802,7 @@ export default function App() {
                                 justifyContent: 'space-between',
                                 cursor: 'pointer',
                                 textAlign: 'left',
+                                userSelect: 'none',
                                 transition: 'background-color 0.12s ease'
                               }}
                               onMouseEnter={(e) => {
@@ -2762,8 +2813,8 @@ export default function App() {
                               }}
                             >
                               <span>{rank}</span>
-                              {authRole === rank && <span style={{ fontWeight: '900' }}>✓</span>}
-                            </button>
+                              {authRole === rank && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
+                            </div>
                           ))}
                         </div>
                       )}
@@ -2795,7 +2846,24 @@ export default function App() {
                       <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                         {authProject || '프로젝트 선택'}
                       </span>
-                      <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '8px', transform: activeSelectLayer === 'project' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▼</span>
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="#64748b" 
+                        strokeWidth="2.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        style={{ 
+                          transform: activeSelectLayer === 'project' ? 'rotate(180deg)' : 'rotate(0deg)', 
+                          transition: 'transform 0.2s ease',
+                          flexShrink: 0,
+                          marginLeft: '8px'
+                        }}
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
                     </button>
 
                     {/* Dropdown Menu directly underneath */}
@@ -2808,17 +2876,18 @@ export default function App() {
                         backgroundColor: '#ffffff',
                         borderRadius: '16px',
                         border: '1.5px solid #e2e8f0',
-                        boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.15)',
-                        zIndex: 100,
+                        boxShadow: '0 12px 30px -4px rgba(15, 23, 42, 0.18)',
+                        zIndex: 1000,
                         padding: '6px',
                         maxHeight: '220px',
-                        overflowY: 'auto'
+                        overflowY: 'auto',
+                        pointerEvents: 'auto'
                       }}>
                         {['ZAL-DONE 업무 관리 시스템', 'AI 메신저 통합 프로젝트', '클라우드 마이그레이션', '차세대 ERP 구축', '신규 웹 서비스 개발'].map(proj => (
-                          <button
+                          <div
                             key={proj}
-                            type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setAuthProject(proj);
                               setActiveSelectLayer(null);
                             }}
@@ -2826,7 +2895,6 @@ export default function App() {
                               width: '100%',
                               padding: '12px 14px',
                               borderRadius: '10px',
-                              border: 'none',
                               backgroundColor: authProject === proj ? '#f1f5f9' : '#ffffff',
                               color: authProject === proj ? '#000000' : '#334155',
                               fontWeight: authProject === proj ? '800' : '600',
@@ -2836,6 +2904,7 @@ export default function App() {
                               justifyContent: 'space-between',
                               cursor: 'pointer',
                               textAlign: 'left',
+                              userSelect: 'none',
                               transition: 'background-color 0.12s ease'
                             }}
                             onMouseEnter={(e) => {
@@ -2846,13 +2915,13 @@ export default function App() {
                             }}
                           >
                             <span>{proj}</span>
-                            {authProject === proj && <span style={{ fontWeight: '900' }}>✓</span>}
-                          </button>
+                            {authProject === proj && <span style={{ fontWeight: '900', color: '#000000' }}>✓</span>}
+                          </div>
                         ))}
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               )}
 
               {/* Email Input Field (Height 60px) */}

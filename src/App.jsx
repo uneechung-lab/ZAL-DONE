@@ -2507,30 +2507,84 @@ export default function App() {
             justifyContent: 'center' 
           }}>
             
-            {/* Left-Aligned Greeting Header with 194px bi_aa.png Image (10% Reduced Size) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0px', width: '100%', marginBottom: '12px', marginLeft: '-82px' }}>
-              <img 
-                src="/bi_aa.png" 
-                alt="잘됨이 로고" 
-                style={{ 
-                  width: '194px', 
-                  height: '194px', 
-                  objectFit: 'contain', 
-                  flexShrink: 0 
-                }} 
-              />
-              <div style={{ textAlign: 'left', marginLeft: '-38px' }}>
-                <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.2' }}>
-                  <span style={{ position: 'relative', display: 'inline-block' }}>
-                    반가워요!
-                    <span style={{ position: 'absolute', bottom: '2px', left: 0, right: 0, height: '8px', backgroundColor: '#facc15', zIndex: -1 }}></span>
+            {/* Header Switcher: Sign Up vs Log In */}
+            {isSignUp ? (
+              /* ──── SIGN UP HEADER (시작하기) ─────────────────── */
+              <div style={{ width: '100%', marginBottom: '20px', textAlign: 'left' }}>
+                {/* Back Arrow Button */}
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setAuthError('');
+                  }}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    padding: 0, 
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#0f172a',
+                    transition: 'transform 0.15s ease'
+                  }}
+                  title="로그인으로 돌아가기"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                  </svg>
+                </button>
+
+                {/* Title: 시작하기 with Yellow Underline Accent */}
+                <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.8px', lineHeight: '1.2' }}>
+                  <span style={{ position: 'relative', display: 'inline-block', zIndex: 1 }}>
+                    시작하기
+                    <span style={{ 
+                      position: 'absolute', 
+                      bottom: '2px', 
+                      left: 0, 
+                      right: 0, 
+                      height: '14px', 
+                      backgroundColor: '#facc15', 
+                      zIndex: -1,
+                      borderRadius: '2px'
+                    }}></span>
                   </span>
                 </h2>
-                <p style={{ fontSize: '24px', color: '#64748b', fontWeight: '500', marginTop: '4px', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.25', whiteSpace: 'nowrap' }}>
-                  잘됨이와 스마트한 하루!
+
+                {/* Subtitle: 회사 이메일 계정을 연결합니다. */}
+                <p style={{ fontSize: '16px', color: '#64748b', fontWeight: '500', marginTop: '6px', margin: 0, letterSpacing: '-0.3px' }}>
+                  회사 이메일 계정을 연결합니다.
                 </p>
               </div>
-            </div>
+            ) : (
+              /* ──── LOGIN HEADER (반가워요!) ─────────────────── */
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0px', width: '100%', marginBottom: '12px', marginLeft: '-82px' }}>
+                <img 
+                  src="/bi_aa.png" 
+                  alt="잘됨이 로고" 
+                  style={{ 
+                    width: '194px', 
+                    height: '194px', 
+                    objectFit: 'contain', 
+                    flexShrink: 0 
+                  }} 
+                />
+                <div style={{ textAlign: 'left', marginLeft: '-38px' }}>
+                  <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.2' }}>
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      반가워요!
+                      <span style={{ position: 'absolute', bottom: '2px', left: 0, right: 0, height: '8px', backgroundColor: '#facc15', zIndex: -1 }}></span>
+                    </span>
+                  </h2>
+                  <p style={{ fontSize: '24px', color: '#64748b', fontWeight: '500', marginTop: '4px', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.25', whiteSpace: 'nowrap' }}>
+                    잘됨이와 스마트한 하루!
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Login / Sign Up Form (Tighter Top Margin) */}
             <form onSubmit={isSignUp ? handleSignUp : handleLogIn} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>

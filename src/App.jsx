@@ -4,7 +4,7 @@ import { appwriteService, isConfigured } from './appwrite';
 import { parseMessageWithGemini } from './gemini';
 
 const TEAM = [
-  { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#6366f1', subtext: '기획 일정' },
+  { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' },
   { id: 'daeum', name: '정다음', role: '정다음(사원)', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
 ];
 
@@ -93,12 +93,27 @@ function isScheduleInMonth(s, year, month) {
 function getProgressBgStyle(colorName, progress) {
   if (!progress || progress <= 0) return {};
   const map = {
-    purple: 'rgba(79, 70, 229, 0.15)',
-    orange: 'rgba(217, 119, 6, 0.15)',
-    green: 'rgba(5, 150, 105, 0.15)',
-    blue: 'rgba(37, 99, 235, 0.15)',
+    purple: '#e0e5ff',
+    orange: '#ffeedd',
+    green: '#d4f7e2',
+    blue: '#d9e6ff',
   };
-  const bgTint = map[colorName] || 'rgba(79, 70, 229, 0.15)';
+  const bgTint = map[colorName] || '#e0e5ff';
+  if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
+  return {
+    background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)`
+  };
+}
+
+function getDayCardProgressStyle(colorName, progress) {
+  if (!progress || progress <= 0) return {};
+  const map = {
+    purple: '#e0e5ff',
+    orange: '#ffeedd',
+    green: '#d4f7e2',
+    blue: '#d9e6ff',
+  };
+  const bgTint = map[colorName] || '#e0e5ff';
   if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
   return {
     background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)`
@@ -112,12 +127,12 @@ function getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
   if (!progress || progress <= 0) return {};
 
   const map = {
-    purple: 'rgba(79, 70, 229, 0.15)',
-    orange: 'rgba(217, 119, 6, 0.15)',
-    green: 'rgba(5, 150, 105, 0.15)',
-    blue: 'rgba(37, 99, 235, 0.15)',
+    purple: '#e0e5ff',
+    orange: '#ffeedd',
+    green: '#d4f7e2',
+    blue: '#d9e6ff',
   };
-  const bgTint = map[evt.color] || 'rgba(79, 70, 229, 0.15)';
+  const bgTint = map[evt.color] || '#e0e5ff';
 
   if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
 
@@ -125,11 +140,11 @@ function getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
   let groupScheds = [];
   if (groupId) {
     groupScheds = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-  } else if (sample.title) {
-    groupScheds = schedules.filter(s => s.title === sample.title);
   }
-  if (groupScheds.length === 0) {
-    groupScheds = [sample];
+  if (!groupId || groupScheds.length === 0) {
+    return {
+      background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)`
+    };
   }
 
   groupScheds.sort((a, b) => {
@@ -181,6 +196,79 @@ function getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
   return {
     background: `linear-gradient(to right, ${bgTint} ${fillPct.toFixed(1)}%, #ffffff ${fillPct.toFixed(1)}%)`
   };
+}
+
+function getWeekCardProgressStyle(event, cardYear, cardMonth, cardDateNum, schedules) {
+  const parsed = parseScheduleDescription(event.description || '');
+  const progress = event.progress !== undefined ? event.progress : (parsed.progress || 0);
+
+  if (!progress || progress <= 0) return {};
+
+  const map = {
+    purple: '#e0e5ff',
+    orange: '#ffeedd',
+    green: '#d4f7e2',
+    blue: '#d9e6ff',
+  };
+  const bgTint = map[event.color] || '#e0e5ff';
+
+  if (progress >= 100) return { background: bgTint, backgroundColor: bgTint };
+
+  const groupId = event.description && event.description.match(/\[그룹 ID\]\s*(g_\w+)/)?.[1];
+  let groupScheds = [];
+  if (groupId) {
+    groupScheds = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+  } else if (event.title) {
+    groupScheds = schedules.filter(s => s.title === event.title);
+  }
+
+  if (groupScheds.length <= 1) {
+    return {
+      background: `linear-gradient(to right, ${bgTint} ${progress}%, #ffffff ${progress}%)`
+    };
+  }
+
+  groupScheds.sort((a, b) => {
+    const ya = a.year || cardYear, yb = b.year || cardYear;
+    if (ya !== yb) return ya - yb;
+    const ma = a.month || cardMonth, mb = b.month || cardMonth;
+    if (ma !== mb) return ma - mb;
+    return a.date - b.date;
+  });
+
+  const first = groupScheds[0];
+  const last = groupScheds[groupScheds.length - 1];
+
+  const firstDate = new Date(first.year || cardYear, (first.month || cardMonth) - 1, first.date);
+  firstDate.setHours(0, 0, 0, 0);
+
+  const lastDate = new Date(last.year || cardYear, (last.month || cardMonth) - 1, last.date);
+  lastDate.setHours(0, 0, 0, 0);
+
+  const totalDays = Math.max(1, Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  const completedDays = totalDays * (progress / 100);
+
+  const currentCardDate = new Date(cardYear, cardMonth - 1, cardDateNum);
+  currentCardDate.setHours(0, 0, 0, 0);
+
+  const dayIndexFromStart = Math.round((currentCardDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const fullCompletedDays = Math.floor(completedDays);
+
+  if (dayIndexFromStart <= fullCompletedDays) {
+    return { background: bgTint, backgroundColor: bgTint };
+  } else if (dayIndexFromStart === fullCompletedDays + 1) {
+    const partialFraction = (completedDays - fullCompletedDays) * 100;
+    if (partialFraction > 0) {
+      return {
+        background: `linear-gradient(to right, ${bgTint} ${partialFraction.toFixed(1)}%, #ffffff ${partialFraction.toFixed(1)}%)`
+      };
+    } else {
+      return { background: '#ffffff' };
+    }
+  } else {
+    return { background: '#ffffff' };
+  }
 }
 
 function getListCardProgressStyle(event, cardDateNum, currentYear, currentMonth, schedules) {
@@ -328,10 +416,10 @@ function formatHour(h) {
 
 function getGreetingMsg(name, slot) {
   const greets = {
-    morning:   `안녕하세요, ${name}님. 🌅\n좋은 아침입니다!\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요.\n(예: "오늘 14시 B사 미팅", "내일 대신증권 투입")`,
-    afternoon: `안녕하세요, ${name}님. ☀️\n점심은 맛있게 드셨나요?\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요. 타임라인에 자동으로 등록해 드립니다!\n(예: "오늘 14시 B사 미팅", "26일 ~ 27일 워크숍")`,
-    evening:   `안녕하세요, ${name}님. ✨\n오늘 하루도 수고하셨습니다.\n완료된 업무나 내일 등록할 일정을 아래 입력창에 남겨주세요!`,
-    night:     `안녕하세요, ${name}님. 🌙\n늦은 시간까지 수고 많으셨어요.\n기록해두실 일정이나 업무 내용을 입력해 주세요!`,
+    morning:   `안녕하세요, ${name}님. 😊\n좋은 아침입니다!\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요.\n(예: "오늘 14시 B사 미팅", "내일 대신증권 투입")`,
+    afternoon: `안녕하세요, ${name}님. 😊\n점심은 맛있게 드셨나요?\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요. 타임라인에 자동으로 등록해 드립니다!\n(예: "오늘 14시 B사 미팅", "26일 ~ 27일 워크숍")`,
+    evening:   `안녕하세요, ${name}님. 😊\n오늘 하루도 수고하셨습니다.\n완료된 업무나 내일 등록할 일정을 아래 입력창에 남겨주세요!`,
+    night:     `안녕하세요, ${name}님. 😊\n늦은 시간까지 수고 많으셨어요.\n기록해두실 일정이나 업무 내용을 입력해 주세요!`,
   };
   return greets[slot];
 }
@@ -782,7 +870,7 @@ export default function App() {
 
   // Fallback virtual user state for non-configured environment
   const [virtualUser, setVirtualUser] = useState(() => {
-    return TEAM[0] || { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#6366f1', subtext: '기획 일정' };
+    return TEAM[0] || { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' };
   });
 
   // Dynamic active team members list
@@ -813,7 +901,12 @@ export default function App() {
   const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '나(부장)' };
   const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
 
-  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#6366f1' } : { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '나', avatarPic: '/pic1_thumb.png', color: '#6366f1' }) : virtualUser;
+  const [greetingEmoji] = useState(() => {
+    const emojis = ['😊', '😄', '😃', '🥰', '🤩', '🤗', '☺️', '🙋‍♀️', '🏻', '🙌', '✨', '🏻'];
+    return emojis[Math.floor(Math.random() * emojis.length)];
+  });
+
+  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' } : { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' }) : virtualUser;
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
   // UI States
@@ -838,13 +931,77 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
+
+  const openReportModal = () => {
+    setIsEditingReport(false);
+    setIsReportModalOpen(true);
+  };
+
+  const closeReportModal = () => {
+    setIsEditingReport(false);
+    setIsReportModalOpen(false);
+  };
+
+  // Custom Layer Dialog State (Replaces native browser alert & confirm)
+  const [layerDialog, setLayerDialog] = useState({
+    isOpen: false,
+    title: '안내',
+    message: '',
+    type: 'info', // info | success | error | confirm
+    isConfirm: false,
+    onConfirm: null,
+    onCancel: null
+  });
+
+  const showLayerAlert = (message, title = '안내', type = 'info', onConfirm = null) => {
+    setLayerDialog({
+      isOpen: true,
+      title,
+      message,
+      type,
+      isConfirm: false,
+      onConfirm,
+      onCancel: null
+    });
+  };
+
+  const showLayerConfirm = (message, title = '확인', onConfirm = null, onCancel = null) => {
+    setLayerDialog({
+      isOpen: true,
+      title,
+      message,
+      type: 'confirm',
+      isConfirm: true,
+      onConfirm,
+      onCancel
+    });
+  };
+
+  const closeLayerDialog = (confirmed = false) => {
+    setLayerDialog(prev => {
+      if (confirmed && prev.onConfirm) prev.onConfirm();
+      if (!confirmed && prev.onCancel) prev.onCancel();
+      return { ...prev, isOpen: false };
+    });
+  };
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [isSavingEvent, setIsSavingEvent] = useState(false);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
   const [deletingIds, setDeletingIds] = useState(new Set());
   const [reportScheduleEdits, setReportScheduleEdits] = useState({});
   const [monthlySummaryEdits, setMonthlySummaryEdits] = useState({});
+
+  const [dailyNextPlanText, setDailyNextPlanText] = useState('');
+  const [dailyIssueText, setDailyIssueText] = useState('');
+
+  const [weeklyNextPlanText, setWeeklyNextPlanText] = useState('');
+  const [weeklyRiskText, setWeeklyRiskText] = useState('');
+
+  const [monthlyGoodText, setMonthlyGoodText] = useState('Good: 주요 프로모션 전환율 개선 및 기획/QA 목표 달성');
+  const [monthlyBadText, setMonthlyBadText] = useState('Bad: 3주차 서버 응답 지연 발생 → 모니터링 체계 보완 완료');
+  const [monthlyNextTasksText, setMonthlyNextTasksText] = useState('대시보드 2.0 고도화 및 고객 유지율(Retention) 개선 캠페인 실행');
 
   const LoadingSpinner = ({ size = 16, color = 'currentColor' }) => (
     <svg 
@@ -871,6 +1028,21 @@ export default function App() {
         [field]: value
       }
     }));
+  };
+
+  const rebuildDescription = (originalDesc, newCleanText) => {
+    if (!originalDesc) return newCleanText;
+    const ymMatch = originalDesc.match(/\[YM:\d{4}\.\d{2}\]/);
+    const groupMatch = originalDesc.match(/\[그룹 ID\]\s*g_\w+/);
+    const progMatch = originalDesc.match(/\[진척률\]\s*\d+%/);
+
+    const tags = [];
+    if (ymMatch) tags.push(ymMatch[0]);
+    if (groupMatch) tags.push(groupMatch[0]);
+    if (progMatch) tags.push(progMatch[0]);
+
+    if (tags.length === 0) return newCleanText;
+    return `${tags.join(' | ')} | [상세] ${newCleanText}`;
   };
 
   const handleReportScheduleChange = (id, field, value) => {
@@ -905,6 +1077,157 @@ export default function App() {
     } finally {
       setIsSavingReport(false);
     }
+  };
+
+  const getDailyNextPlanDefault = () => {
+    if (dailyNextPlanText.trim()) return dailyNextPlanText.trim();
+    const tomDate = selectedDate + 1;
+    const tomScheds = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === tomDate);
+    if (tomScheds.length > 0) {
+      return tomScheds.map(s => {
+        const parsed = parseScheduleDescription(s.description || '');
+        const desc = (parsed.detail || s.description || '').replace(/\[YM:\d{4}\.\d{2}\]/g, '').replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '').trim();
+        return `[${s.title}] ${desc || '익일 업무 수행 및 검수'}`;
+      }).join('\n');
+    }
+    return '[업무] 익일 지정 업무 수행 및 배포 요청';
+  };
+
+  const getDailyIssueDefault = () => {
+    if (dailyIssueText.trim()) return dailyIssueText.trim();
+    const todayScheds = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
+    const issueLines = [];
+    todayScheds.forEach(s => {
+      const desc = s.description || '';
+      if (/이슈|지연|서버|QA|확인|블로커|오류|버그|대응/.test(s.title + ' ' + desc)) {
+        const clean = desc.replace(/\[YM:\d{4}\.\d{2}\]/g, '').replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '').trim();
+        issueLines.push(`${s.title}: ${clean || '상세 확인 및 조치 진행 중'}`);
+      }
+    });
+    if (issueLines.length > 0) return issueLines.join('\n');
+    return 'QA 서버 간헐적 접속 지연 (인프라팀 확인 요청 예정)';
+  };
+
+  const getWeeklyNextPlanDefault = () => {
+    if (weeklyNextPlanText.trim()) return weeklyNextPlanText.trim();
+    const { sunday } = getWeekRangeStr(currentYear, currentMonth, selectedDate);
+    const nextWeekStart = new Date(sunday);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 1);
+    nextWeekStart.setHours(0, 0, 0, 0);
+
+    const nextWeekEnd = new Date(nextWeekStart);
+    nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+    nextWeekEnd.setHours(23, 59, 59, 999);
+
+    const nextWeekScheds = schedules.filter(s => {
+      const sDate = new Date(s.year || currentYear, (s.month || currentMonth) - 1, s.date);
+      sDate.setHours(12, 0, 0, 0);
+      return sDate >= nextWeekStart && sDate <= nextWeekEnd;
+    });
+
+    if (nextWeekScheds.length > 0) {
+      return nextWeekScheds.map(s => {
+        const mName = activeTeam.find(m => m.id === s.memberId)?.name || ME.name;
+        return `${s.title} 진행 및 연동 테스트 완료 (담당: ${mName})`;
+      }).join('\n');
+    }
+    return `결제 모듈 연동 테스트 완료 (담당: ${ME.name})`;
+  };
+
+  const getWeeklyRiskDefault = () => {
+    if (weeklyRiskText.trim()) return weeklyRiskText.trim();
+    const { monday, sunday } = getWeekRangeStr(currentYear, currentMonth, selectedDate);
+    const thisWeekScheds = schedules.filter(s => {
+      const sDate = new Date(s.year || currentYear, (s.month || currentMonth) - 1, s.date);
+      sDate.setHours(12, 0, 0, 0);
+      return sDate >= monday && sDate <= sunday;
+    });
+
+    const riskLines = [];
+    thisWeekScheds.forEach(s => {
+      const desc = s.description || '';
+      if (/이슈|지연|서버|QA|API|인증|기술지원|위험|지체/.test(s.title + ' ' + desc)) {
+        riskLines.push(`${s.title} 관련 이슈 발생 → 담당팀 기술지원 요청 후 해결 예정`);
+      }
+    });
+    if (riskLines.length > 0) return Array.from(new Set(riskLines)).join('\n');
+    return '결제 API 인증 지연 발생 → PG사 기술지원 요청 후 14일까지 해결 예정';
+  };
+
+  const handleCopyReportText = () => {
+    let text = '';
+    if (timeViewTab === 'daily') {
+      const dateStr = `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate}`;
+      const filtered = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
+      
+      const doneList = filtered.length > 0
+        ? filtered.map(s => {
+            const parsed = parseScheduleDescription(s.description || '');
+            const cleanD = (parsed.detail || (s.description || ''))
+              .replace(/\[YM:\d{4}\.\d{2}\]/g, '')
+              .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/gi, '')
+              .replace(/\[진척률\]\s*\d+%\s*\|?\s*/gi, '')
+              .replace(/\[상세\]\s*/gi, '')
+              .replace(/\[메모\]\s*/gi, '')
+              .replace(/^[\s|]+/, '').replace(/[\s|]+$/, '').trim();
+            const prog = s.progress !== undefined ? s.progress : (parsed.progress || 0);
+            return `[${s.title}] ${cleanD || s.title} (진척률 ${prog}%)`;
+          }).join('\n')
+        : '[업무] 금일 등록된 실적 완료';
+
+      const nextPlan = getDailyNextPlanDefault();
+      const issueStr = getDailyIssueDefault();
+
+      text = `[일일 업무보고] ${dateStr} (작성자: ${ME.name})\n\n1. 금일 업무 실적 (Done)\n\n${doneList}\n\n2. 익일 업무 계획 (To-Do)\n\n${nextPlan}\n\n3. 이슈 및 특이사항 (Issue/Blocker)\n\n${issueStr}`;
+
+    } else if (timeViewTab === 'weekly') {
+      const { monday, sunday } = getWeekRangeStr(currentYear, currentMonth, selectedDate);
+      const filtered = schedules.filter(s => {
+        const sMonth = s.month || currentMonth;
+        const sYear = s.year || currentYear;
+        const sDate = new Date(sYear, sMonth - 1, s.date);
+        sDate.setHours(12, 0, 0, 0);
+        return sDate >= monday && sDate <= sunday;
+      });
+
+      const weekNum = Math.ceil(selectedDate / 7);
+      const doneList = filtered.length > 0
+        ? filtered.map((s, i) => {
+            const parsed = parseScheduleDescription(s.description || '');
+            const prog = s.progress !== undefined ? s.progress : (parsed.progress || 0);
+            const statusTag = prog >= 100 ? '[완료]' : `[진행 중, ${prog}%]`;
+            return `목표 ${i + 1}: ${s.title} → ${statusTag} (일정 대비 정상)`;
+          }).join('\n')
+        : '목표 1: 주간 주요 목표 수행 → [완료] (일정 대비 정상)';
+
+      const nextPlan = getWeeklyNextPlanDefault();
+      const riskStr = getWeeklyRiskDefault();
+
+      text = `[주간 업무보고] ${currentYear}년 ${currentMonth}월 ${weekNum}주차 (작성자: ${ME.name})\n\n1. 금주 주요 실적\n\n${doneList}\n\n2. 차주 계획 및 마일스톤\n\n${nextPlan}\n\n3. 이슈 및 건의사항 (Risk & Action Plan)\n\n${riskStr}`;
+
+    } else if (timeViewTab === 'monthly') {
+      const filtered = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth));
+      const summaryItems = `주요 업무 총 ${filtered.length}건 목표 정상 달성\n핵심 추진 프로젝트 일정 대비 정상 완료 (달성률 100%)`;
+
+      const goodStr = monthlyGoodText.trim() || 'Good: 프로모션 전환율 개선 (3.2% → 4.5%)';
+      const badStr = monthlyBadText.trim() || 'Bad: 3주차 서버 다운으로 인한 이탈 발생 → 모니터링 체계 보완 완료';
+      const nextMonthStr = monthlyNextTasksText.trim() || '대시보드 2.0 고도화 및 고객 유지율(Retention) 개선 캠페인 실행';
+
+      text = `[월간 업무보고] ${currentYear}년 ${currentMonth}월 (부서/작성자: ${ME.name})\n\n1. 월간 핵심 성과 (Executive Summary)\n\n${summaryItems}\n\n2. 목표 대비 실적 분석 (성과 및 미흡점)\n\n${goodStr}\n${badStr}\n\n3. 익월 중점 추진 과제\n\n${nextMonthStr}`;
+
+    } else {
+      text = `[${currentMonth}월 업무 목록]\n\n` + schedules.map(s => `• ${s.dateRangeStr || s.date + '일'} | ${s.title} (${s.progress || 0}%)`).join('\n');
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      showLayerAlert(
+        '표준 업무 보고서 템플릿이 클립보드에 복사되었습니다!\n원하시는 곳(슬랙, 메일, 톡 등)에 바로 붙여넣어 사용하세요.',
+        '클립보드 복사 완료',
+        'success'
+      );
+    }).catch(err => {
+      console.error('Clipboard copy failed:', err);
+    });
   };
 
   // Scheduler States
@@ -1090,15 +1413,15 @@ export default function App() {
   const saveEventEdits = async () => {
     if (!editTitle.trim()) return;
     if (editMemberIds.length === 0) {
-      alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
+      showLayerAlert('최소 한 명 이상의 담당자를 지정해야 합니다.', '담당자 지정 필요', 'error');
       return;
     }
     if (!editStartDateStr || !editEndDateStr) {
-      alert('시작일과 종료일을 지정해야 합니다.');
+      showLayerAlert('시작일과 종료일을 지정해야 합니다.', '날짜 지정 필요', 'error');
       return;
     }
     if (editStartDateStr > editEndDateStr) {
-      alert('시작일은 종료일보다 이전이어야 합니다.');
+      showLayerAlert('시작일은 종료일보다 이전이어야 합니다.', '날짜 오류', 'error');
       return;
     }
 
@@ -1273,7 +1596,7 @@ export default function App() {
             }
             
             const getDeterministicColor = (str) => {
-              const colors = ['#6366f1', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+              const colors = ['#000000', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
               let hash = 0;
               for (let i = 0; i < str.length; i++) {
                 hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -1292,7 +1615,7 @@ export default function App() {
               role: '나(부장)',
               avatar: '윤희',
               avatarPic: '/pic1_thumb.png',
-              color: '#6366f1',
+              color: '#000000',
               subtext: '기획 일정'
             };
 
@@ -1878,19 +2201,19 @@ export default function App() {
 
   const saveManualSchedule = async () => {
     if (!addTitle.trim()) {
-      alert('일정명을 입력해 주세요.');
+      showLayerAlert('일정명을 입력해 주세요.', '일정명 입력 필요', 'error');
       return;
     }
     if (addMemberIds.length === 0) {
-      alert('최소 한 명 이상의 담당자를 지정해야 합니다.');
+      showLayerAlert('최소 한 명 이상의 담당자를 지정해야 합니다.', '담당자 지정 필요', 'error');
       return;
     }
     if (!addStartDateStr || !addEndDateStr) {
-      alert('시작일과 종료일을 지정해야 합니다.');
+      showLayerAlert('시작일과 종료일을 지정해야 합니다.', '날짜 지정 필요', 'error');
       return;
     }
     if (addStartDateStr > addEndDateStr) {
-      alert('시작일은 종료일보다 이전이어야 합니다.');
+      showLayerAlert('시작일은 종료일보다 이전이어야 합니다.', '날짜 오류', 'error');
       return;
     }
 
@@ -2139,8 +2462,9 @@ export default function App() {
                     <div style={{ fontSize: '13px', fontWeight: '500', color: '#64748b' }}>
                       {month}월 {dateNum}일
                     </div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.5px', marginTop: '2px' }}>
-                      {titleLine}
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.5px', marginTop: '2px', display: 'flex', alignItems: 'center' }}>
+                      <span>{titleLine.replace(/\s*[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/gu, '').trim()}</span>
+                      <span style={{ fontSize: '28px', marginLeft: '6px', lineHeight: 1 }}>{greetingEmoji}</span>
                     </div>
                     {subLines && (
                       <div style={{ fontSize: '13.5px', color: '#475569', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
@@ -2389,16 +2713,20 @@ export default function App() {
                                 e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
                                 e.target.style.color = '#ef4444';
                               }}
-                              onClick={async () => {
-                                if (confirm('이 메시지로 등록된 모든 일정을 취소하시겠습니까?')) {
-                                  for (const s of existingSchedules) {
-                                    if (isConfigured) {
-                                      await appwriteService.deleteSchedule(s.id);
+                              onClick={() => {
+                                showLayerConfirm(
+                                  '이 메시지로 등록된 모든 일정을 취소하시겠습니까?',
+                                  '등록 취소 확인',
+                                  async () => {
+                                    for (const s of existingSchedules) {
+                                      if (isConfigured) {
+                                        await appwriteService.deleteSchedule(s.id);
+                                      }
                                     }
+                                    const ids = existingSchedules.map(s => s.id);
+                                    setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
                                   }
-                                  const ids = existingSchedules.map(s => s.id);
-                                  setSchedules(prev => prev.filter(item => !ids.includes(item.id)));
-                                }
+                                );
                               }}
                             >
                               모두 등록취소
@@ -2681,7 +3009,7 @@ export default function App() {
                   width: '26px',
                   height: '26px',
                   borderRadius: '50%',
-                  backgroundColor: ME.color || '#6366f1',
+                  backgroundColor: ME.color || '#000000',
                   color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
@@ -2754,19 +3082,23 @@ export default function App() {
                   cursor: 'pointer',
                   transition: 'var(--transition)'
                 }}
-                onClick={async () => {
-                  if (confirm('모든 대화 및 일정 데이터를 초기화하시겠습니까?')) {
-                    if (isConfigured) {
-                      await appwriteService.clearSchedules();
-                      await appwriteService.clearMessages();
+                onClick={() => {
+                  showLayerConfirm(
+                    '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
+                    '데이터 초기화 확인',
+                    async () => {
+                      if (isConfigured) {
+                        await appwriteService.clearSchedules();
+                        await appwriteService.clearMessages();
+                      }
+                      localStorage.setItem('zal_schedules', JSON.stringify([]));
+                      localStorage.removeItem('zal_messages');
+                      setSchedules([]);
+                      setShowPreviousMessages(false);
+                      setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+                      showLayerAlert('모든 데이터가 초기화되었습니다.', '초기화 완료', 'success');
                     }
-                    localStorage.setItem('zal_schedules', JSON.stringify([]));
-                    localStorage.removeItem('zal_messages');
-                    setSchedules([]);
-                    setShowPreviousMessages(false);
-                    setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
-                    alert('모든 데이터가 초기화되었습니다.');
-                  }
+                  );
                 }}
                 title="데이터 초기화"
               >
@@ -2894,7 +3226,7 @@ export default function App() {
                                     top: `${topOffset}px`,
                                     height: '26px',
                                     bottom: 'auto',
-                                    ...getProgressBgStyle(currentEvent.color, eventProgress)
+                                    ...getDayCardProgressStyle(currentEvent.color, eventProgress)
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -3099,7 +3431,7 @@ export default function App() {
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       display: 'block',
-                                      ...getProgressBgStyle(event.color, eventProgress)
+                                      ...getWeekCardProgressStyle(event, currentYear, info.month, info.dayNum, schedules)
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -3551,18 +3883,105 @@ export default function App() {
           })()}
         </div>
 
-        {/* Floating Report Character Button (Always visible on bottom right) */}
-        <button 
-          className="ai-toggle-floating-btn"
-          onClick={() => setIsReportModalOpen(true)}
-          title={
-            timeViewTab === 'daily' ? '일일 업무 보고서 생성' :
-            timeViewTab === 'weekly' ? '주간 업무 보고서 생성' :
-            timeViewTab === 'monthly' ? '월간 업무 보고서 생성' : '업무 보고서 생성'
-          }
-        >
-          <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-        </button>
+        {/* Floating Report Character Button with Layer Bubble Tooltip */}
+        <div style={{ position: 'fixed', right: '24px', bottom: '18px', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          {showReportTooltip && (
+            <div 
+              style={{
+                position: 'relative',
+                marginBottom: '8px',
+                marginRight: '6px',
+                backgroundColor: '#18181b',
+                color: '#ffffff',
+                padding: '5px 10px',
+                borderRadius: '10px',
+                boxShadow: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12.5px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                animation: 'fadeIn 0.2s ease'
+              }}
+              onClick={() => openReportModal()}
+            >
+              <span style={{ fontSize: '13.5px' }}>💡</span>
+              <span style={{ fontWeight: '500' }}>보고서를 출력해보세요!</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReportTooltip(false);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ffffff',
+                  opacity: 0.8,
+                  cursor: 'pointer',
+                  padding: '1px 3px',
+                  marginLeft: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  lineHeight: 1,
+                  transition: 'opacity 0.15s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+                title="닫기"
+              >
+                ✕
+              </button>
+
+              {/* Bottom Pointer Beak / Tail */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  bottom: '-6px',
+                  right: '26px',
+                  width: 0,
+                  height: 0,
+                  borderLeft: '6px solid transparent',
+                  borderRight: '6px solid transparent',
+                  borderTop: '6px solid #18181b'
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <button 
+              className="ai-toggle-floating-btn"
+              onClick={() => openReportModal()}
+              style={{ position: 'relative', right: 0, bottom: 0 }}
+              title={
+                timeViewTab === 'daily' ? '일일 업무 보고서 생성' :
+                timeViewTab === 'weekly' ? '주간 업무 보고서 생성' :
+                timeViewTab === 'monthly' ? '월간 업무 보고서 생성' : '업무 보고서 생성'
+              }
+            >
+              <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </button>
+
+            {/* Ground Shadow Effect Under Character Feet */}
+            <div 
+              style={{
+                width: '46px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(0, 0, 0, 0.22)',
+                marginTop: '-6px',
+                filter: 'blur(2px)',
+                pointerEvents: 'none'
+              }}
+            />
+          </div>
+        </div>
       </main>
 
       {/* ──── ADD SCHEDULE MODAL ─────────────────── */}
@@ -3742,7 +4161,7 @@ export default function App() {
                           flex: 1,
                           height: '30px',
                           borderRadius: isLast ? '0 8px 8px 0' : '0',
-                          backgroundColor: isFilled ? '#6366f1' : '#ffffff',
+                          backgroundColor: isFilled ? '#000000' : '#ffffff',
                           borderRight: isLast ? 'none' : (isFilled ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e2e8f0'),
                           cursor: 'pointer',
                           display: 'flex',
@@ -3939,7 +4358,7 @@ export default function App() {
                             style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', whiteSpace: 'nowrap' }}
                             onClick={async () => {
                               if (!rejectReasonInput.trim()) {
-                                alert('반려 사유를 입력해야 거부할 수 있습니다.');
+                                showLayerAlert('반려 사유를 입력해야 거부할 수 있습니다.', '사유 입력 필요', 'error');
                                 return;
                               }
                               const cleanedDesc = (selectedDetailEvent.description || '')
@@ -4038,7 +4457,7 @@ export default function App() {
                               style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
                               onClick={async () => {
                                 if (!reRequestMsgInput.trim()) {
-                                  alert('재요청 메시지를 입력해 주세요.');
+                                  showLayerAlert('재요청 메시지를 입력해 주세요.', '메시지 입력 필요', 'error');
                                   return;
                                 }
                                 const cleanDesc = (selectedDetailEvent.description || '').trim();
@@ -4234,7 +4653,7 @@ export default function App() {
                           flex: 1,
                           height: '30px',
                           borderRadius: isLast ? '0 8px 8px 0' : '0',
-                          backgroundColor: isFilled ? '#6366f1' : '#ffffff',
+                          backgroundColor: isFilled ? '#000000' : '#ffffff',
                           borderRight: isLast ? 'none' : (isFilled ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e2e8f0'),
                           cursor: isDetailEditable ? 'pointer' : 'default',
                           display: 'flex',
@@ -4343,39 +4762,47 @@ export default function App() {
                       cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
                       opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
                     }}
-                    onClick={async () => {
+                    onClick={() => {
                       const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                       const groupId = matchGroupId ? matchGroupId[1] : null;
                       if (groupId) {
-                        if (confirm(`"${selectedDetailEvent.title}"은 그룹 일정입니다. 연결된 모든 일정을 함께 삭제하시겠습니까?`)) {
-                          setIsDeletingEvent(true);
-                          try {
-                            const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                            if (isConfigured) {
-                              for (const t of targets) {
-                                await appwriteService.deleteSchedule(t.id);
+                        showLayerConfirm(
+                          `"${selectedDetailEvent.title}"은 그룹 일정입니다. 연결된 모든 일정을 함께 삭제하시겠습니까?`,
+                          '그룹 일정 삭제',
+                          async () => {
+                            setIsDeletingEvent(true);
+                            try {
+                              const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                              if (isConfigured) {
+                                for (const t of targets) {
+                                  await appwriteService.deleteSchedule(t.id);
+                                }
                               }
+                              const targetIds = targets.map(t => t.id);
+                              setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
+                              setIsDetailModalOpen(false);
+                            } finally {
+                              setIsDeletingEvent(false);
                             }
-                            const targetIds = targets.map(t => t.id);
-                            setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-                            setIsDetailModalOpen(false);
-                          } finally {
-                            setIsDeletingEvent(false);
                           }
-                        }
+                        );
                       } else {
-                        if (confirm(`"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`)) {
-                          setIsDeletingEvent(true);
-                          try {
-                            if (isConfigured) {
-                              await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                        showLayerConfirm(
+                          `"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`,
+                          '일정 삭제 확인',
+                          async () => {
+                            setIsDeletingEvent(true);
+                            try {
+                              if (isConfigured) {
+                                await appwriteService.deleteSchedule(selectedDetailEvent.id);
+                              }
+                              setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                              setIsDetailModalOpen(false);
+                            } finally {
+                              setIsDeletingEvent(false);
                             }
-                            setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                            setIsDetailModalOpen(false);
-                          } finally {
-                            setIsDeletingEvent(false);
                           }
-                        }
+                        );
                       }
                     }}
                   >
@@ -4417,7 +4844,7 @@ export default function App() {
 
       {/* ──── WORK REPORT GENERATION MODAL (Printable & Fixed Floating Actions) ─────────────────── */}
       {isReportModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsReportModalOpen(false)}>
+        <div className="modal-overlay" onClick={() => closeReportModal()}>
           <div 
             className="modal-content printable-report-modal" 
             style={{ 
@@ -4432,17 +4859,18 @@ export default function App() {
             }} 
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header (Fixed Top) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-color)', padding: '20px 28px 16px 28px', backgroundColor: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '21px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                <span>
+            {/* Modal Header (Fixed Top - All Text Centered) */}
+            <div style={{ borderBottom: '2px solid var(--border-color)', padding: '23px 28px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* Left: Title & Date Nav (Shifted down 5px) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1.2, transform: 'translateY(5px)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                   {timeViewTab === 'daily' && '📋 일일 업무 보고서'}
                   {timeViewTab === 'weekly' && '📋 주간 업무 보고서'}
                   {timeViewTab === 'monthly' && '📋 월간 업무 보고서'}
                   {timeViewTab === 'list' && `📋 ${currentMonth}월 업무 목록`}
                 </span>
 
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginLeft: '6px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginLeft: '6px', lineHeight: 1.2 }}>
                   <button 
                     onClick={handlePrevReportDate} 
                     style={{ 
@@ -4466,7 +4894,7 @@ export default function App() {
                     </svg>
                   </button>
 
-                  <span style={{ fontSize: '18px', fontWeight: '700', color: '#1e293b', padding: '0 4px', userSelect: 'none' }}>
+                  <span style={{ fontSize: '17px', fontWeight: '700', color: '#1e293b', padding: '0 4px', userSelect: 'none', lineHeight: 1.2, display: 'inline-flex', alignItems: 'center' }}>
                     {timeViewTab === 'daily' && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate}`}
                     {timeViewTab === 'weekly' && getWeekRangeStr(currentYear, currentMonth, selectedDate).str}
                     {(timeViewTab === 'monthly' || timeViewTab === 'list') && `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}월`}
@@ -4496,15 +4924,30 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <button 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-tertiary)' }}
-                onClick={() => setIsReportModalOpen(false)}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+
+              {/* Right: Metadata + Close Button (Shifted down 5px together) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', lineHeight: 1.2, transform: 'translateY(5px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#64748b', lineHeight: 1.2 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '600' }}>작성자 / 부서: </span>
+                    <span style={{ fontWeight: '700', color: '#0f172a', marginLeft: '4px' }}>{ME.name} ({ME.role || '팀원'})</span>
+                  </div>
+                  <div style={{ borderLeft: '1px solid #cbd5e1', paddingLeft: '14px', display: 'inline-flex', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '600' }}>보고 일자: </span>
+                    <span style={{ fontWeight: '700', color: '#0f172a', marginLeft: '4px' }}>{new Date().toLocaleDateString('ko-KR')}</span>
+                  </div>
+                </div>
+
+                <button 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={() => closeReportModal()}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Document Body (Editable when isEditingReport is true) */}
@@ -4522,18 +4965,6 @@ export default function App() {
                 outline: 'none'
               }}
             >
-
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: '#64748b' }}>작성자 / 부서</div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{ME.name} ({ME.role || '팀원'})</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '13px', color: '#64748b' }}>보고 일자</div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{new Date().toLocaleDateString('ko-KR')}</div>
-                </div>
-              </div>
 
               {/* Schedules Table / Section */}
               {(() => {
@@ -4726,11 +5157,12 @@ export default function App() {
                   });
 
                   return (
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', color: '#334155' }}>
-                        📌 월간 주차별 주요 업무 종합 요약 (총 {filteredSchedules.length}건)
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ fontSize: '15.5px', fontWeight: '800', marginBottom: '8px', color: '#0f172a' }}>
+                        1. 월간 핵심 성과 (Executive Summary)
                       </div>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
+                      <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
                             <th style={{ padding: '8px 12px 5px 12px', textAlign: 'left', width: '10%' }}>주차</th>
@@ -4745,9 +5177,10 @@ export default function App() {
                             const hasData = ws.scheduleCount > 0;
                             const displayTitles = monthlySummaryEdits[idx]?.titles !== undefined ? monthlySummaryEdits[idx].titles : ws.titles;
                             const displayDescSummary = monthlySummaryEdits[idx]?.descSummary !== undefined ? monthlySummaryEdits[idx].descSummary : ws.descSummary;
+                            const isLastRow = idx === weeklySummaries.length - 1;
 
                             return (
-                              <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: hasData ? '#ffffff' : '#fafafa' }}>
+                              <tr key={idx} style={{ borderBottom: isLastRow ? 'none' : '1px solid #e2e8f0', backgroundColor: hasData ? '#ffffff' : '#fafafa' }}>
                                 <td style={{ padding: '12px 10px', verticalAlign: 'top', color: '#0f172a', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>
                                   {ws.weekName}
                                 </td>
@@ -4842,6 +5275,7 @@ export default function App() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
                   );
                 }
 
@@ -4897,11 +5331,14 @@ export default function App() {
                 })();
 
                 return (
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#334155' }}>
-                      📌 주요 수행 업무 및 일정 목록 ({reportConsolidatedRows.length}건)
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', marginBottom: '8px', color: '#0f172a' }}>
+                      {timeViewTab === 'daily' && '1. 금일 업무 실적 (Done)'}
+                      {timeViewTab === 'weekly' && '1. 금주 주요 실적'}
+                      {timeViewTab === 'list' && `📌 주요 수행 업무 및 일정 목록 (${reportConsolidatedRows.length}건)`}
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px' }}>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
                           {timeViewTab === 'daily' ? (
@@ -4930,9 +5367,10 @@ export default function App() {
                           const timeStr = `${s.startHour ? formatHour(s.startHour) : '09:00'} - ${s.endHour ? formatHour(s.endHour) : '18:00'}`;
                           const progress = s.progress;
                           const cleanDesc = s.cleanDesc;
+                          const isLastRow = idx === reportConsolidatedRows.length - 1;
 
                           return (
-                            <tr key={s.id || s.key || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr key={s.id || s.key || idx} style={{ borderBottom: isLastRow ? 'none' : '1px solid #e2e8f0' }}>
                               {timeViewTab === 'daily' ? (
                                 <>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top' }}>
@@ -4965,8 +5403,8 @@ export default function App() {
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
                                     {isEditingReport ? (
                                       <textarea 
-                                        defaultValue={s.description || ''} 
-                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', e.target.value)} 
+                                        defaultValue={cleanDesc || ''} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', rebuildDescription(s.description, e.target.value))} 
                                         style={{ 
                                           width: '100%', 
                                           minHeight: '65px', 
@@ -5001,7 +5439,7 @@ export default function App() {
                                         })}
                                         {progress > 0 && (
                                           <div style={{ marginTop: '6px', paddingTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f46e5', whiteSpace: 'nowrap' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#000000', whiteSpace: 'nowrap' }}>
                                               진척률 {progress}%
                                             </span>
                                             <div style={{ 
@@ -5017,8 +5455,8 @@ export default function App() {
                                               <div style={{ 
                                                 width: `${progress}%`, 
                                                 height: '100%', 
-                                                backgroundColor: '#4f46e5',
-                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', 
+                                                backgroundColor: '#000000',
+                                                background: '#000000', 
                                                 borderRadius: '4px',
                                                 WebkitPrintColorAdjust: 'exact',
                                                 printColorAdjust: 'exact'
@@ -5029,7 +5467,7 @@ export default function App() {
                                       </div>
                                     )}
                                   </td>
-                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
                                       <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
                                     ))}
@@ -5068,8 +5506,8 @@ export default function App() {
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', color: '#334155', fontSize: '13px' }}>
                                     {isEditingReport ? (
                                       <textarea 
-                                        defaultValue={s.description || ''} 
-                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', e.target.value)} 
+                                        defaultValue={cleanDesc || ''} 
+                                        onChange={(e) => handleReportScheduleChange(s.id, 'description', rebuildDescription(s.description, e.target.value))} 
                                         style={{ 
                                           width: '100%', 
                                           minHeight: '65px', 
@@ -5104,7 +5542,7 @@ export default function App() {
                                         })}
                                         {progress > 0 && (
                                           <div style={{ marginTop: '6px', paddingTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f46e5', whiteSpace: 'nowrap' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#000000', whiteSpace: 'nowrap' }}>
                                               진척률 {progress}%
                                             </span>
                                             <div style={{ 
@@ -5120,8 +5558,8 @@ export default function App() {
                                               <div style={{ 
                                                 width: `${progress}%`, 
                                                 height: '100%', 
-                                                backgroundColor: '#4f46e5',
-                                                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', 
+                                                backgroundColor: '#000000',
+                                                background: '#000000', 
                                                 borderRadius: '4px',
                                                 WebkitPrintColorAdjust: 'exact',
                                                 printColorAdjust: 'exact'
@@ -5132,7 +5570,7 @@ export default function App() {
                                       </div>
                                     )}
                                   </td>
-                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#6366f1', fontSize: '13px' }}>
+                                  <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>
                                     {memberList.map((name, i) => (
                                       <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
                                     ))}
@@ -5145,8 +5583,153 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
-                );
+                </div>
+              );
               })()}
+
+              {/* Standardized 3-Section Additions (Section 2 & Section 3) */}
+              {timeViewTab === 'daily' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      2. 익일 업무 계획 (To-Do)
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <textarea
+                          value={dailyNextPlanText}
+                          onChange={(e) => setDailyNextPlanText(e.target.value)}
+                          placeholder="[프로젝트A] 최종 검수 및 배포 요청"
+                          style={{ width: '100%', minHeight: '65px', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', color: '#1e293b', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                          {getDailyNextPlanDefault()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      3. 이슈 및 특이사항 (Issue/Blocker)
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <textarea
+                          value={dailyIssueText}
+                          onChange={(e) => setDailyIssueText(e.target.value)}
+                          placeholder="특이사항 없음 (또는 이슈 내용 입력)"
+                          style={{ width: '100%', minHeight: '65px', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', color: '#1e293b', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                          {getDailyIssueDefault()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {timeViewTab === 'weekly' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      2. 차주 계획 및 마일스톤
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <textarea
+                          value={weeklyNextPlanText}
+                          onChange={(e) => setWeeklyNextPlanText(e.target.value)}
+                          placeholder="결제 모듈 연동 테스트 완료 (담당: OOO)"
+                          style={{ width: '100%', minHeight: '65px', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', color: '#1e293b', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                          {getWeeklyNextPlanDefault()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      3. 이슈 및 건의사항 (Risk & Action Plan)
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <textarea
+                          value={weeklyRiskText}
+                          onChange={(e) => setWeeklyRiskText(e.target.value)}
+                          placeholder="결제 API 인증 지연 발생 → PG사 기술지원 요청 후 14일까지 해결 예정"
+                          style={{ width: '100%', minHeight: '65px', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', color: '#1e293b', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                          {getWeeklyRiskDefault()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {timeViewTab === 'monthly' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      2. 목표 대비 실적 분석 (성과 및 미흡점)
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <input
+                            type="text"
+                            value={monthlyGoodText}
+                            onChange={(e) => setMonthlyGoodText(e.target.value)}
+                            placeholder="Good: 프로모션 전환율 개선 (3.2% → 4.5%)"
+                            style={{ width: '100%', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', color: '#15803d', fontWeight: '600', boxSizing: 'border-box' }}
+                          />
+                          <input
+                            type="text"
+                            value={monthlyBadText}
+                            onChange={(e) => setMonthlyBadText(e.target.value)}
+                            placeholder="Bad: 3주차 서버 다운으로 인한 이탈 발생 → 모니터링 체계 보완 완료"
+                            style={{ width: '100%', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', color: '#b91c1c', fontWeight: '600', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ color: '#15803d', fontWeight: '600' }}>{monthlyGoodText || 'Good: 프로모션 전환율 개선 (3.2% → 4.5%)'}</div>
+                          <div style={{ color: '#b91c1c', fontWeight: '600' }}>{monthlyBadText || 'Bad: 3주차 서버 다운으로 인한 이탈 발생 → 모니터링 체계 보완 완료'}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                      3. 익월 중점 추진 과제
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+                      {isEditingReport ? (
+                        <textarea
+                          value={monthlyNextTasksText}
+                          onChange={(e) => setMonthlyNextTasksText(e.target.value)}
+                          placeholder="대시보드 2.0 고도화 및 고객 유지율(Retention) 개선 캠페인 실행"
+                          style={{ width: '100%', minHeight: '65px', padding: '8px 12px', fontSize: '13.5px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', color: '#1e293b', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                          {monthlyNextTasksText.trim() || '대시보드 2.0 고도화 및 고객 유지율(Retention) 개선 캠페인 실행'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#94a3b8', textAlign: 'right' }}>
                 ZAL:잘됨 업무관리 시스템 자동생성 보고서
@@ -5175,9 +5758,9 @@ export default function App() {
                   padding: '9px 20px', 
                   fontSize: '15px', 
                   fontWeight: '700', 
-                  backgroundColor: isEditingReport ? '#ffffff' : '#f1f5f9', 
+                  backgroundColor: 'transparent', 
                   color: isEditingReport ? '#000000' : '#1e293b', 
-                  border: isEditingReport ? '1px solid #000000' : '1px solid #cbd5e1', 
+                  border: isEditingReport ? '1.5px solid #000000' : '1px solid #475569', 
                   borderRadius: '6px', 
                   cursor: isSavingReport ? 'not-allowed' : 'pointer', 
                   display: 'inline-flex', 
@@ -5211,6 +5794,31 @@ export default function App() {
                 )}
               </button>
               <button 
+                className="modal-btn"
+                style={{ 
+                  padding: '9px 18px', 
+                  fontSize: '14.5px', 
+                  fontWeight: '700', 
+                  backgroundColor: 'transparent', 
+                  color: '#334155', 
+                  border: '1px solid #475569', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  transition: 'all 0.15s' 
+                }} 
+                onClick={handleCopyReportText}
+                title="슬랙, 메일 등에 붙여넣기 할 수 있는 텍스트 양식을 복사합니다."
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                텍스트 복사
+              </button>
+              <button 
                 className="modal-btn primary" 
                 style={{ padding: '9px 20px', fontSize: '15px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }} 
                 onClick={() => window.print()}
@@ -5221,6 +5829,101 @@ export default function App() {
                   <rect x="6" y="14" width="12" height="8"/>
                 </svg>
                 인쇄 / PDF 출력
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── CUSTOM LAYER DIALOG POPUP (Replaces native browser alert & confirm) ─────────────────── */}
+      {layerDialog.isOpen && (
+        <div 
+          className="modal-overlay" 
+          style={{ zIndex: 10000, backgroundColor: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(3px)' }}
+          onClick={() => closeLayerDialog(false)}
+        >
+          <div 
+            className="modal-content" 
+            style={{ 
+              maxWidth: '420px', 
+              width: '90%', 
+              padding: '24px 28px', 
+              borderRadius: '14px', 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              textAlign: 'center',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#ffffff',
+              animation: 'fadeIn 0.15s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Line Icon (Checkmark inside circle for success) */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              {layerDialog.type === 'success' && (
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              )}
+              {layerDialog.type === 'error' && (
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              )}
+              {layerDialog.isConfirm && layerDialog.type !== 'error' && (
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              )}
+            </div>
+
+            <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+              {layerDialog.title}
+            </div>
+            <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '22px' }}>
+              {layerDialog.message}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              {layerDialog.isConfirm && (
+                <button
+                  style={{
+                    flex: 1,
+                    padding: '10px 0',
+                    fontSize: '14.5px',
+                    fontWeight: '600',
+                    backgroundColor: '#f1f5f9',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onClick={() => closeLayerDialog(false)}
+                >
+                  취소
+                </button>
+              )}
+              <button
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  fontSize: '14.5px',
+                  fontWeight: '700',
+                  backgroundColor: layerDialog.type === 'error' || layerDialog.isConfirm ? '#ef4444' : '#000000',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.15s'
+                }}
+                onClick={() => closeLayerDialog(true)}
+              >
+                확인
               </button>
             </div>
           </div>

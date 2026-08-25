@@ -12,8 +12,8 @@
   --bg-hover:      #ffffff;
   --bg-input:      #ffffff;
 
-  --accent-purple: #4f46e5;
-  --accent-purple-light: #6366f1;
+  --accent-purple: #000000;
+  --accent-purple-light: #18181b;
   --accent-purple-glow: transparent;
   
   --accent-blue:   #2563eb;
@@ -427,11 +427,14 @@ button, input, select, textarea {
 .toggle-item.active-blue::after {
   content: "";
   position: absolute;
-  bottom: 0;
+  bottom: -1px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 4px;
   background-color: #000000;
+  border-radius: 9999px;
+  transform: translateY(50%);
+  z-index: 10;
 }
 
 /* Filter Row */
@@ -749,23 +752,23 @@ button, input, select, textarea {
 }
 
 .schedule-block.completed {
-  background: rgba(79, 70, 229, 0.1);
+  background: #e0e5ff;
 }
 
 .schedule-block.purple.completed {
-  background: rgba(79, 70, 229, 0.1);
+  background: #e0e5ff;
 }
 
 .schedule-block.orange.completed {
-  background: rgba(217, 119, 6, 0.1);
+  background: #ffeedd;
 }
 
 .schedule-block.green.completed {
-  background: rgba(5, 150, 105, 0.1);
+  background: #d4f7e2;
 }
 
 .schedule-block.blue.completed {
-  background: rgba(37, 99, 235, 0.1);
+  background: #d9e6ff;
 }
 
 .schedule-block.status-requested {
@@ -1356,22 +1359,62 @@ button, input, select, textarea {
   }
 }
 
-/* Print Style for Work Report Modal */
+/* Print Style for Work Report Modal (Multi-Page PDF Support) */
+/* Print Style for Work Report Modal (Full-Width Multi-Page PDF) */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  /* Hide everything by default */
   body * {
     visibility: hidden !important;
   }
-  .printable-report-modal, .printable-report-modal * {
+
+  /* Completely collapse background layout elements so they take 0 space */
+  .chat-drawer,
+  .main-content,
+  .app-layout > *:not(.modal-overlay),
+  .mascot-container,
+  .quick-toast,
+  button {
+    display: none !important;
+  }
+
+  /* Reset layout containers */
+  html, body, #root, .app-layout, .modal-overlay {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+  }
+
+  /* Make report modal and all its contents visible */
+  .printable-report-modal,
+  .printable-report-modal * {
     visibility: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
   .printable-report-modal {
     position: absolute !important;
     left: 0 !important;
@@ -1379,16 +1422,45 @@ button, input, select, textarea {
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    padding: 20px !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    background: #fff !important;
+    background: #ffffff !important;
+    transform: none !important;
   }
-  .modal-overlay {
-    position: absolute !important;
-    background: #fff !important;
+
+  .printable-report-modal > div:first-child {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
-  .modal-actions, button {
-    display: none !important;
+
+  #printable-report-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 15px 0 30px 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Allow tables to flow naturally across pages so 1st page is filled without blank gaps */
+  .printable-report-modal table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Prevent individual table rows and card boxes from splitting mid-row */
+  .printable-report-modal tr,
+  .printable-report-modal div[style*="borderRadius"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

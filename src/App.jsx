@@ -281,12 +281,17 @@ function getMemberAvatarPic(member, index) {
   return '/pic1_thumb.png';
 }
 
-function getMemberRoleText(member, index) {
+function getMemberRoleText(member, index, parsedUser) {
   if (!member) return '나';
   if (member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '정다음(사원)';
-  if (member.role) return member.role;
+  if (member.id === 'sh' && parsedUser) {
+    const r = parsedUser.role || '상무';
+    const n = parsedUser.name || '조상무';
+    return `${n}(${r})`;
+  }
+  if (member.role && member.role !== '나(부장)') return member.role;
   if (member.name && member.name !== '정윤희') return `${member.name}`;
-  return '나(부장)';
+  return '조상무(상무)';
 }
 
 function getMemberAvatarStyle(member, index) {
@@ -420,16 +425,19 @@ function extractOnlyName(fullName) {
   if (!fullName) return '사용자';
   let clean = fullName.replace(/\[.*?\]/g, '').trim();
   clean = clean.replace(/\(.*?\)/g, '').trim();
-  const roles = [
+
+  const validRoles = [
     '웹 기획자', '기획자', '디자이너', '개발자',
     '사원', '대리', '과장', '차장', '부장', '이사', '상무', '전무', '대표'
   ];
-  for (const r of roles) {
-    if (clean.endsWith(r)) {
-      clean = clean.slice(0, -r.length).trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    const lastWord = parts[parts.length - 1];
+    if (validRoles.includes(lastWord)) {
+      return parts.slice(0, -1).join(' ');
     }
   }
-  return clean.trim() || fullName;
+  return clean || fullName;
 }
 
 function getGreetingMsg(rawName, slot) {
@@ -4398,7 +4406,7 @@ export default function App() {
                               member.id === 'sh' ? '나' : member.avatar
                             )}
                           </div>
-                          <span className="member-role-label">{getMemberRoleText(member, index)}</span>
+                          <span className="member-role-label">{getMemberRoleText(member, index, parsedUser)}</span>
                         </div>
                       </td>
 
@@ -4543,7 +4551,7 @@ export default function App() {
                                 overflow: 'hidden',
                                 padding: 0
                               }}
-                              title={`${member.name} (${getMemberRoleText(member, memberIdx)})`}
+                              title={`${member.name} (${getMemberRoleText(member, memberIdx, parsedUser)})`}
                             >
                               {getMemberAvatarPic(member, memberIdx) ? (
                                 <img src={getMemberAvatarPic(member, memberIdx)} alt={member.name} style={getMemberAvatarStyle(member, memberIdx)} />

@@ -2898,78 +2898,108 @@ export default function App() {
               )}
 
               {/* ──── SIGN UP STEP 2: Project Button List ──── */}
-              {isSignUp && signUpStep === 2 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                  {/* Project Selection Button List */}
-                  <div style={{ marginTop: '2px', width: '100%' }}>
-                    <p style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', margin: '0 0 8px 2px', textAlign: 'left' }}>
-                      프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                      {[
-                        '신영증권 외화표시펀드 매매 시스템 구축',
-                        '삼성증권 연금 고객중심 서비스 개선',
-                        'NH투자증권 퇴직연금시스템 운영',
-                        '경찰공제회 시스템 유지보수',
-                        '대신증권 연금 경쟁력 강화',
-                        '다음 D-RPS 고도화',
-                        '해당없음'
-                      ].map((proj) => {
-                        const isSelected = authProject.includes(proj);
-                        return (
-                          <button
-                            key={proj}
-                            type="button"
-                            onClick={() => {
-                              if (proj === '해당없음') {
-                                setAuthProject(authProject.includes('해당없음') ? [] : ['해당없음']);
-                              } else {
-                                const filtered = authProject.filter(p => p !== proj && p !== '해당없음');
-                                if (authProject.includes(proj)) {
-                                  setAuthProject(filtered);
+              {isSignUp && signUpStep === 2 && (() => {
+                const projectOptions = [
+                  '신영증권 외화표시펀드 매매 시스템 구축',
+                  '삼성증권 연금 고객중심 서비스 개선',
+                  'NH투자증권 퇴직연금시스템 운영',
+                  '경찰공제회 시스템 유지보수',
+                  '대신증권 연금 경쟁력 강화',
+                  '다음 D-RPS 고도화'
+                ];
+                const isAllSelected = projectOptions.every(p => authProject.includes(p));
+
+                const handleToggleAll = () => {
+                  if (isAllSelected) {
+                    setAuthProject([]);
+                  } else {
+                    setAuthProject([...projectOptions]);
+                  }
+                };
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                    {/* Project Selection Button List Header with Select All Checkbox */}
+                    <div style={{ marginTop: '2px', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 2px' }}>
+                        <input 
+                          type="checkbox" 
+                          id="select-all-projects" 
+                          checked={isAllSelected} 
+                          onChange={handleToggleAll} 
+                          style={{ 
+                            width: '18px', 
+                            height: '18px', 
+                            accentColor: '#000000', 
+                            cursor: 'pointer' 
+                          }} 
+                        />
+                        <label htmlFor="select-all-projects" style={{ fontSize: '13.5px', fontWeight: '700', color: '#334155', cursor: 'pointer', userSelect: 'none' }}>
+                          프로젝트 선택 <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>(복수 선택 가능)</span>
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                        {[
+                          ...projectOptions,
+                          '해당없음'
+                        ].map((proj) => {
+                          const isSelected = authProject.includes(proj);
+                          return (
+                            <button
+                              key={proj}
+                              type="button"
+                              onClick={() => {
+                                if (proj === '해당없음') {
+                                  setAuthProject(authProject.includes('해당없음') ? [] : ['해당없음']);
                                 } else {
-                                  setAuthProject([...filtered, proj]);
+                                  const filtered = authProject.filter(p => p !== proj && p !== '해당없음');
+                                  if (authProject.includes(proj)) {
+                                    setAuthProject(filtered);
+                                  } else {
+                                    setAuthProject([...filtered, proj]);
+                                  }
                                 }
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              height: '60px',
-                              padding: '0 18px',
-                              borderRadius: '16px',
-                              border: isSelected ? '2px solid #000000' : '1.5px solid #e2e8f0',
-                              backgroundColor: '#ffffff',
-                              color: isSelected ? '#0f172a' : '#334155',
-                              fontSize: '14.5px',
-                              fontWeight: isSelected ? '800' : '600',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              transition: 'all 0.15s ease',
-                              boxSizing: 'border-box'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) e.currentTarget.style.backgroundColor = '#ffffff';
-                            }}
-                          >
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginRight: '8px' }}>
-                              {proj}
-                            </span>
-                            {isSelected && (
-                              <span style={{ fontWeight: '900', color: '#000000', fontSize: '16px', flexShrink: 0 }}>✓</span>
-                            )}
-                          </button>
-                        );
-                      })}
+                              }}
+                              style={{
+                                width: '100%',
+                                height: '60px',
+                                padding: '0 18px',
+                                borderRadius: '16px',
+                                border: isSelected ? '2px solid #000000' : '1.5px solid #e2e8f0',
+                                backgroundColor: '#ffffff',
+                                color: isSelected ? '#0f172a' : '#334155',
+                                fontSize: '14.5px',
+                                fontWeight: isSelected ? '800' : '600',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'all 0.15s ease',
+                                boxSizing: 'border-box'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) e.currentTarget.style.backgroundColor = '#ffffff';
+                              }}
+                            >
+                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginRight: '8px' }}>
+                                {proj}
+                              </span>
+                              {isSelected && (
+                                <span style={{ fontWeight: '900', color: '#000000', fontSize: '16px', flexShrink: 0 }}>✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* ──── LOGIN MODE FIELDS ──── */}
               {!isSignUp && (

@@ -2805,7 +2805,9 @@ export default function App() {
                       '삼성증권 연금 고객중심 서비스 개선',
                       'NH투자증권 퇴직연금시스템 운영',
                       '경찰공제회 시스템 유지보수',
-                      '대신증권 연금 경쟁력 강화'
+                      '대신증권 연금 경쟁력 강화',
+                      '다음 D-RPS 고도화',
+                      '해당없음'
                     ]}
                     onChange={(proj) => setAuthProject(proj)}
                   />

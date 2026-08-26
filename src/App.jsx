@@ -4278,9 +4278,9 @@ export default function App() {
                                                      style={{
                                                        padding: '4px 10px',
                                                        fontSize: '11.5px',
-                                                       backgroundColor: '#ffffff',
-                                                       color: '#ef4444',
-                                                       border: '1px solid #fecaca',
+                                                       backgroundColor: '#fef2f2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fca5a5',
                                                        borderRadius: '6px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
@@ -4315,9 +4315,9 @@ export default function App() {
                                                      style={{
                                                        padding: '4px 10px',
                                                        fontSize: '11.5px',
-                                                       backgroundColor: '#ffffff',
-                                                       color: '#ef4444',
-                                                       border: '1px solid #fecaca',
+                                                       backgroundColor: '#fef2f2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fca5a5',
                                                        borderRadius: '6px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
@@ -4352,9 +4352,9 @@ export default function App() {
                                                      style={{
                                                        padding: '4px 10px',
                                                        fontSize: '11.5px',
-                                                       backgroundColor: '#ffffff',
-                                                       color: '#ef4444',
-                                                       border: '1px solid #fecaca',
+                                                       backgroundColor: '#fef2f2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fca5a5',
                                                        borderRadius: '6px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'

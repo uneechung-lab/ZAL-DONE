@@ -2736,9 +2736,9 @@ export default function App() {
           }
 
           const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
-          // Detect mentions of Jung Daeum (정사원/정사인/정다음) in item text
-          const itemFullText = (parsed.title || '') + ' ' + (parsed.description || '') + ' ' + (text || '');
-          const mentionsDaum = /정사원|정사인|정다음|다음/i.test(itemFullText);
+          // Detect mentions of Jung Daeum (정사원/정사인/정다음) in individual item title/description
+          const itemTextOnly = (parsed.title || '') + ' ' + (parsed.description || '');
+          const mentionsDaum = /정사원|정사인|정다음|다음/i.test(itemTextOnly);
 
           if (ME.id === 'sh' && mentionsDaum && !isPersonalLeave) {
             assignedMemberId = 'daum';

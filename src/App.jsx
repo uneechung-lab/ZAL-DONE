@@ -394,7 +394,7 @@ function parseSchedulesFromText(text) {
   let currentChunk = null;
   const chunks = [];
 
-  const isHeaderLine = (line) => /^📅?\s*(?:일정|이슈) \d+/iu.test(line);
+  const isHeaderLine = (line) => /^📅?\s*(?:\d+\.\s*(?:일정|이슈)|(?:일정|이슈)\s*\d+)/iu.test(line);
   const isDetailLine = (line) => /^(?:상세내용|상세):?/iu.test(line);
 
   lines.forEach(line => {
@@ -422,7 +422,7 @@ function parseSchedulesFromText(text) {
   const schedulesList = [];
   chunks.forEach((chunkLines, idx) => {
     const blockText = chunkLines.join('\n');
-    const titleMatch = blockText.match(/"([^"]+)"/) || blockText.match(/(?:일정|이슈) \d+:?\s*([^\n]+)/);
+    const titleMatch = blockText.match(/"([^"]+)"/) || blockText.match(/(?:\d+\.\s*(?:일정|이슈)|(?:일정|이슈)\s*\d+):?\s*([^\n]+)/);
     
     let title = '';
     if (titleMatch) {
@@ -4370,7 +4370,7 @@ export default function App() {
                               lines.forEach(line => {
                                 const trimmed = line.trim();
                                 if (!trimmed) return;
-                                if (/^📅?\s*(?:일정|이슈) \d+/iu.test(trimmed)) return;
+                                if (/^📅?\s*(?:\d+\.\s*(?:일정|이슈)|(?:일정|이슈)\s*\d+)/iu.test(trimmed)) return;
                                 if (trimmed.startsWith('"') && trimmed.endsWith('"')) return;
 
                                 if (trimmed.includes('상세내용:') || trimmed.includes('상세:') || trimmed.includes('상세')) {

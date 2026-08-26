@@ -735,12 +735,12 @@ input:-webkit-autofill:active {
 
 .schedule-block.issue,
 .schedule-block.red {
-  background: #ffffff !important;
-  border: 1px solid var(--border-color) !important;
+  background: #ffffff;
+  border-top: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   border-left: 4px solid #FF0000 !important;
-  border-color: var(--border-color) !important;
-  border-left-color: #FF0000 !important;
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 .schedule-block.issue.completed,
@@ -801,8 +801,11 @@ input:-webkit-autofill:active {
 }
 
 .schedule-block.status-requested {
-  border: 1.5px dashed var(--text-tertiary);
-  opacity: 0.9;
+  border-top: 1.5px dashed var(--text-tertiary) !important;
+  border-right: 1.5px dashed var(--text-tertiary) !important;
+  border-bottom: 1.5px dashed var(--text-tertiary) !important;
+  border-left-style: solid !important;
+  opacity: 0.95;
 }
 
 .schedule-block.status-rejected {

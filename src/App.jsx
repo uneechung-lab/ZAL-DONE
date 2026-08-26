@@ -3918,18 +3918,31 @@ export default function App() {
                                            </button>
                                          </div>
                                       ) : (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fca5a5' }}>
-                                            ❌ 반려됨
-                                          </span>
-                                          <button
-                                            style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
-                                            onClick={() => handleApproveSchedule(item.id)}
-                                          >
-                                            재승인
-                                          </button>
-                                        </div>
-                                      )}
+                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                           <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                             ❌ 반려됨
+                                           </span>
+                                           <button
+                                             style={{
+                                               padding: '6px 12px',
+                                               fontSize: '12px',
+                                               fontWeight: '700',
+                                               backgroundColor: '#ecfdf5',
+                                               color: '#059669',
+                                               border: '1px solid #a7f3d0',
+                                               borderRadius: '8px',
+                                               cursor: 'pointer',
+                                               transition: 'all 0.15s ease',
+                                               display: 'inline-flex',
+                                               alignItems: 'center',
+                                               gap: '4px'
+                                             }}
+                                             onClick={() => handleApproveSchedule(item.id)}
+                                           >
+                                             <span>💙 재승인</span>
+                                           </button>
+                                         </div>
+                                       )}
                                     </div>
                                   </div>
                                 );
@@ -4360,10 +4373,23 @@ export default function App() {
                                                  </span>
                                                  {isApprover ? (
                                                    <button
-                                                     style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
+                                                     style={{
+                                                       padding: '6px 12px',
+                                                       fontSize: '12px',
+                                                       fontWeight: '700',
+                                                       backgroundColor: '#ecfdf5',
+                                                       color: '#059669',
+                                                       border: '1px solid #a7f3d0',
+                                                       borderRadius: '8px',
+                                                       cursor: 'pointer',
+                                                       transition: 'all 0.15s ease',
+                                                       display: 'inline-flex',
+                                                       alignItems: 'center',
+                                                       gap: '4px'
+                                                     }}
                                                      onClick={() => handleApproveSchedule(matchedSchedule.id)}
                                                    >
-                                                     재승인
+                                                     <span>💙 재승인</span>
                                                    </button>
                                                  ) : (
                                                    <button

@@ -5594,7 +5594,8 @@ export default function App() {
                             {currentEvents.map(currentEvent => {
                               const trackIndex = trackMap[currentEvent.id] ?? 0;
                               const topOffset = totalTracks === 1 ? 24 : trackIndex * 32 + 12;
-                              const isRequested = (currentEvent.status === 'requested' || (!currentEvent.status && currentEvent.memberId !== 'sh')) && member.id !== 'sh';
+                              const reqId1 = currentEvent.requesterId || currentEvent.memberId;
+                              const isRequested = currentEvent.status === 'requested' && member.id !== reqId1 && !(member.id === 'sh' && (reqId1 === 'sh' || reqId1 === 'yoonhee'));
                               const isRejected = currentEvent.status === 'rejected' || currentEvent.status === `rejected_${member.id}`;
                               const displayStart = currentEvent.startHour < 8 ? 8 : currentEvent.startHour;
                               const displayEnd = currentEvent.endHour > 19.5 ? 19.5 : currentEvent.endHour;
@@ -5801,7 +5802,8 @@ export default function App() {
                               onClick={() => openAddModal(member, h, info.dayNum, info.month, currentYear)}
                             >
                               {currentEvents.map(event => {
-                                const isRequested = (event.status === 'requested' || (!event.status && event.memberId !== 'sh')) && member.id !== 'sh';
+                                const reqId2 = event.requesterId || event.memberId;
+                                 const isRequested = event.status === 'requested' && member.id !== reqId2 && !(member.id === 'sh' && (reqId2 === 'sh' || reqId2 === 'yoonhee'));
                                 const isRejected = event.status === 'rejected' || event.status === `rejected_${member.id}`;
                                 const displayStart = event.startHour < 8 ? 8 : event.startHour;
                                 const displayEnd = event.endHour > 19.5 ? 19.5 : event.endHour;

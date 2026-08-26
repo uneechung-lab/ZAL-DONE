@@ -733,6 +733,25 @@ input:-webkit-autofill:active {
   z-index: 3;
 }
 
+.schedule-block.issue,
+.schedule-block.red {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  border-left: 4px solid #FF0000 !important;
+  border-color: var(--border-color) !important;
+  border-left-color: #FF0000 !important;
+  color: var(--text-primary) !important;
+}
+
+.schedule-block.issue.completed,
+.schedule-block.red.completed {
+  background: #fff0f0 !important;
+  border: 1px solid var(--border-color) !important;
+  border-left: 4px solid #FF0000 !important;
+  border-color: var(--border-color) !important;
+  border-left-color: #FF0000 !important;
+}
+
 .schedule-block.orange {
   background: #ffffff;
   border-color: var(--border-color);

@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Fragment } from 'react';
 import './index.css';
 import { appwriteService, isConfigured } from './appwrite';
 import { parseMessageWithGemini } from './gemini';
 
 const TEAM = [
-  { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' },
-  { id: 'daum', name: '정다음', role: '정다음(사원)', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
+  { id: 'sh', name: '정윤희', role: '부장', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' },
+  { id: 'sangmoo', name: '조상무', role: '상무', avatar: '상무', avatarPic: '/pic2_thumb.png', color: '#6366f1', subtext: '임원 일정' },
+  { id: 'daum', name: '정다음', role: '사원', avatar: '다음', avatarPic: '/pic2_thumb.png', color: '#10b981', subtext: '개인 일정' }
 ];
 
 // ─── Initial schedules ──────────────────────────────────────────────────────────
@@ -88,6 +89,63 @@ function isScheduleInMonth(s, year, month) {
   schedYear = schedYear || 2026;
   schedMonth = schedMonth || 6;
   return schedYear === year && schedMonth === month;
+}
+
+function isIssueSchedule(s) {
+  if (!s) return false;
+  if (s.isIssue || s.color === 'red') return true;
+  const title = s.title || '';
+  const desc = s.description || '';
+  return title.includes('이슈') || title.includes('안와서') || title.includes('스케치') || title.includes('재요청') || title.includes('미회신') || title.includes('지연') || desc.includes('[이슈]');
+}
+
+function getNthWeekdayOfMonth(year, month, nth, weekdayStr) {
+  const weekdayMap = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+  const targetDow = weekdayMap[weekdayStr];
+  if (targetDow === undefined) return null;
+
+  const daysInM = new Date(year, month, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInM; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    if (dow === targetDow) {
+      count++;
+      if (count === nth) return d;
+    }
+  }
+  return null;
+}
+
+function IssueWarningIcon({ size = 16, style = {} }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      style={{ flexShrink: 0, marginRight: '4px', verticalAlign: '-2px', display: 'inline-block', ...style }}
+    >
+      <path 
+        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" 
+        fill="#FF0000" 
+      />
+      <line 
+        x1="12" 
+        y1="9" 
+        x2="12" 
+        y2="13.5" 
+        stroke="#ffffff" 
+        strokeWidth="2.5" 
+        strokeLinecap="round" 
+      />
+      <circle 
+        cx="12" 
+        cy="17.2" 
+        r="1.25" 
+        fill="#ffffff" 
+      />
+    </svg>
+  );
 }
 
 function getProgressBgStyle(colorName, progress) {
@@ -275,21 +333,27 @@ function getListCardProgressStyle(event, cardDateNum, currentYear, currentMonth,
   return { background: '#ffffff', backgroundColor: '#ffffff' };
 }
 
-function getMemberAvatarPic(member, index) {
+function getMemberAvatarPic(member) {
   if (!member) return '/pic1_thumb.png';
-  if (member.id === 'daum' || member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음' || index === 1) return '/pic2_thumb.png';
-  return '/pic1_thumb.png';
+  if (member.id === 'sangmoo' || member.name === '조상무' || member.avatarPic === '/pic3_thumb.png') {
+    return '/pic2_thumb.png';
+  }
+  return member.avatarPic || '/pic1_thumb.png';
 }
 
-function getMemberRoleText(member, index, parsedUser) {
+function getMemberRoleText(member, meUser) {
   if (!member) return '나';
-  if (member.id === 'daum' || member.id === 'daeum' || member.name === '정다음' || member.avatar === '다음') return '정다음(사원)';
-  if (member.id === 'sh') {
-    const r = parsedUser?.role || member.role || '상무';
-    const n = parsedUser?.name || member.name || '조상무';
-    return `${n}(나/${r})`;
+
+  let role = member.role || '팀원';
+  role = role.replace(/^(?:나\/|나|정윤희|조상무|정다음|\s|\(|\))+/gi, '').replace(/\)+$/, '').trim();
+  role = role.replace(/.*?(부장|상무|사원|대리|과장|차장|이사|대표|팀원).*/, '$1');
+  if (!role) role = member.role || '팀원';
+
+  const isMe = meUser && (member.id === meUser.id || member.name === meUser.name);
+  if (isMe) {
+    return `나(${role})`;
   }
-  return `${member.name}(${member.role || '사원'})`;
+  return `${member.name}(${role})`;
 }
 
 function getMemberAvatarStyle(member, index) {
@@ -330,7 +394,7 @@ function parseSchedulesFromText(text) {
   let currentChunk = null;
   const chunks = [];
 
-  const isHeaderLine = (line) => /^📅?\s*일정 \d+/iu.test(line);
+  const isHeaderLine = (line) => /^📅?\s*(?:일정|이슈) \d+/iu.test(line);
   const isDetailLine = (line) => /^(?:상세내용|상세):?/iu.test(line);
 
   lines.forEach(line => {
@@ -358,7 +422,7 @@ function parseSchedulesFromText(text) {
   const schedulesList = [];
   chunks.forEach((chunkLines, idx) => {
     const blockText = chunkLines.join('\n');
-    const titleMatch = blockText.match(/"([^"]+)"/) || blockText.match(/일정 \d+:?\s*([^\n]+)/);
+    const titleMatch = blockText.match(/"([^"]+)"/) || blockText.match(/(?:일정|이슈) \d+:?\s*([^\n]+)/);
     
     let title = '';
     if (titleMatch) {
@@ -440,13 +504,14 @@ function extractOnlyName(fullName) {
 
 function getGreetingMsg(rawName, slot) {
   const name = extractOnlyName(rawName);
+  const s = slot || getTimeSlot();
   const greets = {
     morning:   `안녕하세요, ${name}님. 😊\n좋은 아침입니다!\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요.\n(예: "오늘 14시 B사 미팅", "내일 대신증권 투입")`,
     afternoon: `안녕하세요, ${name}님. 😊\n점심은 맛있게 드셨나요?\n오늘 진행하실 업무나 일정을 아래 입력창에 편하게 입력해 주세요. 타임라인에 자동으로 등록해 드립니다!\n(예: "오늘 14시 B사 미팅", "26일 ~ 27일 워크숍")`,
     evening:   `안녕하세요, ${name}님. 😊\n오늘 하루도 수고하셨습니다.\n완료된 업무나 내일 등록할 일정을 아래 입력창에 남겨주세요!`,
     night:     `안녕하세요, ${name}님. 😊\n늦은 시간까지 수고 많으셨어요.\n기록해두실 일정이나 업무 내용을 입력해 주세요!`,
   };
-  return greets[slot];
+  return greets[s] || greets.afternoon;
 }
 
 // ─── Mock AI parser ───────────────────────────────────────────────────────────
@@ -513,7 +578,24 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     const dateMmddRegex = /(?:^|\b)(0?6)(\d{2})(?:_|\b|\])/;
     const mmddMatch = dateMmddRegex.exec(temp);
 
-    if (rangeMatch) {
+    const nthWeekdayRegex = /(?:(\d{1,2})\s*월\s*)?(첫\s*번째|첫\s*째|두\s*번째|둘\s*째|세\s*번째|셋\s*째|네\s*번째|넷\s*째|첫|1\s*번째|2\s*번째|3\s*번째|4\s*번째)\s*(?:주)?\s*([일월화수목금토])요일?/;
+    const nthMatch = nthWeekdayRegex.exec(temp);
+
+    if (nthMatch) {
+      const targetM = nthMatch[1] ? parseInt(nthMatch[1]) : currentMonth;
+      const nthWord = nthMatch[2];
+      const dowChar = nthMatch[3];
+      let nth = 1;
+      if (/두|둘|2/.test(nthWord)) nth = 2;
+      else if (/세|셋|3/.test(nthWord)) nth = 3;
+      else if (/네|넷|4/.test(nthWord)) nth = 4;
+      
+      const calcD = getNthWeekdayOfMonth(currentYear, targetM, nth, dowChar);
+      if (calcD) {
+        currentMonthNum = targetM;
+        currentDate = calcD;
+      }
+    } else if (rangeMatch) {
       const startDay = parseInt(rangeMatch[1]);
       currentDate = startDay;
     } else if (koDateMatch) {
@@ -575,14 +657,21 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     }
 
     if (!matched) {
-      const singleKoRegex = /(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?/;
-      match = singleKoRegex.exec(temp);
-      if (match) {
-        const h = parseInt(match[2]);
-        const m = match[3];
-        startHour = normalizeHour(h, match[1]) + (m === '반' || m === '30분' ? 0.5 : 0);
-        endHour = Math.min(startHour + 1, 19.5);
-        matchedString = match[0];
+      if (/오후\s*반차/i.test(temp)) {
+        startHour = 14.0;
+        endHour = 18.0;
+        matched = true;
+      } else if (/오전\s*반차/i.test(temp)) {
+        startHour = 9.0;
+        endHour = 14.0;
+        matched = true;
+      } else if (/반차/i.test(temp) && !/오전/i.test(temp)) {
+        startHour = 14.0;
+        endHour = 18.0;
+        matched = true;
+      } else if (/연차|휴가|병가/i.test(temp)) {
+        startHour = 9.0;
+        endHour = 18.0;
         matched = true;
       }
     }
@@ -714,6 +803,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     }
     res.memberId = memberId;
     res.isAll = isAll;
+    res.isIssue = /안\s*와|지연|미회신|블로커|오류|버그|재요청|다시\s*이메일|아직도|차질|누락|문제|대기\s*중|피드백\s*미|요청했으나|보낼\s*꺼야|보낼거야/i.test(res.line || res.title);
   });
 
   return results;
@@ -1147,7 +1237,7 @@ export default function App() {
 
   // Fallback virtual user state for non-configured environment
   const [virtualUser, setVirtualUser] = useState(() => {
-    return TEAM[0] || { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' };
+    return TEAM[0] || { id: 'sh', name: '정윤희', role: '부장', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' };
   });
 
   // Dynamic active team members list
@@ -1221,22 +1311,52 @@ export default function App() {
   const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
 
   const [greetingEmoji] = useState(() => {
-    const emojis = ['😊', '😄', '😃', '🥰', '🤩', '🤗', '☺️', '🙋‍♀️', '🏻', '🙌', '✨', '🏻'];
+    const emojis = ['😊', '😄', '😃', '🥰', '🤩', '🤗', '☺️', '🙋‍♀️', '🙌', '✨'];
     return emojis[Math.floor(Math.random() * emojis.length)];
   });
 
-  const ME = isConfigured ? (user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' } : { id: 'sh', name: '정윤희', role: '나(부장)', avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' }) : virtualUser;
-  const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, slot), time: formatTime(new Date()), createdAt: new Date().toISOString() };
+  const ME = virtualUser || (isConfigured && user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' } : TEAM[0]);
+  const displayUser = {
+    name: ME.name || parsedUser.name,
+    role: ME.role || parsedUser.role,
+    department: parsedUser.department || '개발',
+    project: parsedUser.project || '대신증권 연금 경쟁력 강화'
+  };
+
+  const isApproverForItem = (sched) => {
+    if (!sched) return false;
+    if (sched.requesterId && (sched.requesterId === ME.id || (ME.id === 'sh' && sched.requesterId === 'yoonhee'))) return false;
+    if (sched.memberId === ME.id && (!sched.requesterId || sched.requesterId === ME.id)) return false;
+
+    if (sched.approverId) {
+      return sched.approverId === ME.id || (ME.id === 'sh' && sched.approverId === 'yoonhee');
+    }
+
+    const isRequestTitle = /반차|연차|휴가|병가|신청|승인/i.test(sched.title || '');
+    if (!isRequestTitle) return false;
+
+    if (ME.id === 'sangmoo' || ME.name === '조상무') {
+      return (sched.requesterId === 'sh' || sched.requesterId === 'yoonhee' || sched.memberId === 'sh' || sched.memberId === 'yoonhee');
+    }
+
+    if (ME.id === 'sh' || ME.name === '정윤희') {
+      return sched.requesterId !== 'sh' && sched.requesterId !== 'yoonhee' && sched.memberId !== 'sh' && sched.memberId !== 'yoonhee';
+    }
+
+    return false;
+  };
+  const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
   // UI States
-  const [messages, setMessages] = useState(() => {
-    const defaultMsg = { id: 0, from: 'ai', text: getGreetingMsg(isConfigured ? '사용자' : (TEAM[0]?.name || '정윤희'), getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
-    const savedMsg = localStorage.getItem('zal_messages');
+  const getInitialMessagesForUser = (userObj) => {
+    const u = userObj || { id: 'sh', name: '정윤희' };
+    const defaultMsg = { id: 0, from: `ai_${u.id}`, text: getGreetingMsg(u.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const savedMsg = localStorage.getItem(`zal_messages_${u.id}`);
     if (savedMsg) {
       try {
         const parsed = JSON.parse(savedMsg);
         const filtered = parsed.filter(msg => 
-          !(msg.from === 'ai' && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
+          !(msg.from && msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
         );
         return [defaultMsg, ...filtered];
       } catch (e) {
@@ -1244,7 +1364,13 @@ export default function App() {
       }
     }
     return [defaultMsg];
-  });
+  };
+
+  const [messages, setMessages] = useState(() => getInitialMessagesForUser(ME));
+
+  useEffect(() => {
+    setMessages(getInitialMessagesForUser(ME));
+  }, [ME.id, ME.name]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
@@ -1556,6 +1682,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [includeSubOrg, setIncludeSubOrg] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState('schedule'); // schedule | facility
+  const [showWeekend, setShowWeekend] = useState(false); // Weekend on/off (default: off)
 
   useEffect(() => {
     localStorage.setItem('zal_selected_date', selectedDate.toString());
@@ -1920,7 +2047,7 @@ export default function App() {
             const memberYoonhee = {
               id: 'sh',
               name: '정윤희',
-              role: '나(부장)',
+              role: '부장',
               avatar: '윤희',
               avatarPic: '/pic1_thumb.png',
               color: '#000000',
@@ -2187,8 +2314,92 @@ export default function App() {
   }, [schedules]);
 
   useEffect(() => {
-    localStorage.setItem('zal_messages', JSON.stringify(messages));
-  }, [messages]);
+    if (ME && ME.id) {
+      localStorage.setItem(`zal_messages_${ME.id}`, JSON.stringify(messages));
+    }
+  }, [messages, ME.id]);
+
+  const handleApproveSchedule = async (schedId) => {
+    const target = schedules.find(s => s.id === schedId);
+    if (!target) return;
+
+    const updated = { ...target, status: 'accepted' };
+
+    if (isConfigured) {
+      try {
+        let dbSched = { ...updated };
+        if (isCurrentUserYoonhee) {
+          dbSched.memberId = updated.memberId === 'sh' ? 'yoonhee' : (updated.memberId === 'yoonhee' ? 'sh' : updated.memberId);
+          dbSched.memberIds = updated.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+          dbSched.requesterId = updated.requesterId === 'sh' ? 'yoonhee' : (updated.requesterId === 'yoonhee' ? 'sh' : updated.requesterId);
+        }
+        await appwriteService.updateSchedule(schedId, dbSched);
+      } catch (e) {
+        console.error("Failed to update schedule status:", e);
+      }
+    }
+
+    setSchedules(prev => prev.map(s => s.id === schedId ? updated : s));
+
+    const approverName = ME.name || '조상무';
+    const dateStr = `${target.month}/${target.date}`;
+    const approvalNoticeText = `🎉 ${approverName}님이 ${dateStr} ${target.title}을(를) 승인하셨습니다.`;
+    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+
+    if (isConfigured) {
+      try {
+        const dbMsg = await appwriteService.createMessage(noticeMsg);
+        setMessages(prev => [...prev, dbMsg || noticeMsg]);
+      } catch (e) {
+        setMessages(prev => [...prev, noticeMsg]);
+      }
+    } else {
+      setMessages(prev => [...prev, noticeMsg]);
+    }
+
+    showLayerAlert(`${target.title} 일정이 승인되었습니다.`, '승인 완료', 'success');
+  };
+
+  const handleRejectSchedule = async (schedId) => {
+    const target = schedules.find(s => s.id === schedId);
+    if (!target) return;
+
+    const updated = { ...target, status: 'rejected' };
+
+    if (isConfigured) {
+      try {
+        let dbSched = { ...updated };
+        if (isCurrentUserYoonhee) {
+          dbSched.memberId = updated.memberId === 'sh' ? 'yoonhee' : (updated.memberId === 'yoonhee' ? 'sh' : updated.memberId);
+          dbSched.memberIds = updated.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+          dbSched.requesterId = updated.requesterId === 'sh' ? 'yoonhee' : (updated.requesterId === 'yoonhee' ? 'sh' : updated.requesterId);
+        }
+        await appwriteService.updateSchedule(schedId, dbSched);
+      } catch (e) {
+        console.error("Failed to update schedule status:", e);
+      }
+    }
+
+    setSchedules(prev => prev.map(s => s.id === schedId ? updated : s));
+
+    const approverName = ME.name || '조상무';
+    const dateStr = `${target.month}/${target.date}`;
+    const rejectNoticeText = `❌ ${approverName}님이 ${dateStr} ${target.title}을(를) 반려하셨습니다.`;
+    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: rejectNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+
+    if (isConfigured) {
+      try {
+        const dbMsg = await appwriteService.createMessage(noticeMsg);
+        setMessages(prev => [...prev, dbMsg || noticeMsg]);
+      } catch (e) {
+        setMessages(prev => [...prev, noticeMsg]);
+      }
+    } else {
+      setMessages(prev => [...prev, noticeMsg]);
+    }
+
+    showLayerAlert(`${target.title} 일정이 반려되었습니다.`, '반려 완료', 'info');
+  };
 
   const handleSend = () => {
     const text = input.trim();
@@ -2316,8 +2527,11 @@ export default function App() {
         const colors = ['purple', 'blue', 'green', 'orange'];
         const newSchedules = [];
 
+        const isIssueMsg = /안\s*와|지연|미회신|블로커|오류|버그|재요청|다시\s*이메일|아직도|차질|누락|문제|대기\s*중|피드백\s*미|요청했으나|보낼\s*꺼야|보낼거야/i.test(text) || listToCreate.some(p => p.isIssue);
+
         listToCreate.forEach((parsed, index) => {
-          const randomColor = colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
+          const isItemIssue = parsed.isIssue || isIssueMsg || /안\s*와|지연|미회신|블로커|오류|버그|재요청|아직도/i.test(parsed.title || '');
+          const randomColor = isItemIssue ? 'red' : colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
           
           let assignedMemberIds;
           let assignedMemberId;
@@ -2340,6 +2554,31 @@ export default function App() {
           const schedYear = parsed.year ? parseInt(parsed.year) : currentYear;
           const schedMonth = parsed.month ? parseInt(parsed.month) : currentMonth;
 
+          let startHour = parsed.startHour;
+          let endHour = parsed.endHour;
+
+          const titleAndText = (parsed.title || '') + ' ' + (text || '');
+          if (/오후\s*반차/i.test(titleAndText)) {
+            startHour = 14.0;
+            endHour = 18.0;
+          } else if (/오전\s*반차/i.test(titleAndText)) {
+            startHour = 9.0;
+            endHour = 14.0;
+          } else if (/반차/i.test(titleAndText) && !/오전/i.test(titleAndText)) {
+            startHour = 14.0;
+            endHour = 18.0;
+          } else if (/연차|휴가|병가/i.test(parsed.title || '')) {
+            startHour = 9.0;
+            endHour = 18.0;
+          }
+
+          const isLeaveOrRequest = isPersonalLeave || parsed.isRequested || /신청|승인요청|반차|연차|휴가|병가/i.test(titleAndText);
+          const schedStatus = isLeaveOrRequest ? 'requested' : (isSelf ? 'accepted' : 'requested');
+          let schedApproverId = parsed.approverId;
+          if (!schedApproverId) {
+            schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
+          }
+
           const newSchedule = {
             id: `s_${Date.now()}_${index}`,
             year: schedYear,
@@ -2347,12 +2586,14 @@ export default function App() {
             memberId: assignedMemberId,
             memberIds: assignedMemberIds,
             title: parsed.title,
-            startHour: parsed.startHour,
-            endHour: parsed.endHour,
+            startHour: startHour,
+            endHour: endHour,
             color: randomColor,
-            status: isSelf ? 'accepted' : 'requested',
+            status: schedStatus,
             date: parsed.date,
-            requesterId: 'sh',
+            requesterId: ME.id,
+            approverId: schedApproverId,
+            isIssue: isItemIssue,
             description: parsed.groupId 
               ? `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
               : `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] ${finalDescription}`,
@@ -2385,7 +2626,8 @@ export default function App() {
                 memberIds: sched.memberIds,
                 items: [{ year: sched.year, month: sched.month, date: sched.date }],
                 status: sched.status,
-                description: finalDescription
+                description: finalDescription,
+                isIssue: sched.isIssue
               };
               groupedForReply.push(existingGroup);
             } else {
@@ -2403,7 +2645,8 @@ export default function App() {
               memberIds: sched.memberIds,
               items: [{ year: sched.year, month: sched.month, date: sched.date }],
               status: sched.status,
-              description: finalDescription
+              description: finalDescription,
+              isIssue: sched.isIssue
             });
           }
         });
@@ -2425,19 +2668,17 @@ export default function App() {
           });
 
           let dateStr = '';
-          if (group.items.length > 1) {
+          if (group.items.length === 1) {
+            const it = group.items[0];
+            dateStr = `${it.year}.${it.month < 10 ? '0' : ''}${it.month}.${it.date < 10 ? '0' : ''}${it.date}`;
+          } else {
             const first = group.items[0];
             const last = group.items[group.items.length - 1];
             const m1 = first.month < 10 ? `0${first.month}` : `${first.month}`;
             const d1 = first.date < 10 ? `0${first.date}` : `${first.date}`;
             const m2 = last.month < 10 ? `0${last.month}` : `${last.month}`;
             const d2 = last.date < 10 ? `0${last.date}` : `${last.date}`;
-            dateStr = `${first.year}.${m1}.${d1} ~ ${last.year}.${m2}.${d2}`;
-          } else {
-            const single = group.items[0];
-            const m = single.month < 10 ? `0${single.month}` : `${single.month}`;
-            const d = single.date < 10 ? `0${single.date}` : `${single.date}`;
-            dateStr = `${single.year}.${m}.${d}`;
+            dateStr = `${first.year}.${m1}.${d1} ~ ${last.year}.${m2}.${d2} (총 ${group.items.length}일)`;
           }
 
           const cleanDesc = (group.description || '')
@@ -2446,7 +2687,8 @@ export default function App() {
             .filter(Boolean)
             .join(', ') || '없음';
 
-          replyDetails += `\n일정 ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          const labelHeader = group.isIssue ? '이슈' : '일정';
+          replyDetails += `\n${labelHeader} ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -2475,8 +2717,28 @@ export default function App() {
 
         setSchedules(prev => [...prev, ...savedSchedules]);
 
+        const hasIssues = groupedForReply.some(g => g.isIssue);
+        if (hasIssues) {
+          const issueSummaryLines = groupedForReply
+            .filter(g => g.isIssue)
+            .map(g => {
+              const desc = (g.description || '').replace(/^[-•*\s]+/, '').trim();
+              return desc && desc !== '없음' ? `• ${g.title}: ${desc}` : `• ${g.title}`;
+            });
+          if (issueSummaryLines.length > 0) {
+            setDailyIssueText(prev => {
+              const added = issueSummaryLines.join('\n');
+              return prev && prev.trim() && prev.trim() !== '특이사항 없음 (또는 이슈 내용 입력)' ? `${prev}\n${added}` : added;
+            });
+          }
+        }
+
+        const aiReplyHeader = hasIssues 
+          ? `메시지를 분석하여 이슈(Issue/Blocker)로 등록해 드렸습니다!` 
+          : `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!`;
+
         const aiReply = newSchedules.length > 0 
-          ? `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!\n${replyDetails}`
+          ? `${aiReplyHeader}\n${replyDetails}`
           : `입력해주신 내용에서 일정을 추출하지 못했습니다. 날짜나 업무 내용을 좀 더 명확히 작성해 주세요!`;
 
         const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
@@ -2654,11 +2916,18 @@ export default function App() {
     return options;
   };
 
-  const filteredMembers = activeTeam.filter(m => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return true;
-    return m.name.toLowerCase().includes(query) || m.role.toLowerCase().includes(query);
-  });
+  const filteredMembers = activeTeam
+    .filter(m => {
+      const query = searchQuery.toLowerCase().trim();
+      if (!query) return true;
+      return m.name.toLowerCase().includes(query) || m.role.toLowerCase().includes(query);
+    })
+    .slice()
+    .sort((a, b) => {
+      if (a.id === ME.id || a.name === ME.name) return -1;
+      if (b.id === ME.id || b.name === ME.name) return 1;
+      return 0;
+    });
 
   const hourSlots = [8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18, 18.5, 19];
 
@@ -3450,21 +3719,136 @@ export default function App() {
                 const titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
                 const subLines = lines.slice(1).join('\n');
 
+                const pendingItems = schedules.filter(s => s.status === 'requested' && isApproverForItem(s));
+
                 return (
-                  <div key={msg.id} style={{ padding: '8px 4px 16px 4px', marginBottom: '8px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#64748b' }}>
-                      {month}월 {dateNum}일
+                  <Fragment key={msg.id}>
+                    <div style={{ padding: '8px 4px 16px 4px', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#64748b' }}>
+                        {month}월 {dateNum}일
+                      </div>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.5px', marginTop: '2px', display: 'flex', alignItems: 'center' }}>
+                        <span>{titleLine.replace(/\s*[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/gu, '').trim()}</span>
+                        <span style={{ fontSize: '28px', marginLeft: '6px', lineHeight: 1 }}>{greetingEmoji}</span>
+                      </div>
+                      {subLines && (
+                        <div style={{ fontSize: '13.5px', color: '#475569', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                          {subLines}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.5px', marginTop: '2px', display: 'flex', alignItems: 'center' }}>
-                      <span>{titleLine.replace(/\s*[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/gu, '').trim()}</span>
-                      <span style={{ fontSize: '28px', marginLeft: '6px', lineHeight: 1 }}>{greetingEmoji}</span>
-                    </div>
-                    {subLines && (
-                      <div style={{ fontSize: '13.5px', color: '#475569', marginTop: '6px', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
-                        {subLines}
+
+                    {/* Pending Approvals as a native AI Answer Bubble below the divider line */}
+                    {pendingItems.length > 0 && (
+                      <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                        <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                              결재 대기 {pendingItems.length}건이 있습니다.
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              {pendingItems.map((item, index) => {
+                                const reqMember = TEAM.find(m => m.id === item.requesterId || m.id === item.memberId) || { name: '정윤희', role: '부장' };
+                                const dateStr = `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                                const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
+                                const cleanDesc = (item.description || '').replace(/^\[YM:.*?\]\s*/, '').replace(/^\[그룹 ID\]\s*g_\w+\s*\|\s*/, '').trim() || '없음';
+
+                                return (
+                                  <div 
+                                    key={item.id} 
+                                    style={{
+                                      backgroundColor: '#ffffff',
+                                      border: '1.5px solid #cbd5e1',
+                                      borderRadius: '12px',
+                                      padding: '12px 14px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '8px',
+                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                    }}
+                                  >
+                                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                      일정 {index + 1}: "{item.title}"
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📄 상세</span>
+                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{cleanDesc}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ color: '#64748b', minWidth: '40px' }}>👤 담당</span>
+                                        <span style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📅 날짜</span>
+                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ color: '#64748b', minWidth: '40px' }}>🕒 시간</span>
+                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</span>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                                      <button
+                                        onClick={() => handleApproveSchedule(item.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '800',
+                                          backgroundColor: '#6366f1',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <span>💙 승인</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectSchedule(item.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '800',
+                                          backgroundColor: '#ffffff',
+                                          color: '#ef4444',
+                                          border: '1.5px solid #fecaca',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <span>❌ 반려</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                          <span className="chat-meta-sender">AI 잘됨이</span>
+                          <span className="chat-meta-time">{formatTime(new Date())}</span>
+                        </div>
                       </div>
                     )}
-                  </div>
+                  </Fragment>
                 );
               }
 
@@ -3473,12 +3857,12 @@ export default function App() {
               return (
                 <div key={msg.id} className={`chat-bubble-wrap ${roleClass}`}>
                   <div className={`chat-bubble ${roleClass}`} style={{ whiteSpace: 'pre-line' }}>
-                    {!isUser && parseSchedulesFromText(msg.text).schedules.length > 0 ? (() => {
-                      const { introText, schedules: parsedSchedules } = parseSchedulesFromText(msg.text);
+                    {!isUser && (parseSchedulesFromText(msg.text || '').schedules || []).length > 0 ? (() => {
+                      const { introText, schedules: parsedSchedules } = parseSchedulesFromText(msg.text || '');
 
                       const existingSchedules = [];
-                      parsedSchedules.forEach(p => {
-                        p.dates.forEach(d => {
+                      (parsedSchedules || []).forEach(p => {
+                        (p.dates || []).forEach(d => {
                           const match = schedules.find(s => 
                             s.title === p.title &&
                             s.date === d &&
@@ -3496,11 +3880,11 @@ export default function App() {
                           {introText && <div style={{ fontWeight: '600' }}>{renderTextWithLinks(introText)}</div>}
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {parsedSchedules.map((parsed, idx) => {
+                            {(parsedSchedules || []).map((parsed, idx) => {
                               let matchedSchedule = null;
                               const normalizeStr = str => (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-                              for (const d of parsed.dates) {
+                              for (const d of (parsed.dates || [])) {
                                 const match = schedules.find(s => 
                                   normalizeStr(s.title) === normalizeStr(parsed.title) &&
                                   s.date === d &&
@@ -3520,7 +3904,7 @@ export default function App() {
                               lines.forEach(line => {
                                 const trimmed = line.trim();
                                 if (!trimmed) return;
-                                if (/^📅?\s*일정 \d+/iu.test(trimmed)) return;
+                                if (/^📅?\s*(?:일정|이슈) \d+/iu.test(trimmed)) return;
                                 if (trimmed.startsWith('"') && trimmed.endsWith('"')) return;
 
                                 if (trimmed.includes('상세내용:') || trimmed.includes('상세:') || trimmed.includes('상세')) {
@@ -3544,6 +3928,8 @@ export default function App() {
                                 }
                               });
                               
+                              const isIssueCard = parsed.isIssue || (lines[0] && lines[0].includes('이슈')) || (parsed.rawText && parsed.rawText.includes('이슈'));
+
                               return (
                                 <div key={idx} style={{ 
                                   padding: '10px 12px', 
@@ -3554,7 +3940,9 @@ export default function App() {
                                   flexDirection: 'column',
                                   gap: '3px'
                                 }}>
-                                  <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', marginBottom: '2px' }}>일정 {idx + 1}: "{parsed.title}"</div>
+                                  <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', marginBottom: '2px' }}>
+                                    {isIssueCard ? '이슈' : '일정'} {idx + 1}: "{parsed.title}"
+                                  </div>
                                   {fields.map((f, fIdx) => {
                                     let icon = null;
                                     if (f.type === 'detail') {
@@ -3619,58 +4007,152 @@ export default function App() {
                                   
                                   <div style={{ marginTop: '8px' }}>
                                       {matchedSchedule ? (
-                                        <button
-                                          style={{
-                                            padding: '6px 12px',
-                                            fontSize: '12px',
-                                            backgroundColor: 'rgba(239, 68, 68, 0.08)', 
-                                            color: '#ef4444', 
-                                            border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                            borderRadius: '8px',
-                                            fontWeight: '700',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.target.style.backgroundColor = '#ef4444';
-                                            e.target.style.borderColor = '#ef4444';
-                                            e.target.style.color = '#fff';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
-                                            e.target.style.borderColor = 'rgba(239, 68, 68, 0.25)';
-                                            e.target.style.color = '#ef4444';
-                                          }}
-                                          onClick={async () => {
-                                             const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                                             const groupId = matchGroupId ? matchGroupId[1] : null;
-                                             if (groupId) {
-                                               const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                                               if (isConfigured) {
-                                                 for (const t of targets) {
-                                                   await appwriteService.deleteSchedule(t.id);
-                                                 }
-                                               }
-                                               const targetIds = targets.map(t => t.id);
-                                               setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
-                                             } else {
-                                               if (isConfigured) {
-                                                 for (const d of parsed.dates) {
-                                                   const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
-                                                   if (match) {
-                                                     await appwriteService.deleteSchedule(match.id);
+                                        matchedSchedule.status === 'requested' ? (
+                                          isApproverForItem(matchedSchedule) ? (
+                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
+                                              <button
+                                                onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                                style={{
+                                                  flex: 1,
+                                                  padding: '7px 12px',
+                                                  fontSize: '12.5px',
+                                                  fontWeight: '800',
+                                                  backgroundColor: '#6366f1',
+                                                  color: '#ffffff',
+                                                  border: 'none',
+                                                  borderRadius: '8px',
+                                                  cursor: 'pointer',
+                                                  boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                                                  transition: 'all 0.15s ease',
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: '4px'
+                                                }}
+                                              >
+                                                <span>💙 승인</span>
+                                              </button>
+                                              <button
+                                                onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                                style={{
+                                                  flex: 1,
+                                                  padding: '7px 12px',
+                                                  fontSize: '12.5px',
+                                                  fontWeight: '800',
+                                                  backgroundColor: '#ffffff',
+                                                  color: '#ef4444',
+                                                  border: '1.5px solid #fecaca',
+                                                  borderRadius: '8px',
+                                                  cursor: 'pointer',
+                                                  transition: 'all 0.15s ease',
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: '4px'
+                                                }}
+                                              >
+                                                <span>❌ 반려</span>
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                                              <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#b45309', backgroundColor: '#fffbeb', padding: '3px 8px', borderRadius: '6px', border: '1px solid #fef3c7' }}>
+                                                ⏳ 결재 대기중 ({TEAM.find(m => m.id === matchedSchedule.approverId)?.name || '조상무'} {TEAM.find(m => m.id === matchedSchedule.approverId)?.role || '상무'} 결재)
+                                              </span>
+                                              <button
+                                                style={{
+                                                  padding: '4px 8px',
+                                                  fontSize: '11px',
+                                                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                                                  color: '#ef4444',
+                                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                                  borderRadius: '6px',
+                                                  fontWeight: '700',
+                                                  cursor: 'pointer'
+                                                }}
+                                                onClick={async () => {
+                                                  if (isConfigured) {
+                                                    await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                  }
+                                                  setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                }}
+                                              >
+                                                신청취소
+                                              </button>
+                                            </div>
+                                          )
+                                        ) : matchedSchedule.status === 'accepted' ? (
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                            <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#16a34a', backgroundColor: '#f0fdf4', padding: '3px 8px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                                              🎉 승인 완료
+                                            </span>
+                                            {isApproverForItem(matchedSchedule) && (
+                                              <button
+                                                style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
+                                                onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                              >
+                                                반려로 변경
+                                              </button>
+                                            )}
+                                          </div>
+                                        ) : matchedSchedule.status === 'rejected' ? (
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                            <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#dc2626', backgroundColor: '#fef2f2', padding: '3px 8px', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                                              ❌ 반려됨
+                                            </span>
+                                            {isApproverForItem(matchedSchedule) && (
+                                              <button
+                                                style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
+                                                onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                              >
+                                                재승인
+                                              </button>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <button
+                                            style={{
+                                              padding: '6px 12px',
+                                              fontSize: '12px',
+                                              backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                                              color: '#ef4444', 
+                                              border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                              borderRadius: '8px',
+                                              fontWeight: '700',
+                                              cursor: 'pointer',
+                                              transition: 'all 0.2s'
+                                            }}
+                                            onClick={async () => {
+                                               const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                                               const groupId = matchGroupId ? matchGroupId[1] : null;
+                                               if (groupId) {
+                                                 const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                                                 if (isConfigured) {
+                                                   for (const t of targets) {
+                                                     await appwriteService.deleteSchedule(t.id);
                                                    }
                                                  }
+                                                 const targetIds = targets.map(t => t.id);
+                                                 setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
+                                               } else {
+                                                 if (isConfigured) {
+                                                   for (const d of parsed.dates) {
+                                                     const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
+                                                     if (match) {
+                                                       await appwriteService.deleteSchedule(match.id);
+                                                     }
+                                                   }
+                                                 }
+                                                 setSchedules(prev => prev.filter(s => {
+                                                    const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
+                                                   return !isMatching;
+                                                 }));
                                                }
-                                               setSchedules(prev => prev.filter(s => {
-                                                  const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
-                                                 return !isMatching;
-                                               }));
-                                             }
-                                           }}
-                                        >
-                                          등록취소
-                                        </button>
+                                             }}
+                                          >
+                                            등록취소
+                                          </button>
+                                        )
                                       ) : (
                                         <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
                                           ✓ 취소됨
@@ -3926,42 +4408,100 @@ export default function App() {
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
-              <button 
-                className="today-btn" 
-                onClick={() => {
-                  const today = new Date();
-                  setCurrentYear(today.getFullYear());
-                  setCurrentMonth(today.getMonth() + 1);
-                  setSelectedDate(today.getDate());
-                }}
-                style={{
-                  marginLeft: '8px',
-                  padding: '5px 12px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#475569',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: '1'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                  e.target.style.borderColor = '#94a3b8';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.borderColor = '#cbd5e1';
-                }}
-                title="오늘 날짜로 이동"
-              >
-                TODAY
-              </button>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginLeft: '4px' }}>
+                <button 
+                  className="today-btn" 
+                  onClick={() => {
+                    const today = new Date();
+                    setCurrentYear(today.getFullYear());
+                    setCurrentMonth(today.getMonth() + 1);
+                    setSelectedDate(today.getDate());
+                  }}
+                  style={{
+                    padding: '0 12px',
+                    height: '24px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#475569',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: '1',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                    e.currentTarget.style.borderColor = '#94a3b8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }}
+                  title="오늘 날짜로 이동"
+                >
+                  오늘
+                </button>
+
+                <button 
+                  className={`weekend-toggle-btn ${showWeekend ? 'active' : ''}`}
+                  onClick={() => {
+                    setShowWeekend(prev => {
+                      const next = !prev;
+                      if (!next) {
+                        const dateObj = new Date(currentYear, currentMonth - 1, selectedDate);
+                        const dow = dateObj.getDay();
+                        if (dow === 6) {
+                          setSelectedDate(prevDate => Math.max(1, prevDate - 1));
+                        } else if (dow === 0) {
+                          setSelectedDate(prevDate => Math.max(1, prevDate - 2));
+                        }
+                      }
+                      return next;
+                    });
+                  }}
+                  style={{
+                    padding: '0 12px',
+                    height: '24px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#475569',
+                    backgroundColor: showWeekend ? 'rgba(255, 187, 0, 0.2)' : 'transparent',
+                    border: showWeekend ? '1px solid #D99B00' : '1px solid #cbd5e1',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: '1',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!showWeekend) {
+                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                      e.currentTarget.style.borderColor = '#94a3b8';
+                    } else {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 187, 0, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showWeekend) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                    } else {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 187, 0, 0.2)';
+                    }
+                  }}
+                  title="주말 표시 여부 토글"
+                >
+                  주말
+                </button>
+              </div>
             </div>
 
             {/* Right Tabs */}
@@ -4048,7 +4588,7 @@ export default function App() {
                   
                   {/* User Name & Role */}
                   <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap' }}>
-                    {parsedUser.name}{parsedUser.role !== '나(부장)' && parsedUser.role ? ` ${parsedUser.role}` : ''}
+                    {displayUser.name}{displayUser.role ? ` ${displayUser.role}` : ''}
                   </span>
 
                   {/* Chevron Arrow */}
@@ -4078,7 +4618,7 @@ export default function App() {
                     position: 'absolute',
                     top: 'calc(100% + 6px)',
                     left: 0,
-                    minWidth: '150px',
+                    minWidth: '180px',
                     backgroundColor: '#ffffff',
                     borderRadius: '12px',
                     border: '1.5px solid #e2e8f0',
@@ -4089,6 +4629,40 @@ export default function App() {
                     flexDirection: 'column',
                     gap: '2px'
                   }}>
+                    <div style={{ padding: '6px 10px 4px 10px', fontSize: '11px', fontWeight: '800', color: '#94a3b8' }}>
+                      계정 / 멤버 전환
+                    </div>
+                    {TEAM.map(tm => (
+                      <div
+                        key={tm.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setVirtualUser(tm);
+                          setIsUserMenuOpen(false);
+                          showLayerAlert(`${tm.name} ${tm.role || ''}(으)로 계정이 전환되었습니다.`, '계정 전환', 'success');
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          fontSize: '12.5px',
+                          fontWeight: ME.id === tm.id ? '800' : '600',
+                          color: ME.id === tm.id ? '#6366f1' : '#334155',
+                          backgroundColor: ME.id === tm.id ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tm.color || '#6366f1' }}></span>
+                        <span>{tm.name} ({tm.role || '팀원'})</span>
+                        {ME.id === tm.id && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
+                      </div>
+                    ))}
+                    <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '4px 0' }}></div>
                     {/* Logout Menu Item */}
                     <div
                       onClick={(e) => {
@@ -4362,6 +4936,8 @@ export default function App() {
                 const isToday = currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1) && dayNum === now.getDate();
                 const isSat = dayOfWeek === '토';
                 const isSun = dayOfWeek === '일';
+                if (!showWeekend && (isSat || isSun)) return null;
+
                 const hasSchedules = schedules.some(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === dayNum);
                 
                 const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
@@ -4382,7 +4958,7 @@ export default function App() {
                     <span className="date-item-day">{dayOfWeek}</span>
                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span className="date-item-num">{dayNum}</span>
-                      {isToday && <span className="date-item-today-badge">TODAY</span>}
+                      {isToday && <span className="date-item-today-badge">오늘</span>}
                       <span className={`date-item-dot ${hasSchedules ? 'visible' : ''}`} />
                     </div>
                   </button>
@@ -4428,7 +5004,7 @@ export default function App() {
                               member.id === 'sh' ? '나' : member.avatar
                             )}
                           </div>
-                          <span className="member-role-label">{getMemberRoleText(member, index, parsedUser)}</span>
+                          <span className="member-role-label">{getMemberRoleText(member, ME)}</span>
                         </div>
                       </td>
 
@@ -4454,15 +5030,21 @@ export default function App() {
                               const eventProgress = currentEvent.progress !== undefined ? currentEvent.progress : (parseScheduleDescription(currentEvent.description || '').progress);
                               const isCompleted = eventProgress === 100;
 
+                              const isIssue = isIssueSchedule(currentEvent);
+
                               return (
                                 <div 
                                   key={currentEvent.id}
-                                  className={`schedule-block ${currentEvent.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
+                                  className={`schedule-block ${isIssue ? 'issue' : currentEvent.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
                                   style={{ 
                                     width: `calc(${(displayEnd - displayStart) * 2 * 100}% - 8px)`,
                                     top: `${topOffset}px`,
                                     height: '26px',
                                     bottom: 'auto',
+                                    borderColor: isIssue ? 'var(--border-color)' : undefined,
+                                    borderLeftColor: isIssue ? '#FF0000' : undefined,
+                                    borderStyle: isIssue ? 'solid' : undefined,
+                                    borderLeftStyle: isIssue ? 'solid' : undefined,
                                     ...getDayCardProgressStyle(currentEvent.color, eventProgress)
                                   }}
                                   onClick={(e) => {
@@ -4471,7 +5053,10 @@ export default function App() {
                                   }}
                                   title={`${currentEvent.title} (클릭시 상세 보기)`}
                                 >
-                                  {isRequested && '⏳ '}{isRejected && '❌ '}{currentEvent.title}
+                                  {isIssue && <IssueWarningIcon size={16} />}
+                                  {isRequested && !isIssue && '⏳ '}
+                                  {isRejected && !isIssue && '❌ '}
+                                  {currentEvent.title}
                                 </div>
                               );
                             })}
@@ -4498,7 +5083,14 @@ export default function App() {
             const selectedObj = new Date(currentYear, currentMonth - 1, selectedDate);
             const dayOfWeekIndex = selectedObj.getDay();
             const startOfWeek = selectedDate - dayOfWeekIndex;
-            const weekDates = Array.from({ length: 7 }, (_, i) => startOfWeek + i);
+            let weekDates = Array.from({ length: 7 }, (_, i) => startOfWeek + i);
+            if (!showWeekend) {
+              weekDates = weekDates.filter(d => {
+                const dateObj = new Date(currentYear, currentMonth - 1, d);
+                const dow = dateObj.getDay();
+                return dow !== 0 && dow !== 6;
+              });
+            }
             const numMembers = filteredMembers.length;
 
             return (
@@ -4573,7 +5165,7 @@ export default function App() {
                                 overflow: 'hidden',
                                 padding: 0
                               }}
-                              title={`${member.name} (${getMemberRoleText(member, memberIdx, parsedUser)})`}
+                              title={getMemberRoleText(member, ME)}
                             >
                               {getMemberAvatarPic(member, memberIdx) ? (
                                 <img src={getMemberAvatarPic(member, memberIdx)} alt={member.name} style={getMemberAvatarStyle(member, memberIdx)} />
@@ -4582,7 +5174,7 @@ export default function App() {
                               )}
                             </div>
                             <span style={{ fontSize: '11.5px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {member.name}
+                              {getMemberRoleText(member, ME)}
                             </span>
                           </div>
                         </th>
@@ -4647,10 +5239,12 @@ export default function App() {
                                 const eventProgress = event.progress !== undefined ? event.progress : (parseScheduleDescription(event.description || '').progress);
                                 const isCompleted = eventProgress === 100;
 
+                                const isIssue = isIssueSchedule(event);
+
                                 return (
                                   <div
                                     key={event.id}
-                                    className={`schedule-block ${event.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
+                                    className={`schedule-block ${isIssue ? 'issue' : event.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
                                     style={{
                                       position: 'absolute',
                                       top: '6px',
@@ -4668,6 +5262,10 @@ export default function App() {
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       display: 'block',
+                                      borderColor: isIssue ? 'var(--border-color)' : undefined,
+                                      borderLeftColor: isIssue ? '#FF0000' : undefined,
+                                      borderStyle: isIssue ? 'solid' : undefined,
+                                      borderLeftStyle: isIssue ? 'solid' : undefined,
                                       ...getWeekCardProgressStyle(event, currentYear, info.month, info.dayNum, schedules)
                                     }}
                                     onClick={(e) => {
@@ -4680,7 +5278,10 @@ export default function App() {
                                       {formatHour(event.startHour)}~{formatHour(event.endHour)}
                                     </div>
                                     <div style={{ wordBreak: 'break-all', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: duration > 0.5 ? 2 : 1, WebkitBoxOrient: 'vertical' }}>
-                                      {isRequested && '⏳ '}{isRejected && '❌ '}{event.title}
+                                      {isIssue && <IssueWarningIcon size={15} />}
+                                      {isRequested && !isIssue && '⏳ '}
+                                      {isRejected && !isIssue && '❌ '}
+                                      {event.title}
                                     </div>
                                   </div>
                                 );
@@ -4701,20 +5302,20 @@ export default function App() {
               {/* Header: Days of Week */}
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(7, 1fr)', 
+                gridTemplateColumns: showWeekend ? 'repeat(7, 1fr)' : 'repeat(5, 1fr)', 
                 background: '#ffffff', 
                 borderBottom: '2px solid var(--border-light)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 10
               }}>
-                <div style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>일</div>
+                {showWeekend && <div style={{ color: 'var(--accent-red)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>일</div>}
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>월</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>화</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>수</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>목</div>
                 <div style={{ textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>금</div>
-                <div style={{ color: 'var(--accent-blue)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>토</div>
+                {showWeekend && <div style={{ color: 'var(--accent-blue)', textAlign: 'center', padding: '10px', fontWeight: '700', fontSize: '13px' }}>토</div>}
               </div>
 
               {/* Month Weeks (Rows) */}
@@ -4810,8 +5411,9 @@ export default function App() {
                   return (
                     <div key={rIdx} style={{ position: 'relative', width: '100%', background: '#fff', borderBottom: rIdx < rows.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
                       {/* Day Cells Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', width: '100%' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: showWeekend ? 'repeat(7, 1fr)' : 'repeat(5, 1fr)', width: '100%' }}>
                         {row.map((day, dIdx) => {
+                          if (!showWeekend && (dIdx === 0 || dIdx === 6)) return null;
                           const isCurrentMonth = day.isCurrentMonth;
                           const dayNum = day.dayNum;
                           const isSat = dIdx === 6;
@@ -4823,7 +5425,9 @@ export default function App() {
                             <div
                               key={dIdx}
                               style={{
-                                borderRight: dIdx < 6 ? '1px solid var(--border-light)' : 'none',
+                                borderRight: showWeekend 
+                                  ? (dIdx < 6 ? '1px solid var(--border-light)' : 'none')
+                                  : (dIdx < 5 ? '1px solid var(--border-light)' : 'none'),
                                 padding: '6px',
                                 background: '#ffffff',
                                 opacity: isCurrentMonth ? 1 : 0.4,
@@ -4867,9 +5471,25 @@ export default function App() {
                       <div style={{ position: 'absolute', top: '32px', left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
                         {weekEvents.map(evt => {
                           const startCol = evt.startCol;
-                          const span = evt.endCol - evt.startCol + 1;
-                          const leftPct = (startCol / 7) * 100;
-                          const widthPct = (span / 7) * 100;
+                          const endCol = evt.endCol;
+
+                          let leftPct = 0;
+                          let widthPct = 0;
+
+                          if (showWeekend) {
+                            const span = endCol - startCol + 1;
+                            leftPct = (startCol / 7) * 100;
+                            widthPct = (span / 7) * 100;
+                          } else {
+                            if (endCol < 1 || startCol > 5) return null;
+                            const effStart = Math.max(1, Math.min(5, startCol));
+                            const effEnd = Math.max(1, Math.min(5, endCol));
+                            const startIdx = effStart - 1;
+                            const span = effEnd - effStart + 1;
+                            leftPct = (startIdx / 5) * 100;
+                            widthPct = (span / 5) * 100;
+                          }
+
                           const topPx = evt.trackIndex * 26;
 
                           const assignees = evt.memberIds && evt.memberIds.length > 0
@@ -4880,10 +5500,12 @@ export default function App() {
                           const sampleProgress = sample ? (sample.progress !== undefined ? sample.progress : (parseScheduleDescription(sample.description || '').progress)) : 0;
                           const isCompleted = sampleProgress === 100;
 
+                          const isIssue = isIssueSchedule(sample) || isIssueSchedule(evt);
+
                           return (
                             <div
                               key={evt.key}
-                              className={`schedule-block ${evt.color} ${isCompleted ? 'completed' : ''}`}
+                              className={`schedule-block ${isIssue ? 'issue' : evt.color} ${isCompleted ? 'completed' : ''}`}
                               style={{
                                 position: 'absolute',
                                 top: `${topPx}px`,
@@ -4900,6 +5522,10 @@ export default function App() {
                                 alignItems: 'center',
                                 pointerEvents: 'auto',
                                 zIndex: 5,
+                                borderColor: isIssue ? 'var(--border-color)' : undefined,
+                                borderLeftColor: isIssue ? '#FF0000' : undefined,
+                                borderStyle: isIssue ? 'solid' : undefined,
+                                borderLeftStyle: isIssue ? 'solid' : undefined,
                                 ...getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
                               }}
                               onClick={(e) => {
@@ -4910,6 +5536,7 @@ export default function App() {
                             >
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '6px' }}>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  {isIssue && <IssueWarningIcon size={15} />}
                                   {evt.title}
                                 </span>
                                 <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
@@ -4957,8 +5584,12 @@ export default function App() {
             });
             
             const sortedDates = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+            const visibleDates = showWeekend ? sortedDates : sortedDates.filter(d => {
+              const dowIdx = new Date(currentYear, currentMonth - 1, d).getDay();
+              return dowIdx !== 0 && dowIdx !== 6;
+            });
             
-            if (sortedDates.length === 0) {
+            if (visibleDates.length === 0) {
               return (
                 <div style={{ padding: '40px', textAlignment: 'center', color: 'var(--text-tertiary)', fontSize: '15px' }}>
                   등록된 일정이 없습니다.
@@ -4974,7 +5605,7 @@ export default function App() {
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px', background: '#fff', borderRadius: 'var(--radius-lg)' }}>
-                {sortedDates.map(d => {
+                {visibleDates.map(d => {
                   const dow = getDayOfWeek(d);
                   const isSat = dow === '토';
                   const isSun = dow === '일';
@@ -5051,10 +5682,12 @@ export default function App() {
                             .replace(/[\s|]+$/, '')
                             .trim();
 
+                          const isIssue = isIssueSchedule(event);
+
                           return (
                             <div
                               key={event.id}
-                              className={`schedule-block ${event.color}`}
+                              className={`schedule-block ${isIssue ? 'issue' : event.color}`}
                               style={{
                                 position: 'static',
                                 width: '100%',
@@ -5065,7 +5698,12 @@ export default function App() {
                                 flexDirection: 'column',
                                 gap: '6px',
                                 boxShadow: 'var(--shadow-sm)',
-                                border: '1px solid var(--border-light)',
+                                border: isIssue ? '1px solid var(--border-color)' : '1px solid var(--border-light)',
+                                borderLeft: isIssue ? '4px solid #FF0000' : undefined,
+                                borderColor: isIssue ? 'var(--border-color)' : undefined,
+                                borderLeftColor: isIssue ? '#FF0000' : undefined,
+                                borderStyle: isIssue ? 'solid' : undefined,
+                                borderLeftStyle: isIssue ? 'solid' : undefined,
                                 transition: 'all 0.2s ease',
                                 textAlign: 'left',
                                 background: '#ffffff',
@@ -5077,11 +5715,13 @@ export default function App() {
                                 <span style={{ fontSize: '11px', fontWeight: '700', opacity: 0.8 }}>
                                   {formatHour(event.startHour)} ~ {formatHour(event.endHour)}
                                 </span>
-                                {isRequested && <span style={{ fontSize: '10px', color: '#b45309', backgroundColor: '#fffbeb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fef3c7' }}>승인대기</span>}
-                                {isRejected && <span style={{ fontSize: '10px', color: '#b91c1c', backgroundColor: '#fef2f2', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fee2e2' }}>반려됨</span>}
+                                {isIssue && <span style={{ fontSize: '10px', color: '#dc2626', backgroundColor: '#fef2f2', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fecaca' }}>이슈/특이사항</span>}
+                                {isRequested && !isIssue && <span style={{ fontSize: '10px', color: '#b45309', backgroundColor: '#fffbeb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fef3c7' }}>승인대기</span>}
+                                {isRejected && !isIssue && <span style={{ fontSize: '10px', color: '#b91c1c', backgroundColor: '#fef2f2', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', border: '1px solid #fee2e2' }}>반려됨</span>}
                               </div>
-                              <div style={{ fontSize: '14px', fontWeight: '700' }}>
-                                {event.title}{eventProgress > 0 ? ` ${eventProgress}%` : ''}
+                              <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {isIssue && <IssueWarningIcon size={20} />}
+                                <span>{event.title}{eventProgress > 0 ? ` ${eventProgress}%` : ''}</span>
                               </div>
                               {cleanDescText && (
                                 <div style={{ fontSize: '12px', opacity: 0.85, whiteSpace: 'pre-wrap', borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '4px' }}>

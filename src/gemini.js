@@ -22,6 +22,24 @@ export const parseMessageWithGemini = async (text, todayDate, teamList, year = n
     const todayDOW = daysKo[now.getDay()];
     const monthStr = month < 10 ? `0${month}` : `${month}`;
 
+    const monthMentionMatch = text.match(/(\d{1,2})\s*월/);
+    const targetMonthNum = monthMentionMatch ? parseInt(monthMentionMatch[1]) : month;
+
+    const buildCalendarGuide = (y, m) => {
+      const daysInM = new Date(y, m, 0).getDate();
+      const list = [];
+      for (let d = 1; d <= daysInM; d++) {
+        const dow = daysKo[new Date(y, m - 1, d).getDay()];
+        list.push(`${d}일(${dow})`);
+      }
+      return `${y}년 ${m}월 달력: ` + list.join(', ');
+    };
+
+    const calendarGuide = [
+      buildCalendarGuide(year, month),
+      targetMonthNum !== month ? buildCalendarGuide(year, targetMonthNum) : ''
+    ].filter(Boolean).join('\n');
+
     const prompt = `
 You are an AI assistant that manages a team calendar.
 Analyze the user's input message and determine the correct action to take.
@@ -29,6 +47,8 @@ Analyze the user's input message and determine the correct action to take.
 Context Information:
 - Current Year/Month: ${year}.${monthStr}
 - Today's Date: ${year}.${monthStr}.${todayDate} (${todayDOW}) (Use this as reference for relative dates like "오늘", "내일", "다음주", "이번주", etc.)
+- Calendar Cheat Sheet (CRITICAL - USE THIS EXACT MAPPING FOR ALL DATES AND WEEKDAYS):
+${calendarGuide}
 - Team Members list:
 ${JSON.stringify(teamList, null, 2)}
 
@@ -73,12 +93,26 @@ Values for "schedules" fields:
        - Assign ALL schedules in this range the EXACT SAME "groupId" string (e.g., "g_until_0904") so they form a continuous schedule bar from Today to the target date.
     2) If the phrase specifies an explicit range (e.g. "26일 ~ 27일" or "8월 21일 ~ 9월 4일"):
        - Generate one schedule object for each date in the range, and assign them all the exact same "groupId" string (e.g., "g_range_2627").
-  * CRITICAL WEEKDAY RULES (Korean Context):
+  * CRITICAL NTH WEEKDAY RULES (Korean Context):
+    - When the user specifies phrases like "[Month] [N]번째 [요일]" or "[Month] [N]째주 [요일]" (e.g., "9월 첫번째 화요일", "9월 둘째주 목요일", "10월 3번째 금요일"):
+      1) Look up the EXACT date from the Calendar Cheat Sheet above for that month.
+      2) Find the N-th date that falls on that specific [요일].
+      3) FOR EXAMPLE: In 2026년 9월, 1일 is 화요일. So "9월 첫번째 화요일" is 9월 1일 (date: 1)! Do NOT calculate 9월 2일 (which is 수요일)!
+      4) For "9월 첫번째 수요일": 9월 2일 (date: 2).
+      5) For "9월 두번째 화요일": 9월 8일 (date: 8).
     - "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday): Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
 - "startHour" (number): Start time (24h format, e.g. 9.0).
-- "endHour" (number): End time (24h format, e.g. 10.0).
+  * CRITICAL HALF-DAY & LEAVE TIME RULES (MUST FOLLOW STRICTLY):
+    1) "오후 반차" (Afternoon Half-day Leave): MUST set startHour: 14.0, endHour: 18.0 (14:00 ~ 18:00).
+    2) "오전 반차" (Morning Half-day Leave): MUST set startHour: 9.0, endHour: 14.0 (09:00 ~ 14:00).
+    3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
+    4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
+- "endHour" (number): End time (24h format, e.g. 18.0).
 - "memberId" (string): Assigned member ID (default to first member's ID: "${teamList[0]?.id || 'sh'}").
 - "isAll" (boolean): true if for all members.
+- "isRequested" (boolean): Set to true if the schedule is a leave/half-day request (반차, 연차, 휴가, 병가) or approval request.
+- "approverId" (string): Target approver ID (e.g. if applicant is 정윤희/sh -> set to "sangmoo" (조상무 상무), otherwise set to "sh" (정윤희 부장)).
+- "isIssue" (boolean): CRITICAL! Set to true if the input message expresses an issue, blocker, delay, missing/unreceived file or feedback, re-request/retry email, error, bug, or operational problem (e.g. "스케치 파일 요청한거 아직도 안와서 다시 이메일 보낼꺼야", "피드백 미수신", "서버 응답 지연", "재요청 예정"). Otherwise set to false.
 - "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input, you must leave this field empty ("").
 
 

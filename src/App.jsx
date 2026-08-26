@@ -3860,13 +3860,13 @@ export default function App() {
                                           <button
                                             onClick={() => handleRejectSchedule(item.id)}
                                             style={{
-                                              padding: '4px 10px',
-                                              fontSize: '11.5px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#fef2f2',
-                                              color: '#dc2626',
-                                              border: 'none',
-                                              borderRadius: '6px',
+                                              padding: '6px 12px',
+                                               fontSize: '12px',
+                                               fontWeight: '700',
+                                               backgroundColor: '#fef2f2',
+                                               color: '#dc2626',
+                                               border: '1px solid #fca5a5',
+                                               borderRadius: '8px',
                                               cursor: 'pointer',
                                               transition: 'all 0.15s ease',
                                               display: 'inline-flex',
@@ -3879,13 +3879,13 @@ export default function App() {
                                           <button
                                             onClick={() => handleApproveSchedule(item.id)}
                                             style={{
-                                              padding: '4px 10px',
-                                              fontSize: '11.5px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#ecfdf5',
-                                              color: '#059669',
-                                              border: 'none',
-                                              borderRadius: '6px',
+                                              padding: '6px 12px',
+                                               fontSize: '12px',
+                                               fontWeight: '700',
+                                               backgroundColor: '#ecfdf5',
+                                               color: '#059669',
+                                               border: '1px solid #a7f3d0',
+                                               borderRadius: '8px',
                                               cursor: 'pointer',
                                               transition: 'all 0.15s ease',
                                               display: 'inline-flex',

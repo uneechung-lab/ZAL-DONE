@@ -4088,6 +4088,7 @@ export default function App() {
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {(parsedSchedules || []).map((parsed, idx) => {
+                              const isCancellationMsg = /취소/i.test(parsed.action || '') || (msg && msg.text && /취소/i.test(msg.text));
                               let matchedSchedule = null;
                               const normalizeStr = str => (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
 

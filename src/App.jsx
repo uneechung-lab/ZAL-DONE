@@ -3781,57 +3781,50 @@ export default function App() {
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📄 상세</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{cleanDesc}</span>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                          <span>상세</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>👤 담당</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name}</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                          <span>담당</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name}</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📅 날짜</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                          <span>날짜</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>🕒 시간</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                          <span>시간</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                                      <button
-                                        onClick={() => handleApproveSchedule(item.id)}
-                                        style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
-                                          fontWeight: '800',
-                                          backgroundColor: '#6366f1',
-                                          color: '#ffffff',
-                                          border: 'none',
-                                          borderRadius: '8px',
-                                          cursor: 'pointer',
-                                          boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
-                                          transition: 'all 0.15s ease',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          gap: '4px'
-                                        }}
-                                      >
-                                        <span>💙 승인</span>
-                                      </button>
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                                       <button
                                         onClick={() => handleRejectSchedule(item.id)}
                                         style={{
                                           flex: 1,
                                           padding: '7px 12px',
                                           fontSize: '12.5px',
-                                          fontWeight: '800',
+                                          fontWeight: '700',
                                           backgroundColor: '#ffffff',
                                           color: '#ef4444',
-                                          border: '1.5px solid #fecaca',
+                                          border: '1px solid #fecaca',
                                           borderRadius: '8px',
                                           cursor: 'pointer',
                                           transition: 'all 0.15s ease',
@@ -3842,6 +3835,27 @@ export default function App() {
                                         }}
                                       >
                                         <span>❌ 반려</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleApproveSchedule(item.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#ecfdf5',
+                                          color: '#059669',
+                                          border: '1px solid #a7f3d0',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <span>💙 승인</span>
                                       </button>
                                     </div>
                                   </div>
@@ -3892,54 +3906,47 @@ export default function App() {
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📄 상세</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{cleanDesc}</span>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                          <span>상세</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>👤 요청자</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '부장'})</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                          <span>요청자</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '부장'})</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>📅 날짜</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                          <span>날짜</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>🕒 시간</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</span>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                          <span>시간</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                                      <button
-                                        onClick={() => handleApproveSchedule(item.id)}
-                                        style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
-                                          fontWeight: '800',
-                                          backgroundColor: '#6366f1',
-                                          color: '#ffffff',
-                                          border: 'none',
-                                          borderRadius: '8px',
-                                          cursor: 'pointer',
-                                          boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
-                                          transition: 'all 0.15s ease',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          gap: '4px'
-                                        }}
-                                      >
-                                        <span>💙 수락</span>
-                                      </button>
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                                       <button
                                         onClick={() => handleRejectSchedule(item.id)}
                                         style={{
                                           flex: 1,
                                           padding: '7px 12px',
                                           fontSize: '12.5px',
-                                          fontWeight: '800',
+                                          fontWeight: '700',
                                           backgroundColor: '#ffffff',
                                           color: '#ef4444',
                                           border: '1.5px solid #fecaca',
@@ -3953,6 +3960,27 @@ export default function App() {
                                         }}
                                       >
                                         <span>❌ 반려</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleApproveSchedule(item.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#ecfdf5',
+                                          color: '#059669',
+                                          border: '1px solid #a7f3d0',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <span>💙 수락</span>
                                       </button>
                                     </div>
                                   </div>

@@ -7918,10 +7918,52 @@ export default function App() {
                                     )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>
-                                    {memberList.map((name, i) => (
-                                      <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
-                                    ))}
-                                  </td>
+                                     {(() => {
+                                       const ids = s.memberIds && s.memberIds.length > 0 ? s.memberIds : [s.memberId || 'sh'];
+                                       const reqId = s.requesterId || s.memberId;
+                                       const isJointOrRequest = (s.status === 'requested' || s.status === 'accepted' || (s.status && s.status.startsWith('rejected'))) &&
+                                         (s.approverId || ids.length > 1 || /반차|연차|휴가|병가|신청|승인/i.test(s.title || ''));
+
+                                       return ids.map((id, i) => {
+                                         const m = activeTeam.find(teamMember => teamMember.id === id);
+                                         const name = m ? m.name : (id === 'sh' ? '정윤희' : (id === 'daum' ? '정다음' : id));
+                                         const isTarget = id !== reqId || (ids.length > 1 && id !== ME.id);
+
+                                         if (s.status === 'requested' && isTarget) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#b45309', backgroundColor: '#fffbeb', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fde68a', whiteSpace: 'nowrap' }}>
+                                                 수락 대기
+                                               </span>
+                                             </div>
+                                           );
+                                         } else if (s.status === 'accepted' && isJointOrRequest && isTarget && (s.approverId || ids.length > 1)) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 5px', borderRadius: '4px', border: '1px solid #a7f3d0', whiteSpace: 'nowrap' }}>
+                                                 수락 완료
+                                               </span>
+                                             </div>
+                                           );
+                                         } else if (s.status && (s.status === 'rejected' || s.status.startsWith('rejected_')) && isTarget) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fca5a5', whiteSpace: 'nowrap' }}>
+                                                 거절됨
+                                               </span>
+                                             </div>
+                                           );
+                                         }
+
+                                         return (
+                                           <div key={i} style={{ lineHeight: '1.6' }}>{name}</div>
+                                         );
+                                       });
+                                     })()}
+                                   </td>
                                 </>
                               ) : (
                                 <>
@@ -8021,10 +8063,52 @@ export default function App() {
                                     )}
                                   </td>
                                   <td style={{ padding: '7px 10px', verticalAlign: 'top', textAlign: 'center', fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>
-                                    {memberList.map((name, i) => (
-                                      <div key={i} style={{ lineHeight: '1.4' }}>{name}</div>
-                                    ))}
-                                  </td>
+                                     {(() => {
+                                       const ids = s.memberIds && s.memberIds.length > 0 ? s.memberIds : [s.memberId || 'sh'];
+                                       const reqId = s.requesterId || s.memberId;
+                                       const isJointOrRequest = (s.status === 'requested' || s.status === 'accepted' || (s.status && s.status.startsWith('rejected'))) &&
+                                         (s.approverId || ids.length > 1 || /반차|연차|휴가|병가|신청|승인/i.test(s.title || ''));
+
+                                       return ids.map((id, i) => {
+                                         const m = activeTeam.find(teamMember => teamMember.id === id);
+                                         const name = m ? m.name : (id === 'sh' ? '정윤희' : (id === 'daum' ? '정다음' : id));
+                                         const isTarget = id !== reqId || (ids.length > 1 && id !== ME.id);
+
+                                         if (s.status === 'requested' && isTarget) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#b45309', backgroundColor: '#fffbeb', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fde68a', whiteSpace: 'nowrap' }}>
+                                                 수락 대기
+                                               </span>
+                                             </div>
+                                           );
+                                         } else if (s.status === 'accepted' && isJointOrRequest && isTarget && (s.approverId || ids.length > 1)) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 5px', borderRadius: '4px', border: '1px solid #a7f3d0', whiteSpace: 'nowrap' }}>
+                                                 수락 완료
+                                               </span>
+                                             </div>
+                                           );
+                                         } else if (s.status && (s.status === 'rejected' || s.status.startsWith('rejected_')) && isTarget) {
+                                           return (
+                                             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                               <span>{name}</span>
+                                               <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#dc2626', backgroundColor: '#fef2f2', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fca5a5', whiteSpace: 'nowrap' }}>
+                                                 거절됨
+                                               </span>
+                                             </div>
+                                           );
+                                         }
+
+                                         return (
+                                           <div key={i} style={{ lineHeight: '1.6' }}>{name}</div>
+                                         );
+                                       });
+                                     })()}
+                                   </td>
                                 </>
                               )}
                             </tr>

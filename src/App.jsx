@@ -1676,7 +1676,16 @@ export default function App() {
     let text = '';
     if (timeViewTab === 'daily') {
       const dateStr = `${currentYear}.${currentMonth < 10 ? '0' : ''}${currentMonth}.${selectedDate < 10 ? '0' : ''}${selectedDate}`;
-      const filtered = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
+      const isScheduleForCurrentUser = (s) => {
+        if (!s || !ME) return false;
+        const uid = ME.id;
+        const matchesUid = id => id === uid || (uid === 'sh' && id === 'yoonhee') || (uid === 'yoonhee' && id === 'sh') || (uid === 'sangmoo' && id === 'sangmu') || (uid === 'sangmu' && id === 'sangmoo');
+        if (matchesUid(s.memberId)) return true;
+        if (s.memberIds && Array.isArray(s.memberIds) && s.memberIds.some(matchesUid)) return true;
+        if (s.requesterId && matchesUid(s.requesterId)) return true;
+        return false;
+      };
+      const filtered = schedules.filter(s => isScheduleForCurrentUser(s) && isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
       
       const doneList = filtered.length > 0
         ? filtered.map(s => {
@@ -7450,12 +7459,24 @@ export default function App() {
 
               {/* Schedules Table / Section */}
               {(() => {
+                const isScheduleForCurrentUser = (s) => {
+                  if (!s || !ME) return false;
+                  const uid = ME.id;
+                  const matchesUid = id => id === uid || (uid === 'sh' && id === 'yoonhee') || (uid === 'yoonhee' && id === 'sh') || (uid === 'sangmoo' && id === 'sangmu') || (uid === 'sangmu' && id === 'sangmoo');
+                  if (matchesUid(s.memberId)) return true;
+                  if (s.memberIds && Array.isArray(s.memberIds) && s.memberIds.some(matchesUid)) return true;
+                  if (s.requesterId && matchesUid(s.requesterId)) return true;
+                  return false;
+                };
+
+                const mySchedules = schedules.filter(isScheduleForCurrentUser);
+
                 let filteredSchedules = [];
                 if (timeViewTab === 'daily') {
-                  filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
+                  filteredSchedules = mySchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate);
                 } else if (timeViewTab === 'weekly') {
                   const { monday, sunday } = getWeekRangeStr(currentYear, currentMonth, selectedDate);
-                  filteredSchedules = schedules.filter(s => {
+                  filteredSchedules = mySchedules.filter(s => {
                     const sMonth = s.month || currentMonth;
                     const sYear = s.year || currentYear;
                     const sDate = new Date(sYear, sMonth - 1, s.date);
@@ -7463,9 +7484,9 @@ export default function App() {
                     return sDate >= monday && sDate <= sunday;
                   });
                 } else if (timeViewTab === 'monthly') {
-                  filteredSchedules = schedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth));
+                  filteredSchedules = mySchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth));
                 } else {
-                  filteredSchedules = [...schedules];
+                  filteredSchedules = [...mySchedules];
                 }
 
                 if (filteredSchedules.length === 0) {

@@ -1483,6 +1483,21 @@ input:-webkit-autofill:active {
     box-sizing: border-box !important;
   }
 
+  .report-filter-bar,
+  .report-filter-bar * {
+    visibility: visible !important;
+    display: flex !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .report-filter-bar button {
+    display: inline-flex !important;
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* Allow tables to flow naturally across pages so 1st page is filled without blank gaps */
   .printable-report-modal table {
     page-break-inside: auto !important;

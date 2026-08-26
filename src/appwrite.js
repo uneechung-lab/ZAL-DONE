@@ -176,6 +176,30 @@ export const appwriteService = {
     }
   },
 
+    async setGlobalResetMarker() {
+    if (!isConfigured) return null;
+    try {
+      const timestampStr = Date.now().toString();
+      const data = {
+        memberId: 'all',
+        memberIds: JSON.stringify(['all']),
+        title: '__RESET__',
+        startHour: 0,
+        endHour: 0,
+        color: 'gray',
+        status: 'reset',
+        date: 1,
+        requesterId: 'system',
+        description: timestampStr
+      };
+      await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
+      return timestampStr;
+    } catch (e) {
+      console.error('Appwrite failed to set global reset marker', e);
+      return null;
+    }
+  },
+
   async clearSchedules() {
     if (!isConfigured) return null;
     try {

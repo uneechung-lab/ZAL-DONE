@@ -2228,14 +2228,22 @@ export default function App() {
 
               setActiveTeam(fullTeamList);
 
-              const resetTsStr = localStorage.getItem('zal_reset_timestamp');
-              const resetTs = resetTsStr ? parseInt(resetTsStr, 10) : 0;
+              const resetDocs = mapped.filter(s => s.title === '__RESET__');
+              let globalResetTs = 0;
+              resetDocs.forEach(rd => {
+                const ts = parseInt(rd.description || '0', 10);
+                if (ts > globalResetTs) globalResetTs = ts;
+              });
+
+              const localResetTsStr = localStorage.getItem('zal_reset_timestamp');
+              const localResetTs = localResetTsStr ? parseInt(localResetTsStr, 10) : 0;
+              const effectiveResetTs = Math.max(localResetTs, globalResetTs);
 
               const actualSchedules = mapped.filter(s => {
-                if (s.title === '__PROFILE__') return false;
-                if (resetTs && s.createdAt) {
+                if (s.title === '__PROFILE__' || s.title === '__RESET__') return false;
+                if (effectiveResetTs && s.createdAt) {
                   const createdTime = new Date(s.createdAt).getTime();
-                  if (createdTime && createdTime <= resetTs) return false;
+                  if (createdTime && createdTime <= effectiveResetTs) return false;
                 }
                 return true;
               });
@@ -2243,15 +2251,24 @@ export default function App() {
             }
             const dbMessages = await appwriteService.getMessages();
             if (dbMessages !== null) {
-              const resetTsStr = localStorage.getItem('zal_reset_timestamp');
-              const resetTs = resetTsStr ? parseInt(resetTsStr, 10) : 0;
+              const resetDocs = (await appwriteService.getSchedules() || []).filter(s => s.title === '__RESET__');
+              let globalResetTs = 0;
+              resetDocs.forEach(rd => {
+                const ts = parseInt(rd.description || '0', 10);
+                if (ts > globalResetTs) globalResetTs = ts;
+              });
+
+              const localResetTsStr = localStorage.getItem('zal_reset_timestamp');
+              const localResetTs = localResetTsStr ? parseInt(localResetTsStr, 10) : 0;
+              const effectiveResetTs = Math.max(localResetTs, globalResetTs);
+
               const userSuffix = currentUser.$id;
 
               const filteredDbMessages = dbMessages.filter(msg => {
                 if (!msg || msg.id === 0) return false;
-                if (resetTs && msg.createdAt) {
+                if (effectiveResetTs && msg.createdAt) {
                   const createdTime = new Date(msg.createdAt).getTime();
-                  if (createdTime && createdTime <= resetTs) return false;
+                  if (createdTime && createdTime <= effectiveResetTs) return false;
                 }
                 return (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
                   !(msg.from && msg.from.startsWith('ai') && msg.text && (
@@ -5201,6 +5218,7 @@ export default function App() {
 
                             if (isConfigured) {
                               try {
+                                await appwriteService.setGlobalResetMarker();
                                 await appwriteService.clearSchedules();
                                 await appwriteService.clearMessages();
                               } catch (err) {

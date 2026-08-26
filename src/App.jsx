@@ -761,7 +761,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
   results.forEach(res => {
     let memberId = 'sh';
     let isAll = false;
-    const isPersonalLeave = res.title.includes('연차') || res.title.includes('휴가') || res.title.includes('반차') || res.title.includes('병가');
+    const isPersonalLeave = (res.title.includes('연차') || res.title.includes('휴가') || res.title.includes('반차') || res.title.includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(res.title || '');
     if (
       !isPersonalLeave && (
         res.line.includes('모두에게') || 
@@ -1325,6 +1325,7 @@ export default function App() {
 
   const isApproverForItem = (sched) => {
     if (!sched) return false;
+    if (/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(sched.title || '')) return false;
     if (sched.requesterId && (sched.requesterId === ME.id || (ME.id === 'sh' && sched.requesterId === 'yoonhee'))) return false;
     if (sched.memberId === ME.id && (!sched.requesterId || sched.requesterId === ME.id)) return false;
 
@@ -2553,7 +2554,7 @@ export default function App() {
           let assignedMemberId;
           let isSelf;
 
-          const isPersonalLeave = (parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가');
+          const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
           if (parsed.isAll && !isPersonalLeave) {
             assignedMemberIds = activeTeam.map(m => m.id);

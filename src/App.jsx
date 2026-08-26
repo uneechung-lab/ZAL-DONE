@@ -5616,7 +5616,8 @@ export default function App() {
                               const trackIndex = trackMap[currentEvent.id] ?? 0;
                               const topOffset = totalTracks === 1 ? 24 : trackIndex * 32 + 12;
                               const reqId1 = currentEvent.requesterId || currentEvent.memberId;
-                              const isRequested = currentEvent.status === 'requested' && member.id !== reqId1 && !(member.id === 'sh' && (reqId1 === 'sh' || reqId1 === 'yoonhee'));
+                              const isLeaveOrApprove1 = /반차|연차|휴가|병가|신청|승인/i.test(currentEvent.title || '') || Boolean(currentEvent.approverId && currentEvent.status === 'requested');
+                              const isRequested = currentEvent.status === 'requested' && (isLeaveOrApprove1 || member.id !== reqId1);
                               const isRejected = currentEvent.status === 'rejected' || currentEvent.status === `rejected_${member.id}`;
                               const displayStart = currentEvent.startHour < 8 ? 8 : currentEvent.startHour;
                               const displayEnd = currentEvent.endHour > 19.5 ? 19.5 : currentEvent.endHour;
@@ -5824,7 +5825,8 @@ export default function App() {
                             >
                               {currentEvents.map(event => {
                                 const reqId2 = event.requesterId || event.memberId;
-                                 const isRequested = event.status === 'requested' && member.id !== reqId2 && !(member.id === 'sh' && (reqId2 === 'sh' || reqId2 === 'yoonhee'));
+                                 const isLeaveOrApprove2 = /반차|연차|휴가|병가|신청|승인/i.test(event.title || '') || Boolean(event.approverId && event.status === 'requested');
+                                 const isRequested = event.status === 'requested' && (isLeaveOrApprove2 || member.id !== reqId2);
                                 const isRejected = event.status === 'rejected' || event.status === `rejected_${member.id}`;
                                 const displayStart = event.startHour < 8 ? 8 : event.startHour;
                                 const displayEnd = event.endHour > 19.5 ? 19.5 : event.endHour;

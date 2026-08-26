@@ -1449,6 +1449,8 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReportProject, setSelectedReportProject] = useState('대신증권 연금 경쟁력 강화');
+  const [selectedReportMembers, setSelectedReportMembers] = useState([]);
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
 
@@ -7441,6 +7443,114 @@ export default function App() {
               </div>
             </div>
 
+            {/* Project & Member Selection Bar (Filter Bar) */}
+            <div style={{ 
+              padding: '12px 28px', 
+              backgroundColor: '#f8fafc', 
+              borderBottom: '1px solid #e2e8f0', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              gap: '16px',
+              flexWrap: 'wrap'
+            }}>
+              {/* Left: Project Selector Pill */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>프로젝트:</span>
+                <select
+                  value={selectedReportProject}
+                  onChange={(e) => setSelectedReportProject(e.target.value)}
+                  style={{
+                    padding: '6px 32px 6px 14px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#0f172a',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    appearance: 'none',
+                    backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23475569\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/ %3e%3c/svg%3e")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                    backgroundSize: '14px'
+                  }}
+                >
+                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
+                  <option value="전체 프로젝트">전체 프로젝트</option>
+                </select>
+              </div>
+
+              {/* Right: Member Selection Chips */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginRight: '4px' }}>구성원:</span>
+                
+                {/* All Chip */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedReportMembers.length === activeTeam.length) {
+                      setSelectedReportMembers([ME.id]);
+                    } else {
+                      setSelectedReportMembers(activeTeam.map(m => m.id));
+                    }
+                  }}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    border: selectedReportMembers.length === activeTeam.length ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
+                    backgroundColor: selectedReportMembers.length === activeTeam.length ? '#e0e7ff' : '#ffffff',
+                    color: selectedReportMembers.length === activeTeam.length ? '#4338ca' : '#64748b',
+                    boxShadow: selectedReportMembers.length === activeTeam.length ? '0 1px 3px rgba(99,102,241,0.2)' : 'none'
+                  }}
+                >
+                  전체
+                </button>
+
+                {/* Individual Member Chips */}
+                {activeTeam.map(m => {
+                  const isSelected = selectedReportMembers.includes(m.id);
+                  const isMe = m.id === ME.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          if (selectedReportMembers.length > 1) {
+                            setSelectedReportMembers(prev => prev.filter(id => id !== m.id));
+                          }
+                        } else {
+                          setSelectedReportMembers(prev => [...prev, m.id]);
+                        }
+                      }}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        border: isSelected ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
+                        backgroundColor: isSelected ? '#6366f1' : '#ffffff',
+                        color: isSelected ? '#ffffff' : '#475569',
+                        boxShadow: isSelected ? '0 2px 4px rgba(99,102,241,0.25)' : 'none'
+                      }}
+                    >
+                      {m.name}
+                      {isMe && ' (나)'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Scrollable Document Body (Editable when isEditingReport is true) */}
             <div 
               id="printable-report-area" 
@@ -7460,12 +7570,12 @@ export default function App() {
               {/* Schedules Table / Section */}
               {(() => {
                 const isScheduleForCurrentUser = (s) => {
-                  if (!s || !ME) return false;
-                  const uid = ME.id;
-                  const matchesUid = id => id === uid || (uid === 'sh' && id === 'yoonhee') || (uid === 'yoonhee' && id === 'sh') || (uid === 'sangmoo' && id === 'sangmu') || (uid === 'sangmu' && id === 'sangmoo');
-                  if (matchesUid(s.memberId)) return true;
-                  if (s.memberIds && Array.isArray(s.memberIds) && s.memberIds.some(matchesUid)) return true;
-                  if (s.requesterId && matchesUid(s.requesterId)) return true;
+                  if (!s) return false;
+                  const selectedIds = selectedReportMembers.length > 0 ? selectedReportMembers : [ME.id];
+                  const matchesSelected = id => selectedIds.some(uid => id === uid || (uid === 'sh' && id === 'yoonhee') || (uid === 'yoonhee' && id === 'sh') || (uid === 'sangmoo' && id === 'sangmu') || (uid === 'sangmu' && id === 'sangmoo'));
+                  if (matchesSelected(s.memberId)) return true;
+                  if (s.memberIds && Array.isArray(s.memberIds) && s.memberIds.some(matchesSelected)) return true;
+                  if (s.requesterId && matchesSelected(s.requesterId)) return true;
                   return false;
                 };
 

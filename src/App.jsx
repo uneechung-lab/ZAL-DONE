@@ -1202,6 +1202,19 @@ export default function App() {
   const projectMenuRef = useRef(null);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
 
+  // Close report project select dropdown layer when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (reportProjectMenuRef.current && !reportProjectMenuRef.current.contains(e.target)) {
+        setIsReportProjectMenuOpen(false);
+      }
+    };
+    if (isReportProjectMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }
+  }, [isReportProjectMenuOpen]);
+
   // Close project select dropdown layer when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -1450,6 +1463,8 @@ export default function App() {
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedReportProject, setSelectedReportProject] = useState('대신증권 연금 경쟁력 강화');
+  const [isReportProjectMenuOpen, setIsReportProjectMenuOpen] = useState(false);
+  const reportProjectMenuRef = useRef(null);
   const [selectedReportMembers, setSelectedReportMembers] = useState([]);
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
@@ -7453,13 +7468,16 @@ export default function App() {
               gap: '16px',
               flexWrap: 'wrap'
             }}>
-              {/* Left: Project Selector Pill */}
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <select
-                  value={selectedReportProject}
-                  onChange={(e) => setSelectedReportProject(e.target.value)}
+              {/* Left: Custom Project Selector Pill & Dropdown Box */}
+              <div ref={reportProjectMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsReportProjectMenuOpen(prev => !prev)}
                   style={{
-                    padding: '6px 32px 6px 14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
                     fontSize: '13px',
                     fontWeight: '700',
                     color: '#0f172a',
@@ -7469,16 +7487,91 @@ export default function App() {
                     cursor: 'pointer',
                     outline: 'none',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                    appearance: 'none',
-                    backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23475569\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/ %3e%3c/svg%3e")',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 10px center',
-                    backgroundSize: '14px'
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <option value="대신증권 연금 경쟁력 강화">대신증권 연금 경쟁력 강화</option>
-                  <option value="전체 프로젝트">전체 프로젝트</option>
-                </select>
+                  <span>{selectedReportProject}</span>
+                  <svg 
+                    width="14" 
+                    height="14" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="#475569" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isReportProjectMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+
+                {/* Custom Popover Menu Box on Dropdown Click */}
+                {isReportProjectMenuOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      zIndex: 100,
+                      minWidth: '220px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06)',
+                      padding: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px'
+                    }}
+                  >
+                    {['대신증권 연금 경쟁력 강화', '전체 프로젝트'].map(proj => {
+                      const isCurrent = selectedReportProject === proj;
+                      return (
+                        <button
+                          key={proj}
+                          type="button"
+                          onClick={() => {
+                            setSelectedReportProject(proj);
+                            setIsReportProjectMenuOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '8px 12px',
+                            fontSize: '13px',
+                            fontWeight: isCurrent ? '700' : '600',
+                            color: isCurrent ? '#000000' : '#334155',
+                            backgroundColor: isCurrent ? '#f1f5f9' : 'transparent',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            transition: 'background-color 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isCurrent) e.currentTarget.style.backgroundColor = '#f8fafc';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isCurrent) e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <span>{proj}</span>
+                          {isCurrent && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Right: Member Selection Chips */}

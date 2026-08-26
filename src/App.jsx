@@ -7460,8 +7460,24 @@ export default function App() {
               </div>
             </div>
 
-            {/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
-            <div style={{ 
+            {/* Scrollable Document Body (Editable when isEditingReport is true) */}
+            <div 
+              id="printable-report-area" 
+              contentEditable={isEditingReport}
+              suppressContentEditableWarning={true}
+              style={{ 
+                flex: 1, 
+                overflowY: 'auto', 
+                padding: '20px 28px', 
+                fontFamily: 'sans-serif', 
+                color: '#1e293b', 
+                lineHeight: '1.6',
+                outline: 'none'
+              }}
+            >
+
+{/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
+            <div className="report-filter-bar" style={{ 
               padding: '0px 28px 4px 28px', 
               marginTop: '-2px',
               backgroundColor: 'transparent', 
@@ -7653,21 +7669,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Scrollable Document Body (Editable when isEditingReport is true) */}
-            <div 
-              id="printable-report-area" 
-              contentEditable={isEditingReport}
-              suppressContentEditableWarning={true}
-              style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                padding: '20px 28px', 
-                fontFamily: 'sans-serif', 
-                color: '#1e293b', 
-                lineHeight: '1.6',
-                outline: 'none'
-              }}
-            >
+            
 
               {/* Schedules Table / Section */}
               {(() => {

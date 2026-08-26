@@ -3899,8 +3899,8 @@ export default function App() {
                                       ) : item.status === 'accepted' ? (
                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                             🎉 승인 완료
-                                           </span>
+                                             🎉 승인하였습니다.
+                                            </span>
                                            <button
                                              style={{
                                                padding: '6px 12px',
@@ -3920,8 +3920,8 @@ export default function App() {
                                       ) : (
                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                             ❌ 반려됨
-                                           </span>
+                                             ❌ 반려하였습니다.
+                                            </span>
                                            <button
                                              style={{
                                                padding: '6px 12px',
@@ -4323,7 +4323,7 @@ export default function App() {
                                              return (
                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                   🎉 승인 완료 ({approverMember.name} {approverMember.role} 승인)
+                                                   {isApprover ? '🎉 승인하였습니다.' : `🎉 승인 완료 (${approverMember.name} ${approverMember.role} 승인)`}
                                                  </span>
                                                  {isApprover ? (
                                                    <button
@@ -4369,7 +4369,7 @@ export default function App() {
                                              return (
                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                   ❌ 반려됨 ({approverMember.name} {approverMember.role} 반려)
+                                                   {isApprover ? '❌ 반려하였습니다.' : `❌ 반려됨 (${approverMember.name} ${approverMember.role} 반려)`}
                                                  </span>
                                                  {isApprover ? (
                                                    <button

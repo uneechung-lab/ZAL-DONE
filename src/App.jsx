@@ -2872,8 +2872,8 @@ export default function App() {
             .filter(Boolean)
             .join(', ') || '없음';
 
-          const labelHeader = group.isIssue ? '이슈' : '일정';
-          replyDetails += `\n${labelHeader} ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeText}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          const labelType = group.isIssue ? '이슈' : '일정';
+          replyDetails += `\n${index + 1}. ${labelType}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeText}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -2918,9 +2918,19 @@ export default function App() {
           }
         }
 
-        const aiReplyHeader = hasIssues 
-          ? `메시지를 분석하여 이슈(Issue/Blocker)로 등록해 드렸습니다!` 
-          : `메시지를 분석하여 타임라인에 일정을 등록해 드렸습니다!`;
+        const issueCount = groupedForReply.filter(g => g.isIssue).length;
+        const scheduleCount = groupedForReply.filter(g => !g.isIssue).length;
+
+        let aiReplyHeader = '메시지를 분석하여 ';
+        if (issueCount > 0 && scheduleCount > 0) {
+          aiReplyHeader += `이슈 ${issueCount}건, 일정 ${scheduleCount}건 등록해 드렸습니다!`;
+        } else if (issueCount > 0) {
+          aiReplyHeader += `이슈 ${issueCount}건 등록해 드렸습니다!`;
+        } else if (scheduleCount > 0) {
+          aiReplyHeader += `일정 ${scheduleCount}건 등록해 드렸습니다!`;
+        } else {
+          aiReplyHeader += `일정을 등록해 드렸습니다!`;
+        }
 
         const aiReply = newSchedules.length > 0 
           ? `${aiReplyHeader}\n${replyDetails}`

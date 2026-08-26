@@ -7463,7 +7463,7 @@ export default function App() {
             {/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
             <div style={{ 
               padding: '0px 28px 4px 28px', 
-              marginTop: '-12px',
+              marginTop: '-2px',
               backgroundColor: 'transparent', 
               display: 'flex', 
               alignItems: 'center', 

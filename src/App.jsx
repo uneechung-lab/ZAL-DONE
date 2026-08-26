@@ -2720,7 +2720,7 @@ export default function App() {
           let startHour = parsed.startHour;
           let endHour = parsed.endHour;
 
-          const titleAndText = (parsed.title || '') + ' ' + (text || '');
+          const titleAndText = (parsed.title || '') + ' ' + (parsed.description || '');
           if (/오후\s*반차/i.test(titleAndText)) {
             startHour = 14.0;
             endHour = 18.0;

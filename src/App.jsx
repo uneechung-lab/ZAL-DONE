@@ -2719,8 +2719,8 @@ export default function App() {
             endHour = 18.0;
           }
 
-          const isLeaveOrRequest = isPersonalLeave || (parsed.isRequested && !/마무리|진행|완료|연동|개발|작업/i.test(parsed.title || '')) || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
-          const schedStatus = isLeaveOrRequest ? 'requested' : (isSelf ? 'accepted' : 'requested');
+          const isLeaveOrRequest = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '') || (mentionsYoonhee && ME.id !== 'sh');
+          const schedStatus = isLeaveOrRequest ? 'requested' : 'accepted';
           let schedApproverId = parsed.approverId;
           if (!schedApproverId) {
             schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
@@ -4511,7 +4511,7 @@ export default function App() {
                                              return (
                                                <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                   {isApprover ? '🎉 승인하였습니다' : `🎉 승인 완료 (${approverMember.name} ${approverMember.role} 승인)`}
+                                                   {isApprover ? '🎉 승인하였습니다' : (/반차|연차|휴가|병가|신청|승인/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId) ? `🎉 승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : '🎉 등록 완료')}
                                                  </span>
                                                  {isApprover ? (
                                                    <button

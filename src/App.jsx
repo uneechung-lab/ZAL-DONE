@@ -2518,7 +2518,7 @@ export default function App() {
     const proceedWithAI = async () => {
       try {
         const todayDate = selectedDate || new Date().getDate();
-        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth);
+        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth, ME);
         
         let aiResult;
         if (rawResult && typeof rawResult === 'object' && rawResult.action) {
@@ -2628,10 +2628,9 @@ export default function App() {
         const colors = ['purple', 'blue', 'green', 'orange'];
         const newSchedules = [];
 
-        const isIssueMsg = /안\s*와|지연|미회신|블로커|오류|버그|재요청|다시\s*이메일|아직도|차질|누락|문제|대기\s*중|피드백\s*미|요청했으나|보낼\s*꺼야|보낼거야/i.test(text) || listToCreate.some(p => p.isIssue);
-
         listToCreate.forEach((parsed, index) => {
-          const isItemIssue = parsed.isIssue || isIssueMsg || /안\s*와|지연|미회신|블로커|오류|버그|재요청|아직도/i.test(parsed.title || '');
+          // Check issue status per individual schedule item, NOT forcing whole text
+          const isItemIssue = parsed.isIssue || /긴급|디버깅|버그|오류|지연|블로커|안\s*와|미회신|아직도|이슈\s*터짐/i.test(parsed.title || '');
           const randomColor = isItemIssue ? 'red' : colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
           
           let assignedMemberIds;
@@ -2640,15 +2639,26 @@ export default function App() {
 
           const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
+          // Check if input/title mentions another team member for joint schedules (e.g. "정부장이랑", "정윤희")
+          const mentionsYoonhee = /정부장|정윤희/i.test(text + ' ' + (parsed.title || ''));
+
           if (parsed.isAll && !isPersonalLeave) {
             assignedMemberIds = activeTeam.map(m => m.id);
-            assignedMemberId = 'sh';
-            isSelf = false;
+            assignedMemberId = ME.id;
+            isSelf = true;
           } else {
-            const assignedMember = activeTeam.find(m => m.id === parsed.memberId) || ME;
-            assignedMemberIds = [assignedMember.id];
-            assignedMemberId = assignedMember.id;
-            isSelf = assignedMember.id === 'sh';
+            // Default assignee is the current logged-in user (ME)
+            const targetMember = activeTeam.find(m => m.id === parsed.memberId);
+            assignedMemberId = targetMember ? targetMember.id : ME.id;
+
+            if (mentionsYoonhee && assignedMemberId === ME.id) {
+              const yoonheeMember = activeTeam.find(m => m.id === 'sh' || m.id === 'yoonhee');
+              assignedMemberIds = yoonheeMember ? [ME.id, yoonheeMember.id] : [ME.id];
+            } else {
+              assignedMemberIds = [assignedMemberId];
+            }
+
+            isSelf = assignedMemberId === ME.id || (ME.id === 'sh' && assignedMemberId === 'yoonhee');
           }
 
           const finalDescription = parsed.description || '';
@@ -2673,7 +2683,7 @@ export default function App() {
             endHour = 18.0;
           }
 
-          const isLeaveOrRequest = isPersonalLeave || parsed.isRequested || /신청|승인요청|반차|연차|휴가|병가/i.test(titleAndText);
+          const isLeaveOrRequest = isPersonalLeave || (parsed.isRequested && !/마무리|진행|완료|연동|개발|작업/i.test(parsed.title || '')) || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
           const schedStatus = isLeaveOrRequest ? 'requested' : (isSelf ? 'accepted' : 'requested');
           let schedApproverId = parsed.approverId;
           if (!schedApproverId) {

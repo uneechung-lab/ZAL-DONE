@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-export const parseMessageWithGemini = async (text, todayDate, teamList, year = new Date().getFullYear(), month = new Date().getMonth() + 1) => {
+export const parseMessageWithGemini = async (text, todayDate, teamList, year = new Date().getFullYear(), month = new Date().getMonth() + 1, currentUser = null) => {
   if (!genAI) {
     console.warn("Gemini API key is missing. Please set VITE_GEMINI_API_KEY in .env");
     return null;
@@ -108,11 +108,11 @@ Values for "schedules" fields:
     3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
     4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
 - "endHour" (number): End time (24h format, e.g. 18.0).
-- "memberId" (string): Assigned member ID (default to first member's ID: "${teamList[0]?.id || 'sh'}").
+- "memberId" (string): Assigned member ID. CRITICAL: The user writing this input message is "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}"). Unless the input explicitly states that ANOTHER person is performing the task ALONE (e.g. "정윤희 부장님이 혼자 대외 미팅"), default "memberId" to "${currentUser?.id || 'sh'}".
 - "isAll" (boolean): true if for all members.
-- "isRequested" (boolean): Set to true if the schedule is a leave/half-day request (반차, 연차, 휴가, 병가) or approval request.
+- "isRequested" (boolean): Set to true ONLY if the schedule explicitly requires manager approval (such as leave/vacation "연차", "반차", "휴가", "병가") OR if requesting a team member/manager to attend/approve a specific meeting. Standard personal work tasks ("~마무리 예정", "개발 진행", "~작업 예정") MUST NOT require approval ("isRequested": false).
 - "approverId" (string): Target approver ID (e.g. if applicant is 정윤희/sh -> set to "sangmoo" (조상무 상무), otherwise set to "sh" (정윤희 부장)).
-- "isIssue" (boolean): CRITICAL! Set to true if the input message expresses an issue, blocker, delay, missing/unreceived file or feedback, re-request/retry email, error, bug, or operational problem (e.g. "스케치 파일 요청한거 아직도 안와서 다시 이메일 보낼꺼야", "피드백 미수신", "서버 응답 지연", "재요청 예정"). Otherwise set to false.
+- "isIssue" (boolean): CRITICAL! Set to true ONLY for specific individual schedule items that represent an unexpected error, bug, emergency debugging ("긴급 디버깅", "이슈 터짐"), blocker, delay, or missing file/feedback. Regular work schedules ("API 연동 마무리", "개발", "기획", "리뷰", "회의", "점검") MUST have "isIssue": false!
 - "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input, you must leave this field empty ("").
 
 

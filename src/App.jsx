@@ -2684,8 +2684,9 @@ export default function App() {
 
           const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
-          // Check if input/title mentions another team member for joint schedules (e.g. "정부장이랑", "정윤희")
-          const mentionsYoonhee = /정부장|정윤희/i.test(text + ' ' + (parsed.title || ''));
+          // Check if individual item title/description mentions another team member (e.g. "정부장이랑", "정윤희")
+          const itemText = (parsed.title || '') + ' ' + (parsed.description || '');
+          const mentionsYoonhee = /정부장|정윤희/i.test(itemText);
 
           if (parsed.isAll && !isPersonalLeave) {
             assignedMemberIds = activeTeam.map(m => m.id);

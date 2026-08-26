@@ -121,7 +121,9 @@ Values for "schedules" fields:
   2) The current user is assigning/delegating a task or meeting request to another colleague (e.g. "정사원한테 로그 분석 맡기고" -> isRequested: true, assigned to "daum").
   3) Otherwise, for personal work tasks performed by the logged-in user, set "isRequested": false.
 - "approverId" (string): Target approver ID (e.g. if applicant is 정윤희/sh -> set to "sangmoo" (조상무 상무), otherwise set to "sh" (정윤희 부장)).
-- "isIssue" (boolean): CRITICAL! Set to true ONLY for specific individual schedule items that represent an unexpected error, bug, emergency debugging ("긴급 디버깅", "이슈 터짐"), blocker, delay, or missing file/feedback. Regular work schedules ("API 연동 마무리", "개발", "기획", "리뷰", "회의", "점검") MUST have "isIssue": false!
+- "isIssue" (boolean): CRITICAL ISSUE CLASSIFICATION RULE:
+  Set to true ONLY if the specific task itself is an unexpected incident, system error, bug, or emergency debugging ("긴급 디버깅", "장애 파기", "이슈 처리", "버그 수정").
+  Regular work tasks such as writing reports/documents ("경영진 보고서 작성", "보고서 작성", "자료 작성", "문서 작성"), meetings ("회의", "대책 회의", "리뷰"), and development ("API 연동", "개발", "점검") MUST ALWAYS HAVE "isIssue": false!
 - "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input, you must leave this field empty ("").
 
 

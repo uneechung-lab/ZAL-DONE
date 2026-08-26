@@ -2675,7 +2675,8 @@ export default function App() {
 
         listToCreate.forEach((parsed, index) => {
           // Check issue status per individual schedule item, NOT forcing whole text
-          const isItemIssue = parsed.isIssue || /긴급|디버깅|버그|오류|지연|블로커|안\s*와|미회신|아직도|이슈\s*터짐/i.test(parsed.title || '');
+          const isReportTask = /보고서|자료\s*작성|문서|서류/i.test((parsed.title || '') + ' ' + (parsed.description || ''));
+          const isItemIssue = !isReportTask && (parsed.isIssue || /긴급|디버깅|버그|오류|지연|블로커|안\s*와|미회신|아직도|이슈\s*터짐/i.test(parsed.title || ''));
           const randomColor = isItemIssue ? 'red' : colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
           
           let assignedMemberIds;

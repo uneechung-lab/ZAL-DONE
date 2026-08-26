@@ -4276,12 +4276,12 @@ export default function App() {
                                                    </span>
                                                    <button
                                                      style={{
-                                                       padding: '4px 10px',
-                                                       fontSize: '11.5px',
+                                                       padding: '6px 12px',
+                                                       fontSize: '12px',
                                                        backgroundColor: '#fef2f2',
-                                                        color: '#dc2626',
-                                                        border: '1px solid #fca5a5',
-                                                       borderRadius: '6px',
+                                                       color: '#dc2626',
+                                                       border: '1px solid #fca5a5',
+                                                       borderRadius: '8px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
                                                      }}
@@ -4313,12 +4313,12 @@ export default function App() {
                                                  ) : (
                                                    <button
                                                      style={{
-                                                       padding: '4px 10px',
-                                                       fontSize: '11.5px',
+                                                       padding: '6px 12px',
+                                                       fontSize: '12px',
                                                        backgroundColor: '#fef2f2',
-                                                        color: '#dc2626',
-                                                        border: '1px solid #fca5a5',
-                                                       borderRadius: '6px',
+                                                       color: '#dc2626',
+                                                       border: '1px solid #fca5a5',
+                                                       borderRadius: '8px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
                                                      }}
@@ -4350,12 +4350,12 @@ export default function App() {
                                                  ) : (
                                                    <button
                                                      style={{
-                                                       padding: '4px 10px',
-                                                       fontSize: '11.5px',
+                                                       padding: '6px 12px',
+                                                       fontSize: '12px',
                                                        backgroundColor: '#fef2f2',
-                                                        color: '#dc2626',
-                                                        border: '1px solid #fca5a5',
-                                                       borderRadius: '6px',
+                                                       color: '#dc2626',
+                                                       border: '1px solid #fca5a5',
+                                                       borderRadius: '8px',
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
                                                      }}
@@ -4376,12 +4376,12 @@ export default function App() {
                                            return (
                                              <button
                                                style={{
-                                                  padding: '4px 10px',
-                                                  fontSize: '11.5px',
+                                                  padding: '6px 12px',
+                                                  fontSize: '12px',
                                                   backgroundColor: '#fef2f2',
                                                   color: '#dc2626',
                                                   border: '1px solid #fca5a5',
-                                                  borderRadius: '6px',
+                                                  borderRadius: '8px',
                                                   fontWeight: '700',
                                                   cursor: 'pointer',
                                                   transition: 'all 0.15s ease'

@@ -5646,7 +5646,7 @@ export default function App() {
                                     bottom: 'auto',
                                     borderColor: isIssue ? 'var(--border-color)' : undefined,
                                     borderLeftColor: isIssue ? '#FF0000' : undefined,
-                                    borderStyle: isIssue ? 'solid' : undefined,
+                                    borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                     borderLeftStyle: isIssue ? 'solid' : undefined,
                                     ...getDayCardProgressStyle(currentEvent.color, eventProgress)
                                   }}
@@ -5869,7 +5869,7 @@ export default function App() {
                                       display: 'block',
                                       borderColor: isIssue ? 'var(--border-color)' : undefined,
                                       borderLeftColor: isIssue ? '#FF0000' : undefined,
-                                      borderStyle: isIssue ? 'solid' : undefined,
+                                      borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                       borderLeftStyle: isIssue ? 'solid' : undefined,
                                       ...getWeekCardProgressStyle(event, currentYear, info.month, info.dayNum, schedules)
                                     }}
@@ -6129,7 +6129,7 @@ export default function App() {
                                 zIndex: 5,
                                 borderColor: isIssue ? 'var(--border-color)' : undefined,
                                 borderLeftColor: isIssue ? '#FF0000' : undefined,
-                                borderStyle: isIssue ? 'solid' : undefined,
+                                borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                 borderLeftStyle: isIssue ? 'solid' : undefined,
                                 ...getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
                               }}
@@ -6307,7 +6307,7 @@ export default function App() {
                                 borderLeft: isIssue ? '4px solid #FF0000' : undefined,
                                 borderColor: isIssue ? 'var(--border-color)' : undefined,
                                 borderLeftColor: isIssue ? '#FF0000' : undefined,
-                                borderStyle: isIssue ? 'solid' : undefined,
+                                borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                 borderLeftStyle: isIssue ? 'solid' : undefined,
                                 transition: 'all 0.2s ease',
                                 textAlign: 'left',

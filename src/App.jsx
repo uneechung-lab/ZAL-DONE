@@ -2728,11 +2728,19 @@ export default function App() {
             endHour = 18.0;
           }
 
-          const isLeaveOrRequest = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '') || (mentionsYoonhee && ME.id !== 'sh');
-          const schedStatus = isLeaveOrRequest ? 'requested' : 'accepted';
-          let schedApproverId = parsed.approverId;
-          if (!schedApproverId) {
+          const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
+          let schedStatus = 'accepted';
+          let schedApproverId = null;
+
+          if (isLeaveOrApproval) {
+            schedStatus = 'requested';
             schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
+          } else if (mentionsYoonhee && ME.id !== 'sh') {
+            schedStatus = 'requested';
+            schedApproverId = 'sh';
+          } else {
+            schedStatus = 'accepted';
+            schedApproverId = null;
           }
 
           const newSchedule = {
@@ -2809,12 +2817,26 @@ export default function App() {
 
         let replyDetails = '';
         groupedForReply.forEach((group, index) => {
-          let displayAssigneeName;
+          let displayAssigneeText = '';
           if (group.memberIds.length === activeTeam.length) {
-            displayAssigneeName = '전체 인원';
+            displayAssigneeText = '전체 인원';
+            if (group.status === 'requested') displayAssigneeText += ' (요청됨)';
+          } else if (group.memberIds.length > 1) {
+            const names = group.memberIds.map(id => {
+              const m = activeTeam.find(teamMember => teamMember.id === id);
+              const mName = m ? m.name : id;
+              if (group.status === 'requested' && id !== ME.id && (id === 'sh' || id === 'yoonhee' || id === 'sangmu')) {
+                return `${mName} (요청됨)`;
+              }
+              return mName;
+            });
+            displayAssigneeText = names.join(', ');
           } else {
             const assignedMember = activeTeam.find(m => m.id === group.memberId) || ME;
-            displayAssigneeName = assignedMember.name;
+            displayAssigneeText = assignedMember.name;
+            if (group.status === 'requested' && (group.isPersonalLeave || group.approverId)) {
+              displayAssigneeText += ' (요청됨)';
+            }
           }
           
           group.items.sort((a, b) => {
@@ -2844,7 +2866,7 @@ export default function App() {
             .join(', ') || '없음';
 
           const labelHeader = group.isIssue ? '이슈' : '일정';
-          replyDetails += `\n${labelHeader} ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeName}${group.status === 'requested' ? ' (요청됨)' : ''}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          replyDetails += `\n${labelHeader} ${index + 1}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeText}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];

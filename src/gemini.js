@@ -102,11 +102,12 @@ Values for "schedules" fields:
       5) For "9월 두번째 화요일": 9월 8일 (date: 8).
     - "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday): Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
 - "startHour" (number): Start time (24h format, e.g. 9.0).
-  * CRITICAL HALF-DAY & LEAVE TIME RULES (MUST FOLLOW STRICTLY):
+  * CRITICAL HALF-DAY & LEAVE TIME & ASSIGNEE RULES (MUST FOLLOW STRICTLY):
     1) "오후 반차" (Afternoon Half-day Leave): MUST set startHour: 14.0, endHour: 18.0 (14:00 ~ 18:00).
     2) "오전 반차" (Morning Half-day Leave): MUST set startHour: 9.0, endHour: 14.0 (09:00 ~ 14:00).
     3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
     4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
+    5) LEAVE MEMBER ASSIGNMENT: For any leave/vacation ("연차", "반차", "휴가", "병가"), "memberId" MUST ALWAYS BE the current user "${currentUser?.id || 'sh'}" who is taking the leave! Even if the input mentions a manager (e.g. "조상무님한테 9월 1일 오후 반차 승인 요청"), "memberId" MUST BE "${currentUser?.id || 'sh'}" (the applicant), and "approverId" MUST BE "sangmoo"! Never assign the leave schedule memberId to the manager!
 - "endHour" (number): End time (24h format, e.g. 18.0).
 - "memberId" (string): Assigned member ID. CRITICAL MEMBER ASSIGNMENT & ALIAS RULES:
   1) If the input mentions assigning or delegating a task to another specific team member (e.g. "정사원한테/정다음한테/정사인한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!

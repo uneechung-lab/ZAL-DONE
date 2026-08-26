@@ -2689,7 +2689,12 @@ export default function App() {
           const itemText = (parsed.title || '') + ' ' + (parsed.description || '');
           const mentionsYoonhee = /정부장|정윤희/i.test(itemText);
 
-          if (parsed.isAll && !isPersonalLeave) {
+          if (isPersonalLeave) {
+            // Personal leave (연차, 반차, 휴가) always belongs to the logged-in user
+            assignedMemberId = ME.id;
+            assignedMemberIds = [ME.id];
+            isSelf = true;
+          } else if (parsed.isAll) {
             assignedMemberIds = activeTeam.map(m => m.id);
             assignedMemberId = ME.id;
             isSelf = true;

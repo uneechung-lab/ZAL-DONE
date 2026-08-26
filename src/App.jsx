@@ -3814,23 +3814,21 @@ export default function App() {
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                                       <button
                                         onClick={() => handleRejectSchedule(item.id)}
                                         style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
+                                          padding: '4px 10px',
+                                          fontSize: '11.5px',
                                           fontWeight: '700',
                                           backgroundColor: '#ffffff',
                                           color: '#ef4444',
                                           border: '1px solid #fecaca',
-                                          borderRadius: '8px',
+                                          borderRadius: '6px',
                                           cursor: 'pointer',
                                           transition: 'all 0.15s ease',
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          justifyContent: 'center',
                                           gap: '4px'
                                         }}
                                       >
@@ -3839,19 +3837,17 @@ export default function App() {
                                       <button
                                         onClick={() => handleApproveSchedule(item.id)}
                                         style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
+                                          padding: '4px 10px',
+                                          fontSize: '11.5px',
                                           fontWeight: '700',
                                           backgroundColor: '#ecfdf5',
                                           color: '#059669',
                                           border: '1px solid #a7f3d0',
-                                          borderRadius: '8px',
+                                          borderRadius: '6px',
                                           cursor: 'pointer',
                                           transition: 'all 0.15s ease',
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          justifyContent: 'center',
                                           gap: '4px'
                                         }}
                                       >
@@ -3939,23 +3935,21 @@ export default function App() {
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                                       <button
                                         onClick={() => handleRejectSchedule(item.id)}
                                         style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
+                                          padding: '4px 10px',
+                                          fontSize: '11.5px',
                                           fontWeight: '700',
                                           backgroundColor: '#ffffff',
                                           color: '#ef4444',
-                                          border: '1.5px solid #fecaca',
-                                          borderRadius: '8px',
+                                          border: '1px solid #fecaca',
+                                          borderRadius: '6px',
                                           cursor: 'pointer',
                                           transition: 'all 0.15s ease',
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          justifyContent: 'center',
                                           gap: '4px'
                                         }}
                                       >
@@ -3964,19 +3958,17 @@ export default function App() {
                                       <button
                                         onClick={() => handleApproveSchedule(item.id)}
                                         style={{
-                                          flex: 1,
-                                          padding: '7px 12px',
-                                          fontSize: '12.5px',
+                                          padding: '4px 10px',
+                                          fontSize: '11.5px',
                                           fontWeight: '700',
                                           backgroundColor: '#ecfdf5',
                                           color: '#059669',
                                           border: '1px solid #a7f3d0',
-                                          borderRadius: '8px',
+                                          borderRadius: '6px',
                                           cursor: 'pointer',
                                           transition: 'all 0.15s ease',
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          justifyContent: 'center',
                                           gap: '4px'
                                         }}
                                       >

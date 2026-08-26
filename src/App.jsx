@@ -7481,7 +7481,7 @@ export default function App() {
                     alignItems: 'center',
                     gap: '6px',
                     padding: '6px 14px 6px 0px',
-                    fontSize: '13px',
+                    fontSize: '15px',
                     fontWeight: '700',
                     color: '#0f172a',
                     backgroundColor: '#ffffff',
@@ -7555,7 +7555,7 @@ export default function App() {
                             width: '100%',
                             textAlign: 'left',
                             padding: '8px 12px',
-                            fontSize: '13px',
+                            fontSize: '14px',
                             fontWeight: isCurrent ? '700' : '600',
                             color: isCurrent ? '#000000' : '#334155',
                             backgroundColor: isCurrent ? '#f1f5f9' : 'transparent',
@@ -7600,8 +7600,8 @@ export default function App() {
                     }
                   }}
                   style={{
-                    padding: '5px 13px',
-                    fontSize: '12.5px',
+                    padding: '6px 14px',
+                    fontSize: '13.5px',
                     fontWeight: '700',
                     borderRadius: '16px',
                     cursor: 'pointer',

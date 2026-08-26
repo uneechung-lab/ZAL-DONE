@@ -4508,6 +4508,34 @@ export default function App() {
                                                );
                                              }
                                            } else if (matchedSchedule && matchedSchedule.status === 'accepted') {
+                                              const isApprovalItem = /반차|연차|휴가|병가|신청|승인/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId);
+
+                                              if (!isApprover && !isApprovalItem) {
+                                                return (
+                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px' }}>
+                                                    <button
+                                                      style={{
+                                                        padding: '6px 12px',
+                                                        fontSize: '12px',
+                                                        backgroundColor: '#fef2f2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fca5a5',
+                                                        borderRadius: '8px',
+                                                        fontWeight: '700',
+                                                        cursor: 'pointer'
+                                                      }}
+                                                      onClick={async () => {
+                                                        if (isConfigured) {
+                                                          await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                        }
+                                                        setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                      }}
+                                                    >
+                                                      등록취소
+                                                    </button>
+                                                  </div>
+                                                );
+                                              }
                                              return (
                                                <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>

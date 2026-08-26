@@ -153,9 +153,23 @@ The output must be EXACTLY a single valid JSON object matching one of the format
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    return JSON.parse(responseText);
+    let cleanedText = responseText.trim();
+    if (cleanedText.includes('```')) {
+      cleanedText = cleanedText.replace(/^[\s\S]*?```(?:json)?\s*/i, '').replace(/\s*```[\s\S]*$/i, '').trim();
+    }
+    return JSON.parse(cleanedText);
   } catch (error) {
     console.error("Failed to parse message with Gemini", error);
+    try {
+      if (typeof responseText === 'string') {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      }
+    } catch (innerErr) {
+      console.error("Fallback regex JSON extraction also failed:", innerErr);
+    }
     return null;
   }
 };

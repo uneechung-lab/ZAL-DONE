@@ -2148,7 +2148,7 @@ export default function App() {
             };
 
             const otherMember = isCurrentUserYoonhee ? {
-              id: 'sangmu',
+              id: 'sangmoo',
               name: '조상무',
               role: '상무',
               avatar: '상무',
@@ -2826,7 +2826,7 @@ export default function App() {
             const names = group.memberIds.map(id => {
               const m = activeTeam.find(teamMember => teamMember.id === id);
               const mName = m ? m.name : id;
-              if (group.status === 'requested' && id !== ME.id && (id === 'sh' || id === 'yoonhee' || id === 'sangmu')) {
+              if (group.status === 'requested' && id !== ME.id && (id === 'sh' || id === 'yoonhee' || id === 'sangmoo')) {
                 return `${mName} (요청됨)`;
               }
               return mName;

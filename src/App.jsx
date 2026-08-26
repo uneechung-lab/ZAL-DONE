@@ -2266,9 +2266,11 @@ export default function App() {
 
               const filteredDbMessages = dbMessages.filter(msg => {
                 if (!msg || msg.id === 0) return false;
-                if (effectiveResetTs && msg.createdAt) {
-                  const createdTime = new Date(msg.createdAt).getTime();
-                  if (createdTime && createdTime <= effectiveResetTs) return false;
+                if (effectiveResetTs) {
+                  let createdTime = 0;
+                  if (msg.createdAt) createdTime = new Date(msg.createdAt).getTime();
+                  if (!createdTime && msg.$createdAt) createdTime = new Date(msg.$createdAt).getTime();
+                  if (!createdTime || isNaN(createdTime) || createdTime <= effectiveResetTs) return false;
                 }
                 return (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
                   !(msg.from && msg.from.startsWith('ai') && msg.text && (

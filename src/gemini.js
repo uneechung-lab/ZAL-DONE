@@ -58,6 +58,12 @@ User Input:
 Instructions:
 Determine if the user wants to CREATE new schedules, UPDATE existing schedules, or DELETE schedules.
 
+CRITICAL SINGLE-TASK DELEGATION RULE:
+When the input describes a cause/incident and a delegated task together (e.g. "아침부터 인증 서버 지연 이슈 떠서 정사인한테 로그 분석 맡기고"):
+- Do NOT split this into two separate schedules ("이슈" and "로그 분석")!
+- Combine them into a SINGLE schedule item: title "인증 서버 지연 로그 분석" (or "인증 서버 로그 분석"), memberId: "daum", isIssue: true, isRequested: true, approverId: "daum"!
+- The schedule MUST belong ONLY to the assigned team member ("daum"), NOT to the manager writing the message!
+
 Return a JSON object in one of the following formats:
 
 1. CREATE ACTION:

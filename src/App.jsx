@@ -7480,7 +7480,7 @@ export default function App() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    padding: '6px 14px',
+                    padding: '6px 14px 6px 0px',
                     fontSize: '13px',
                     fontWeight: '700',
                     color: '#0f172a',

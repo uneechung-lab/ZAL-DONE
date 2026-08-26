@@ -7462,7 +7462,8 @@ export default function App() {
 
             {/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
             <div style={{ 
-              padding: '14px 28px 4px 28px', 
+              padding: '0px 28px 4px 28px', 
+              marginTop: '-12px',
               backgroundColor: 'transparent', 
               display: 'flex', 
               alignItems: 'center', 
@@ -7488,7 +7489,7 @@ export default function App() {
                     borderRadius: '20px',
                     cursor: 'pointer',
                     outline: 'none',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    boxShadow: 'none',
                     transition: 'all 0.15s ease'
                   }}
                 >
@@ -7608,7 +7609,7 @@ export default function App() {
                     border: selectedReportMembers.length === activeTeam.length ? '1.5px solid #000000' : '1px solid #cbd5e1',
                     backgroundColor: selectedReportMembers.length === activeTeam.length ? '#000000' : '#ffffff',
                     color: selectedReportMembers.length === activeTeam.length ? '#ffffff' : '#64748b',
-                    boxShadow: selectedReportMembers.length === activeTeam.length ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
+                    boxShadow: 'none'
                   }}
                 >
                   전체
@@ -7641,7 +7642,7 @@ export default function App() {
                         border: isSelected ? '1.5px solid #000000' : '1px solid #cbd5e1',
                         backgroundColor: isSelected ? '#000000' : '#ffffff',
                         color: isSelected ? '#ffffff' : '#475569',
-                        boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
+                        boxShadow: 'none'
                       }}
                     >
                       {m.name}

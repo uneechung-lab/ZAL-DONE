@@ -2272,8 +2272,9 @@ export default function App() {
                   if (!createdTime && msg.$createdAt) createdTime = new Date(msg.$createdAt).getTime();
                   if (!createdTime || isNaN(createdTime) || createdTime <= effectiveResetTs) return false;
                 }
-                return (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
-                  !(msg.from && msg.from.startsWith('ai') && msg.text && (
+                const isMyMsg = msg.from === `user_${userSuffix}_${ME.id}` || msg.from === `ai_${userSuffix}_${ME.id}`;
+                return isMyMsg &&
+                  !(msg.from && msg.from.includes('ai') && msg.text && (
                     msg.text.includes('안녕하세요') ||
                     msg.text.includes('좋은 아침') ||
                     msg.text.includes('점심은') ||
@@ -2467,7 +2468,7 @@ export default function App() {
     const verb = isLeave ? '승인' : '수락';
     const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
     const approvalNoticeText = `🎉 ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`;
-    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
       try {
@@ -2522,7 +2523,7 @@ export default function App() {
     const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
     const verb = isLeave ? '반려' : '거절';
     const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
-    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: `❌ ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: `❌ ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
       try {
@@ -2543,7 +2544,7 @@ export default function App() {
     if (!text) return;
 
     const userSuffix = user ? user.$id : 'local';
-    const userMsg = { id: msgId.current++, from: `user_${userSuffix}`, text, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const userMsg = { id: msgId.current++, from: `user_${userSuffix}_${ME.id}`, text, time: formatTime(new Date()), createdAt: new Date().toISOString() };
     
     setInput('');
     setIsTyping(true);
@@ -2610,7 +2611,7 @@ export default function App() {
           }
           
           const aiReply = `요청하신 조건에 따라 ${updatedCount}개의 등록된 일정을 변경해 드렸습니다!`;
-          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
           if (isConfigured) {
             await appwriteService.createMessage(aiMsg);
           }
@@ -2652,7 +2653,7 @@ export default function App() {
           }
           
           const aiReply = `요청하신 조건에 부합하는 ${deletedCount}개의 일정을 삭제했습니다!`;
-          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
           if (isConfigured) {
             await appwriteService.createMessage(aiMsg);
           }
@@ -2888,7 +2889,7 @@ export default function App() {
           ? `${aiReplyHeader}\n${replyDetails}`
           : `입력해주신 내용에서 일정을 추출하지 못했습니다. 날짜나 업무 내용을 좀 더 명확히 작성해 주세요!`;
 
-        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+        const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
         
         if (isConfigured) {
           try {
@@ -2904,7 +2905,7 @@ export default function App() {
       } catch (err) {
         console.error("Critical error in proceedWithAI:", err);
         const errReply = "메시지 분석 및 일정 정리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-        const errMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: errReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+        const errMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: errReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
         setMessages(prev => [...prev, errMsg]);
       } finally {
         setIsTyping(false);

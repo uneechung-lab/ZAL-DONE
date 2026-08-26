@@ -4213,207 +4213,216 @@ export default function App() {
                                   })}
                                   
                                   <div style={{ marginTop: '8px' }}>
-                                      {matchedSchedule ? (
-                                        matchedSchedule.status === 'requested' ? (
-                                          isApproverForItem(matchedSchedule) ? (
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
-                                              <button
-                                                onClick={() => handleApproveSchedule(matchedSchedule.id)}
-                                                style={{
-                                                  flex: 1,
-                                                  padding: '7px 12px',
-                                                  fontSize: '12.5px',
-                                                  fontWeight: '800',
-                                                  backgroundColor: '#6366f1',
-                                                  color: '#ffffff',
-                                                  border: 'none',
-                                                  borderRadius: '8px',
-                                                  cursor: 'pointer',
-                                                  boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
-                                                  transition: 'all 0.15s ease',
-                                                  display: 'inline-flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  gap: '4px'
-                                                }}
-                                              >
-                                                <span>💙 승인</span>
-                                              </button>
-                                              <button
-                                                onClick={() => handleRejectSchedule(matchedSchedule.id)}
-                                                style={{
-                                                  flex: 1,
-                                                  padding: '7px 12px',
-                                                  fontSize: '12.5px',
-                                                  fontWeight: '800',
-                                                  backgroundColor: '#ffffff',
-                                                  color: '#ef4444',
-                                                  border: '1.5px solid #fecaca',
-                                                  borderRadius: '8px',
-                                                  cursor: 'pointer',
-                                                  transition: 'all 0.15s ease',
-                                                  display: 'inline-flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  gap: '4px'
-                                                }}
-                                              >
-                                                <span>❌ 반려</span>
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                                              <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#b45309', backgroundColor: '#fffbeb', padding: '3px 8px', borderRadius: '6px', border: '1px solid #fef3c7' }}>
-                                                ⏳ 결재 대기중 ({TEAM.find(m => m.id === matchedSchedule.approverId)?.name || '조상무'} {TEAM.find(m => m.id === matchedSchedule.approverId)?.role || '상무'} 결재)
-                                              </span>
-                                              <button
-                                                style={{
-                                                  padding: '4px 8px',
-                                                  fontSize: '11px',
-                                                  backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                                                  color: '#ef4444',
-                                                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                                                  borderRadius: '6px',
-                                                  fontWeight: '700',
-                                                  cursor: 'pointer'
-                                                }}
-                                                onClick={async () => {
-                                                  if (isConfigured) {
-                                                    await appwriteService.deleteSchedule(matchedSchedule.id);
+                                       {!isCancellationMsg ? (
+                                         (() => {
+                                           const approverMember = matchedSchedule ? (TEAM.find(m => m.id === (matchedSchedule.approverId || 'sangmoo')) || { name: '조상무', role: '상무' }) : { name: '조상무', role: '상무' };
+                                           const isApprover = matchedSchedule ? isApproverForItem(matchedSchedule) : false;
+
+                                           if (matchedSchedule && matchedSchedule.status === 'requested') {
+                                             if (isApprover) {
+                                               return (
+                                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
+                                                   <button
+                                                     onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                                     style={{
+                                                       flex: 1,
+                                                       padding: '7px 12px',
+                                                       fontSize: '12.5px',
+                                                       fontWeight: '800',
+                                                       backgroundColor: '#6366f1',
+                                                       color: '#ffffff',
+                                                       border: 'none',
+                                                       borderRadius: '8px',
+                                                       cursor: 'pointer',
+                                                       boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                                                       transition: 'all 0.15s ease',
+                                                       display: 'inline-flex',
+                                                       alignItems: 'center',
+                                                       justifyContent: 'center',
+                                                       gap: '4px'
+                                                     }}
+                                                   >
+                                                     <span>💙 승인</span>
+                                                   </button>
+                                                   <button
+                                                     onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                                     style={{
+                                                       flex: 1,
+                                                       padding: '7px 12px',
+                                                       fontSize: '12.5px',
+                                                       fontWeight: '800',
+                                                       backgroundColor: '#ffffff',
+                                                       color: '#ef4444',
+                                                       border: '1.5px solid #fecaca',
+                                                       borderRadius: '8px',
+                                                       cursor: 'pointer',
+                                                       transition: 'all 0.15s ease',
+                                                       display: 'inline-flex',
+                                                       alignItems: 'center',
+                                                       justifyContent: 'center',
+                                                       gap: '4px'
+                                                     }}
+                                                   >
+                                                     <span>❌ 반려</span>
+                                                   </button>
+                                                 </div>
+                                               );
+                                             } else {
+                                               return (
+                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                   <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                     ⏳ 결재 대기중 ({approverMember.name} {approverMember.role} 결재)
+                                                   </span>
+                                                   <button
+                                                     style={{
+                                                       padding: '4px 10px',
+                                                       fontSize: '11.5px',
+                                                       backgroundColor: '#ffffff',
+                                                       color: '#ef4444',
+                                                       border: '1px solid #fecaca',
+                                                       borderRadius: '6px',
+                                                       fontWeight: '700',
+                                                       cursor: 'pointer'
+                                                     }}
+                                                     onClick={async () => {
+                                                       if (isConfigured) {
+                                                         await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                       }
+                                                       setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                     }}
+                                                   >
+                                                     신청취소
+                                                   </button>
+                                                 </div>
+                                               );
+                                             }
+                                           } else if (matchedSchedule && matchedSchedule.status === 'accepted') {
+                                             return (
+                                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                 <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                   🎉 승인 완료 ({approverMember.name} {approverMember.role} 승인)
+                                                 </span>
+                                                 {isApprover ? (
+                                                   <button
+                                                     style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
+                                                     onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                                   >
+                                                     반려로 변경
+                                                   </button>
+                                                 ) : (
+                                                   <button
+                                                     style={{
+                                                       padding: '4px 10px',
+                                                       fontSize: '11.5px',
+                                                       backgroundColor: '#ffffff',
+                                                       color: '#ef4444',
+                                                       border: '1px solid #fecaca',
+                                                       borderRadius: '6px',
+                                                       fontWeight: '700',
+                                                       cursor: 'pointer'
+                                                     }}
+                                                     onClick={async () => {
+                                                       if (isConfigured) {
+                                                         await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                       }
+                                                       setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                     }}
+                                                   >
+                                                     신청취소
+                                                   </button>
+                                                 )}
+                                               </div>
+                                             );
+                                           } else if (matchedSchedule && matchedSchedule.status === 'rejected') {
+                                             return (
+                                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                 <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                   ❌ 반려됨 ({approverMember.name} {approverMember.role} 반려)
+                                                 </span>
+                                                 {isApprover ? (
+                                                   <button
+                                                     style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
+                                                     onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                                   >
+                                                     재승인
+                                                   </button>
+                                                 ) : (
+                                                   <button
+                                                     style={{
+                                                       padding: '4px 10px',
+                                                       fontSize: '11.5px',
+                                                       backgroundColor: '#ffffff',
+                                                       color: '#ef4444',
+                                                       border: '1px solid #fecaca',
+                                                       borderRadius: '6px',
+                                                       fontWeight: '700',
+                                                       cursor: 'pointer'
+                                                     }}
+                                                     onClick={async () => {
+                                                       if (isConfigured) {
+                                                         await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                       }
+                                                       setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                     }}
+                                                   >
+                                                     신청취소
+                                                   </button>
+                                                 )}
+                                               </div>
+                                             );
+                                           }
+
+                                           return (
+                                             <button
+                                               style={{
+                                                 padding: '6px 12px',
+                                                 fontSize: '12px',
+                                                 backgroundColor: 'rgba(239, 68, 68, 0.08)', 
+                                                 color: '#ef4444', 
+                                                 border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                                 borderRadius: '8px',
+                                                 fontWeight: '700',
+                                                 cursor: 'pointer',
+                                                 transition: 'all 0.2s'
+                                               }}
+                                               onClick={async () => {
+                                                  const matchGroupId = matchedSchedule && matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                                                  const groupId = matchGroupId ? matchGroupId[1] : null;
+                                                  if (groupId) {
+                                                    const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                                                    if (isConfigured) {
+                                                      for (const t of targets) {
+                                                        await appwriteService.deleteSchedule(t.id);
+                                                      }
+                                                    }
+                                                    const targetIds = targets.map(t => t.id);
+                                                    setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
+                                                  } else {
+                                                    if (isConfigured) {
+                                                      for (const d of parsed.dates) {
+                                                        const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
+                                                        if (match) {
+                                                          await appwriteService.deleteSchedule(match.id);
+                                                        }
+                                                      }
+                                                    }
+                                                    setSchedules(prev => prev.filter(s => {
+                                                       const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
+                                                      return !isMatching;
+                                                    }));
                                                   }
-                                                  setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                }}
-                                              >
-                                                신청취소
-                                              </button>
-                                            </div>
-                                          )
-                                        ) : matchedSchedule.status === 'accepted' ? (() => {
-                                           const approverMember = TEAM.find(m => m.id === (matchedSchedule.approverId || 'sangmoo')) || { name: '조상무', role: '상무' };
-                                           return (
-                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                               <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                 🎉 승인 완료 ({approverMember.name} {approverMember.role} 승인)
-                                               </span>
-                                               {isApproverForItem(matchedSchedule) ? (
-                                                 <button
-                                                   style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
-                                                   onClick={() => handleRejectSchedule(matchedSchedule.id)}
-                                                 >
-                                                   반려로 변경
-                                                 </button>
-                                               ) : (
-                                                 <button
-                                                   style={{
-                                                     padding: '4px 10px',
-                                                     fontSize: '11.5px',
-                                                     backgroundColor: '#ffffff',
-                                                     color: '#ef4444',
-                                                     border: '1px solid #fecaca',
-                                                     borderRadius: '6px',
-                                                     fontWeight: '700',
-                                                     cursor: 'pointer'
-                                                   }}
-                                                   onClick={async () => {
-                                                     if (isConfigured) {
-                                                       await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                     }
-                                                     setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                   }}
-                                                 >
-                                                   신청취소
-                                                 </button>
-                                               )}
-                                             </div>
+                                               }}
+                                             >
+                                               등록취소
+                                             </button>
                                            );
-                                         })() : matchedSchedule.status === 'rejected' ? (() => {
-                                           const approverMember = TEAM.find(m => m.id === (matchedSchedule.approverId || 'sangmoo')) || { name: '조상무', role: '상무' };
-                                           return (
-                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                               <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                 ❌ 반려됨 ({approverMember.name} {approverMember.role} 반려)
-                                               </span>
-                                               {isApproverForItem(matchedSchedule) ? (
-                                                 <button
-                                                   style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
-                                                   onClick={() => handleApproveSchedule(matchedSchedule.id)}
-                                                 >
-                                                   재승인
-                                                 </button>
-                                               ) : (
-                                                 <button
-                                                   style={{
-                                                     padding: '4px 10px',
-                                                     fontSize: '11.5px',
-                                                     backgroundColor: '#ffffff',
-                                                     color: '#ef4444',
-                                                     border: '1px solid #fecaca',
-                                                     borderRadius: '6px',
-                                                     fontWeight: '700',
-                                                     cursor: 'pointer'
-                                                   }}
-                                                   onClick={async () => {
-                                                     if (isConfigured) {
-                                                       await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                     }
-                                                     setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                   }}
-                                                 >
-                                                   신청취소
-                                                 </button>
-                                               )}
-                                             </div>
-                                           );
-                                         })() : (
-                                          <button
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              backgroundColor: 'rgba(239, 68, 68, 0.08)', 
-                                              color: '#ef4444', 
-                                              border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                              borderRadius: '8px',
-                                              fontWeight: '700',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.2s'
-                                            }}
-                                            onClick={async () => {
-                                               const matchGroupId = matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                                               const groupId = matchGroupId ? matchGroupId[1] : null;
-                                               if (groupId) {
-                                                 const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                                                 if (isConfigured) {
-                                                   for (const t of targets) {
-                                                     await appwriteService.deleteSchedule(t.id);
-                                                   }
-                                                 }
-                                                 const targetIds = targets.map(t => t.id);
-                                                 setSchedules(prev => prev.filter(item => !targetIds.includes(item.id)));
-                                               } else {
-                                                 if (isConfigured) {
-                                                   for (const d of parsed.dates) {
-                                                     const match = schedules.find(s => s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && s.date === d);
-                                                     if (match) {
-                                                       await appwriteService.deleteSchedule(match.id);
-                                                     }
-                                                   }
-                                                 }
-                                                 setSchedules(prev => prev.filter(s => {
-                                                    const isMatching = s.title === parsed.title && isScheduleInMonth(s, currentYear, currentMonth) && parsed.dates.includes(s.date);
-                                                   return !isMatching;
-                                                 }));
-                                               }
-                                             }}
-                                          >
-                                            등록취소
-                                          </button>
-                                        )
-                                      ) : (
-                                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
-                                          ✓ 취소됨
-                                        </span>
-                                      )}
-                                  </div>
+                                         })()
+                                       ) : (
+                                         <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>
+                                           ✓ 취소됨
+                                         </span>
+                                       )}
+                                   </div>
                                 </div>
                               );
                             })}

@@ -2730,12 +2730,17 @@ export default function App() {
           }
 
           const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
+          const isDelegatedToColleague = assignedMemberId !== ME.id && (assignedMemberId === 'daum' || assignedMemberId === 'sh' || assignedMemberId === 'sangmoo');
+
           let schedStatus = 'accepted';
           let schedApproverId = null;
 
           if (isLeaveOrApproval) {
             schedStatus = 'requested';
             schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
+          } else if (isDelegatedToColleague || parsed.isRequested) {
+            schedStatus = 'requested';
+            schedApproverId = assignedMemberId;
           } else if (mentionsYoonhee && ME.id !== 'sh') {
             schedStatus = 'requested';
             schedApproverId = 'sh';

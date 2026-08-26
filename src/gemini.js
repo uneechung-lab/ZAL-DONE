@@ -108,9 +108,18 @@ Values for "schedules" fields:
     3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
     4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
 - "endHour" (number): End time (24h format, e.g. 18.0).
-- "memberId" (string): Assigned member ID. CRITICAL: The user writing this input message is "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}"). Unless the input explicitly states that ANOTHER person is performing the task ALONE (e.g. "정윤희 부장님이 혼자 대외 미팅"), default "memberId" to "${currentUser?.id || 'sh'}".
+- "memberId" (string): Assigned member ID. CRITICAL MEMBER ASSIGNMENT & ALIAS RULES:
+  1) If the input mentions assigning or delegating a task to another specific team member (e.g. "정사원한테/정다음한테/정사인한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!
+  2) Otherwise, default "memberId" to the current user "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}").
+  3) Korean Team Aliases & IDs:
+     - "정다음", "정사원", "정사인", "다음" -> "daum" (정다음 사원)
+     - "정윤희", "정부장", "윤희" -> "sh" (정윤희 부장)
+     - "조상무", "상무님", "조상무님" -> "sangmoo" (조상무 상무)
 - "isAll" (boolean): true if for all members.
-- "isRequested" (boolean): Set to true ONLY if the schedule explicitly requires manager approval (such as leave/vacation "연차", "반차", "휴가", "병가") OR if requesting a team member/manager to attend/approve a specific meeting. Standard personal work tasks ("~마무리 예정", "개발 진행", "~작업 예정") MUST NOT require approval ("isRequested": false).
+- "isRequested" (boolean): Set to true if:
+  1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청").
+  2) The current user is assigning/delegating a task or meeting request to another colleague (e.g. "정사원한테 로그 분석 맡기고" -> isRequested: true, assigned to "daum").
+  3) Otherwise, for personal work tasks performed by the logged-in user, set "isRequested": false.
 - "approverId" (string): Target approver ID (e.g. if applicant is 정윤희/sh -> set to "sangmoo" (조상무 상무), otherwise set to "sh" (정윤희 부장)).
 - "isIssue" (boolean): CRITICAL! Set to true ONLY for specific individual schedule items that represent an unexpected error, bug, emergency debugging ("긴급 디버깅", "이슈 터짐"), blocker, delay, or missing file/feedback. Regular work schedules ("API 연동 마무리", "개발", "기획", "리뷰", "회의", "점검") MUST have "isIssue": false!
 - "description" (string): A structured, clearly organized step-by-step or bulleted list of the tasks/details summarized concisely from the input. Strictly format it as a bulleted list using "-" for each item, separated by line breaks ("\n"). Do not write a continuous long sentence or paragraph. Provide this in Korean, without dates/times/assignees. IMPORTANT: This description must ONLY contain the sub-tasks or detailed steps belonging specifically to this individual schedule. If there are no specific sub-tasks, detailed notes, or action items for this schedule in the input, you must leave this field empty ("").

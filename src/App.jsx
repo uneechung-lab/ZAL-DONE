@@ -7485,7 +7485,7 @@ export default function App() {
                     fontWeight: '700',
                     color: '#0f172a',
                     backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
+                    border: 'none',
                     borderRadius: '20px',
                     cursor: 'pointer',
                     outline: 'none',

@@ -1346,6 +1346,63 @@ export default function App() {
 
     return false;
   };
+
+  const getCleanDesc = (desc) => {
+    if (!desc) return '없음';
+    let d = desc;
+    d = d.replace(/\[YM:.*?\]/g, '');
+    d = d.replace(/\[그룹 ID\]\s*g_[\w_]+\s*\|?/g, '');
+    d = d.replace(/\[진척률\]\s*\d+%s*\|?/g, '');
+    const matchDetail = d.match(/\[상세\]\s*([^|]+)/);
+    if (matchDetail) {
+      d = matchDetail[1].trim();
+    } else {
+      d = d.replace(/^[|\s]+|[|\s]+$/g, '').replace(/\|+/g, ' ').trim();
+    }
+    return d || '없음';
+  };
+
+  const groupList = (list) => {
+    const groups = [];
+    const processedGroupIds = new Set();
+
+    (list || []).forEach(item => {
+      const groupMatch = (item.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+      const groupId = item.groupId || (groupMatch ? groupMatch[1] : null);
+
+      if (groupId) {
+        if (processedGroupIds.has(groupId)) return;
+        processedGroupIds.add(groupId);
+
+        const groupItems = list.filter(s => {
+          const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+          return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+        });
+
+        groupItems.sort((a, b) => new Date(a.year, a.month - 1, a.date) - new Date(b.year, b.month - 1, b.date));
+        const first = groupItems[0];
+        const last = groupItems[groupItems.length - 1];
+
+        const startMonthStr = first.month < 10 ? `0${first.month}` : `${first.month}`;
+        const startDateStr = first.date < 10 ? `0${first.date}` : `${first.date}`;
+        const endMonthStr = last.month < 10 ? `0${last.month}` : `${last.month}`;
+        const endDateStr = last.date < 10 ? `0${last.date}` : `${last.date}`;
+
+        const dateStr = groupItems.length > 1
+          ? `${first.year}.${startMonthStr}.${startDateStr} ~ ${last.year}.${endMonthStr}.${endDateStr}`
+          : `${first.year}.${startMonthStr}.${startDateStr}`;
+
+        groups.push({ ...first, dateStr, isGroup: true, count: groupItems.length });
+      } else {
+        const monthStr = item.month < 10 ? `0${item.month}` : `${item.month}`;
+        const dateNumStr = item.date < 10 ? `0${item.date}` : `${item.date}`;
+        const dateStr = `${item.year}.${monthStr}.${dateNumStr}`;
+        groups.push({ ...item, dateStr, isGroup: false });
+      }
+    });
+
+    return groups;
+  };
   const initMsg = { id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
   // UI States
@@ -2334,33 +2391,46 @@ export default function App() {
     }
   }, [messages, ME.id]);
 
-  const handleApproveSchedule = async (schedId) => {
+    const handleApproveSchedule = async (schedId) => {
     const target = schedules.find(s => s.id === schedId);
     if (!target) return;
 
-    const updated = { ...target, status: 'accepted' };
+    const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+    const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+
+    let targetItems = [target];
+    if (groupId) {
+      targetItems = schedules.filter(s => {
+        const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+        return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+      });
+    }
+
+    const targetIds = targetItems.map(s => s.id);
 
     if (isConfigured) {
       try {
-        let dbSched = { ...updated };
-        if (isCurrentUserYoonhee) {
-          dbSched.memberId = updated.memberId === 'sh' ? 'yoonhee' : (updated.memberId === 'yoonhee' ? 'sh' : updated.memberId);
-          dbSched.memberIds = updated.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-          dbSched.requesterId = updated.requesterId === 'sh' ? 'yoonhee' : (updated.requesterId === 'yoonhee' ? 'sh' : updated.requesterId);
+        for (const item of targetItems) {
+          let dbSched = { ...item, status: 'accepted' };
+          if (isCurrentUserYoonhee) {
+            dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+            dbSched.memberIds = item.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+            dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+          }
+          await appwriteService.updateSchedule(item.id, dbSched);
         }
-        await appwriteService.updateSchedule(schedId, dbSched);
       } catch (e) {
         console.error("Failed to update schedule status:", e);
       }
     }
 
-    setSchedules(prev => prev.map(s => s.id === schedId ? updated : s));
+    setSchedules(prev => prev.map(s => targetIds.includes(s.id) ? { ...s, status: 'accepted' } : s));
 
     const approverName = ME.name || '조상무';
-    const dateStr = `${target.month}/${target.date}`;
     const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
     const verb = isLeave ? '승인' : '수락';
-    const approvalNoticeText = `🎉 ${approverName}님이 ${dateStr} "${target.title}" 일정을 ${verb}하셨습니다.`;
+    const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
+    const approvalNoticeText = `🎉 ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`;
     const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
@@ -2377,32 +2447,46 @@ export default function App() {
     showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'success');
   };
 
-  const handleRejectSchedule = async (schedId) => {
+    const handleRejectSchedule = async (schedId) => {
     const target = schedules.find(s => s.id === schedId);
     if (!target) return;
 
-    const updated = { ...target, status: 'rejected' };
+    const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+    const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+
+    let targetItems = [target];
+    if (groupId) {
+      targetItems = schedules.filter(s => {
+        const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+        return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+      });
+    }
+
+    const targetIds = targetItems.map(s => s.id);
 
     if (isConfigured) {
       try {
-        let dbSched = { ...updated };
-        if (isCurrentUserYoonhee) {
-          dbSched.memberId = updated.memberId === 'sh' ? 'yoonhee' : (updated.memberId === 'yoonhee' ? 'sh' : updated.memberId);
-          dbSched.memberIds = updated.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-          dbSched.requesterId = updated.requesterId === 'sh' ? 'yoonhee' : (updated.requesterId === 'yoonhee' ? 'sh' : updated.requesterId);
+        for (const item of targetItems) {
+          let dbSched = { ...item, status: 'rejected' };
+          if (isCurrentUserYoonhee) {
+            dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+            dbSched.memberIds = item.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+            dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+          }
+          await appwriteService.updateSchedule(item.id, dbSched);
         }
-        await appwriteService.updateSchedule(schedId, dbSched);
       } catch (e) {
         console.error("Failed to update schedule status:", e);
       }
     }
 
-    setSchedules(prev => prev.map(s => s.id === schedId ? updated : s));
+    setSchedules(prev => prev.map(s => targetIds.includes(s.id) ? { ...s, status: 'rejected' } : s));
 
     const approverName = ME.name || '조상무';
-    const dateStr = `${target.month}/${target.date}`;
-    const rejectNoticeText = `❌ ${approverName}님이 ${dateStr} "${target.title}" 일정을 반려하셨습니다.`;
-    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: rejectNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
+    const verb = isLeave ? '반려' : '거절';
+    const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
+    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: `❌ ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
       try {
@@ -2415,7 +2499,7 @@ export default function App() {
       setMessages(prev => [...prev, noticeMsg]);
     }
 
-    showLayerAlert(`${target.title} 일정이 반려되었습니다.`, '반려 완료', 'info');
+    showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'info');
   };
 
   const handleSend = () => {
@@ -3770,6 +3854,9 @@ export default function App() {
                   !/반차|연차|휴가|병가/i.test(s.title || '')
                 );
 
+                const groupedPendingItems = groupList(pendingItems);
+                const groupedIncomingTaskRequests = groupList(incomingTaskRequests);
+
                 return (
                   <Fragment key={msg.id}>
                     <div style={{ padding: '8px 4px 16px 4px', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -3788,20 +3875,20 @@ export default function App() {
                     </div>
 
                     {/* Pending Approvals (Leave Approvals for Approver - Cho Sangmoo) */}
-                    {pendingItems.length > 0 && (
+                    {groupedPendingItems.length > 0 && (
                       <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                         <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              {requestedPendingCount > 0 ? `결재 대기 ${requestedPendingCount}건이 있습니다.` : `결재 관리 항목 (${pendingItems.length}건)`}
+                              {requestedPendingCount > 0 ? `결재 대기 ${requestedPendingCount}건이 있습니다.` : `결재 관리 항목 (${groupedPendingItems.length}건)`}
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {pendingItems.map((item, index) => {
+                              {groupedPendingItems.map((item, index) => {
                                 const reqMember = TEAM.find(m => m.id === item.requesterId || m.id === item.memberId) || { name: '정윤희', role: '부장' };
-                                const dateStr = `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
                                 const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
-                                const cleanDesc = (item.description || '').replace(/^\[YM:.*?\]\s*/, '').replace(/^\[그룹 ID\]\s*g_\w+\s*\|\s*/, '').trim() || '없음';
+                                const cleanDesc = getCleanDesc(item.description);
 
                                 return (
                                   <div 
@@ -3961,20 +4048,20 @@ export default function App() {
                     )}
 
                     {/* Incoming Task Requests (Assignee view, e.g. 정다음 receiving task from 정윤희) */}
-                    {incomingTaskRequests.length > 0 && (
+                    {groupedIncomingTaskRequests.length > 0 && (
                       <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                         <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              요청 대기중인 일정 {incomingTaskRequests.length}건이 있습니다.
+                              요청 대기중인 일정 {groupedIncomingTaskRequests.length}건이 있습니다.
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {incomingTaskRequests.map((item, index) => {
+                              {groupedIncomingTaskRequests.map((item, index) => {
                                 const reqMember = TEAM.find(m => m.id === item.requesterId) || { name: '정윤희', role: '부장' };
-                                const dateStr = `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
                                 const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
-                                const cleanDesc = (item.description || '').replace(/^\[YM:.*?\]\s*/, '').replace(/^\[그룹 ID\]\s*g_\w+\s*\|\s*/, '').trim() || '없음';
+                                const cleanDesc = getCleanDesc(item.description);
 
                                 return (
                                   <div 

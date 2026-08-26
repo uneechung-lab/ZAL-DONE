@@ -3760,7 +3760,8 @@ export default function App() {
                 const titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
                 const subLines = lines.slice(1).join('\n');
 
-                const pendingItems = schedules.filter(s => s.status === 'requested' && isApproverForItem(s));
+                const pendingItems = schedules.filter(s => isApproverForItem(s));
+                const requestedPendingCount = pendingItems.filter(s => s.status === 'requested').length;
                 const incomingTaskRequests = schedules.filter(s => 
                   s.status === 'requested' && 
                   (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
@@ -3785,13 +3786,13 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Pending Approvals (Leave Approvals for Approver) */}
+                    {/* Pending Approvals (Leave Approvals for Approver - Cho Sangmoo) */}
                     {pendingItems.length > 0 && (
                       <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                         <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              결재 대기 {pendingItems.length}건이 있습니다.
+                              {requestedPendingCount > 0 ? `결재 대기 ${requestedPendingCount}건이 있습니다.` : `결재 관리 항목 (${pendingItems.length}건)`}
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -3854,44 +3855,72 @@ export default function App() {
                                     </div>
 
                                     <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
-                                      <button
-                                        onClick={() => handleRejectSchedule(item.id)}
-                                        style={{
-                                          padding: '4px 10px',
-                                          fontSize: '11.5px',
-                                          fontWeight: '700',
-                                          backgroundColor: '#fef2f2',
-                                          color: '#dc2626',
-                                          border: '1px solid #fca5a5',
-                                          borderRadius: '6px',
-                                          cursor: 'pointer',
-                                          transition: 'all 0.15s ease',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px'
-                                        }}
-                                      >
-                                        <span>❌ 반려</span>
-                                      </button>
-                                      <button
-                                        onClick={() => handleApproveSchedule(item.id)}
-                                        style={{
-                                          padding: '4px 10px',
-                                          fontSize: '11.5px',
-                                          fontWeight: '700',
-                                          backgroundColor: '#ecfdf5',
-                                          color: '#059669',
-                                          border: '1px solid #a7f3d0',
-                                          borderRadius: '6px',
-                                          cursor: 'pointer',
-                                          transition: 'all 0.15s ease',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px'
-                                        }}
-                                      >
-                                        <span>💙 승인</span>
-                                      </button>
+                                      {item.status === 'requested' ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleRejectSchedule(item.id)}
+                                            style={{
+                                              padding: '4px 10px',
+                                              fontSize: '11.5px',
+                                              fontWeight: '700',
+                                              backgroundColor: '#fef2f2',
+                                              color: '#dc2626',
+                                              border: '1px solid #fca5a5',
+                                              borderRadius: '6px',
+                                              cursor: 'pointer',
+                                              transition: 'all 0.15s ease',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px'
+                                            }}
+                                          >
+                                            <span>❌ 반려</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleApproveSchedule(item.id)}
+                                            style={{
+                                              padding: '4px 10px',
+                                              fontSize: '11.5px',
+                                              fontWeight: '700',
+                                              backgroundColor: '#ecfdf5',
+                                              color: '#059669',
+                                              border: '1px solid #a7f3d0',
+                                              borderRadius: '6px',
+                                              cursor: 'pointer',
+                                              transition: 'all 0.15s ease',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px'
+                                            }}
+                                          >
+                                            <span>💙 승인</span>
+                                          </button>
+                                        </>
+                                      ) : item.status === 'accepted' ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                                            🎉 승인 완료
+                                          </span>
+                                          <button
+                                            style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
+                                            onClick={() => handleRejectSchedule(item.id)}
+                                          >
+                                            반려로 변경
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fca5a5' }}>
+                                            ❌ 반려됨
+                                          </span>
+                                          <button
+                                            style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#6366f1', border: 'none', cursor: 'pointer', fontWeight: '700' }}
+                                            onClick={() => handleApproveSchedule(item.id)}
+                                          >
+                                            재승인
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 );

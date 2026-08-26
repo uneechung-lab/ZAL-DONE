@@ -113,9 +113,9 @@ Values for "schedules" fields:
   1) If the input mentions assigning or delegating a task to another specific team member (e.g. "정사원한테/정다음한테/정사인한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!
   2) Otherwise, default "memberId" to the current user "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}").
   3) Korean Team Aliases & IDs:
-     - "정다음", "정사원", "정사인", "다음" -> "daum" (정다음 사원)
-     - "정윤희", "정부장", "윤희" -> "sh" (정윤희 부장)
-     - "조상무", "상무님", "조상무님" -> "sangmoo" (조상무 상무)
+     - "정다음", "정사원", "정사인", "다음", "정사원한테", "정사인한테", "정다음한테" -> ALWAYS map "memberId" to "daum" and "approverId" to "daum"!
+     - "정윤희", "정부장", "윤희", "정부장한테" -> "sh" (정윤희 부장)
+     - "조상무", "상무님", "조상무님", "상무님한테" -> "sangmoo" (조상무 상무)
 - "isAll" (boolean): true if for all members.
 - "isRequested" (boolean): Set to true if:
   1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청").

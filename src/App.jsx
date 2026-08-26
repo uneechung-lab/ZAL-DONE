@@ -7519,7 +7519,9 @@ export default function App() {
                       top: 'calc(100% + 6px)',
                       left: 0,
                       zIndex: 100,
-                      minWidth: '220px',
+                      minWidth: '280px',
+                      maxHeight: '280px',
+                      overflowY: 'auto',
                       backgroundColor: '#ffffff',
                       border: '1px solid #e2e8f0',
                       borderRadius: '12px',
@@ -7530,7 +7532,15 @@ export default function App() {
                       gap: '2px'
                     }}
                   >
-                    {['대신증권 연금 경쟁력 강화', '전체 프로젝트'].map(proj => {
+                    {[
+                      '대신증권 연금 경쟁력 강화',
+                      '신영증권 외화표시펀드 매매 시스템 구축',
+                      '삼성증권 연금 고객중심 서비스 개선',
+                      'NH투자증권 퇴직연금시스템 운영',
+                      '경찰공제회 시스템 유지보수',
+                      '다음 D-RPS 고도화',
+                      '전체 프로젝트'
+                    ].map(proj => {
                       const isCurrent = selectedReportProject === proj;
                       return (
                         <button

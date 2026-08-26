@@ -7478,8 +7478,9 @@ export default function App() {
 
 {/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
             <div className="report-filter-bar" style={{ 
-              padding: '0px 28px 4px 28px', 
-              marginTop: '-2px',
+              padding: '0px 0px 12px 0px', 
+              marginTop: '-4px',
+              marginBottom: '6px',
               backgroundColor: 'transparent', 
               display: 'flex', 
               alignItems: 'center', 

@@ -1202,6 +1202,10 @@ export default function App() {
   const projectMenuRef = useRef(null);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
 
+  const [selectedReportProject, setSelectedReportProject] = useState('대신증권 연금 경쟁력 강화');
+  const [isReportProjectMenuOpen, setIsReportProjectMenuOpen] = useState(false);
+  const reportProjectMenuRef = useRef(null);
+
   // Close report project select dropdown layer when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -1462,9 +1466,7 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [selectedReportProject, setSelectedReportProject] = useState('대신증권 연금 경쟁력 강화');
-  const [isReportProjectMenuOpen, setIsReportProjectMenuOpen] = useState(false);
-  const reportProjectMenuRef = useRef(null);
+
   const [selectedReportMembers, setSelectedReportMembers] = useState([]);
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);

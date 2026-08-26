@@ -3897,17 +3897,26 @@ export default function App() {
                                           </button>
                                         </>
                                       ) : item.status === 'accepted' ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
-                                            🎉 승인 완료
-                                          </span>
-                                          <button
-                                            style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
-                                            onClick={() => handleRejectSchedule(item.id)}
-                                          >
-                                            반려로 변경
-                                          </button>
-                                        </div>
+                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                           <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                             🎉 승인 완료
+                                           </span>
+                                           <button
+                                             style={{
+                                               padding: '6px 12px',
+                                               fontSize: '12px',
+                                               fontWeight: '700',
+                                               backgroundColor: '#fef2f2',
+                                               color: '#dc2626',
+                                               border: '1px solid #fca5a5',
+                                               borderRadius: '8px',
+                                               cursor: 'pointer'
+                                             }}
+                                             onClick={() => handleRejectSchedule(item.id)}
+                                           >
+                                             승인 취소
+                                           </button>
+                                         </div>
                                       ) : (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                           <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fca5a5' }}>
@@ -4305,10 +4314,19 @@ export default function App() {
                                                  </span>
                                                  {isApprover ? (
                                                    <button
-                                                     style={{ padding: '4px 8px', fontSize: '11px', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
+                                                     style={{
+                                                       padding: '6px 12px',
+                                                       fontSize: '12px',
+                                                       fontWeight: '700',
+                                                       backgroundColor: '#fef2f2',
+                                                       color: '#dc2626',
+                                                       border: '1px solid #fca5a5',
+                                                       borderRadius: '8px',
+                                                       cursor: 'pointer'
+                                                     }}
                                                      onClick={() => handleRejectSchedule(matchedSchedule.id)}
                                                    >
-                                                     반려로 변경
+                                                     승인 취소
                                                    </button>
                                                  ) : (
                                                    <button

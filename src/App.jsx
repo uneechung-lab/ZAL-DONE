@@ -1356,7 +1356,14 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedMsg);
         const filtered = parsed.filter(msg => 
-          !(msg.from && msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요')))
+          msg && msg.id !== 0 &&
+          !(msg.from && msg.from.startsWith('ai') && msg.text && (
+            msg.text.includes('안녕하세요') ||
+            msg.text.includes('좋은 아침') ||
+            msg.text.includes('점심은') ||
+            msg.text.includes('수고하셨') ||
+            msg.text.includes('수고 많으셨')
+          ))
         );
         return [defaultMsg, ...filtered];
       } catch (e) {
@@ -2171,7 +2178,14 @@ export default function App() {
               const userSuffix = currentUser.$id;
               const filteredDbMessages = dbMessages.filter(msg => 
                 (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
-                !(msg.from.startsWith('ai') && (msg.text.includes('좋은 아침') || msg.text.includes('점심은 맛있게') || msg.text.includes('고생 많으셨습니다') || msg.text.includes('수고하셨어요') || msg.text.includes('안녕하세요')))
+                msg && msg.id !== 0 &&
+                !(msg.from && msg.from.startsWith('ai') && msg.text && (
+                  msg.text.includes('안녕하세요') ||
+                  msg.text.includes('좋은 아침') ||
+                  msg.text.includes('점심은') ||
+                  msg.text.includes('수고하셨') ||
+                  msg.text.includes('수고 많으셨')
+                ))
               );
               setMessages([initMsg, ...filteredDbMessages]);
             }
@@ -3709,8 +3723,33 @@ export default function App() {
 
         <div className="chat-messages">
           {(() => {
-            const todayMessages = messages.filter(msg => isTodayMessage(msg));
-            const previousMessages = messages.filter(msg => !isTodayMessage(msg));
+            const uniqueMessages = [];
+            const seenIds = new Set();
+
+            (messages || []).forEach(msg => {
+              if (!msg) return;
+              if (msg.id === 0) {
+                if (!seenIds.has(0)) {
+                  seenIds.add(0);
+                  uniqueMessages.push(msg);
+                }
+              } else {
+                const isGreeting = msg.from && msg.from.startsWith('ai') && msg.text && (
+                  msg.text.includes('안녕하세요') ||
+                  msg.text.includes('좋은 아침') ||
+                  msg.text.includes('점심은') ||
+                  msg.text.includes('수고하셨') ||
+                  msg.text.includes('수고 많으셨')
+                );
+                if (!isGreeting && !seenIds.has(msg.id)) {
+                  seenIds.add(msg.id);
+                  uniqueMessages.push(msg);
+                }
+              }
+            });
+
+            const todayMessages = uniqueMessages.filter(msg => isTodayMessage(msg));
+            const previousMessages = uniqueMessages.filter(msg => !isTodayMessage(msg));
 
             const renderBubble = (msg) => {
               if (msg.id === 0) {

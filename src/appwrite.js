@@ -86,7 +86,7 @@ export const appwriteService = {
     if (!isConfigured) return null;
     try {
       const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
-      return response.documents.map(doc => {
+      return response.documents.filter(doc => doc.status !== 'deleted' && doc.title !== '__DELETED__').map(doc => {
         let year = doc.year || null;
         let month = doc.month || null;
         if ((!year || !month) && doc.description) {
@@ -179,35 +179,35 @@ export const appwriteService = {
     if (!isConfigured) return null;
     try {
       let hasMore = true;
-      while (hasMore) {
+      let iterations = 0;
+      while (hasMore && iterations < 10) {
+        iterations++;
         const response = await databases.listDocuments(databaseId, schedulesCollectionId, [Query.limit(100)]);
         if (!response.documents || response.documents.length === 0) {
           hasMore = false;
           break;
         }
-        let deletedInCount = 0;
-        for (const doc of response.documents) {
+
+        const validDocs = response.documents.filter(d => d.status !== 'deleted' && d.title !== '__DELETED__');
+        if (validDocs.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        for (const doc of validDocs) {
           try {
             await databases.deleteDocument(databaseId, schedulesCollectionId, doc.$id);
-            deletedInCount++;
-            await sleep(50);
           } catch (err) {
-            if (err?.message?.includes('Rate limit')) {
-              await sleep(1000);
-              try {
-                await databases.deleteDocument(databaseId, schedulesCollectionId, doc.$id);
-                deletedInCount++;
-              } catch (e2) {
-                console.warn('Retry delete schedule failed:', doc.$id, e2);
-              }
-            } else {
-              console.warn('Could not delete schedule document:', doc.$id, err);
+            console.warn('Could not delete schedule document, attempting status update:', doc.$id, err);
+            try {
+              await databases.updateDocument(databaseId, schedulesCollectionId, doc.$id, {
+                status: 'deleted',
+                title: '__DELETED__'
+              });
+            } catch (uErr) {
+              console.error('Failed to update schedule doc as deleted:', doc.$id, uErr);
             }
           }
-        }
-        if (deletedInCount === 0) {
-          // Break loop if no documents could be deleted in this pass to prevent infinite loop
-          break;
         }
       }
       return true;
@@ -222,7 +222,7 @@ export const appwriteService = {
     try {
       // Appwrite queries default order is undefined. Sort ascending by creation time.
       const response = await databases.listDocuments(databaseId, messagesCollectionId, [Query.limit(100), Query.orderAsc('$createdAt')]);
-      return response.documents.map(doc => ({
+      return response.documents.filter(doc => doc.from !== 'deleted' && doc.text !== '__DELETED__').map(doc => ({
         id: doc.$id,
         from: doc.from,
         text: doc.text,
@@ -255,35 +255,35 @@ export const appwriteService = {
     if (!isConfigured) return null;
     try {
       let hasMore = true;
-      while (hasMore) {
+      let iterations = 0;
+      while (hasMore && iterations < 10) {
+        iterations++;
         const response = await databases.listDocuments(databaseId, messagesCollectionId, [Query.limit(100)]);
         if (!response.documents || response.documents.length === 0) {
           hasMore = false;
           break;
         }
-        let deletedInCount = 0;
-        for (const doc of response.documents) {
+
+        const validDocs = response.documents.filter(d => d.from !== 'deleted' && d.text !== '__DELETED__');
+        if (validDocs.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        for (const doc of validDocs) {
           try {
             await databases.deleteDocument(databaseId, messagesCollectionId, doc.$id);
-            deletedInCount++;
-            await sleep(50);
           } catch (err) {
-            if (err?.message?.includes('Rate limit')) {
-              await sleep(1000);
-              try {
-                await databases.deleteDocument(databaseId, messagesCollectionId, doc.$id);
-                deletedInCount++;
-              } catch (e2) {
-                console.warn('Retry delete message failed:', doc.$id, e2);
-              }
-            } else {
-              console.warn('Could not delete message document:', doc.$id, err);
+            console.warn('Could not delete message document, attempting text update:', doc.$id, err);
+            try {
+              await databases.updateDocument(databaseId, messagesCollectionId, doc.$id, {
+                from: 'deleted',
+                text: '__DELETED__'
+              });
+            } catch (uErr) {
+              console.error('Failed to update message doc as deleted:', doc.$id, uErr);
             }
           }
-        }
-        if (deletedInCount === 0) {
-          // Break loop if no documents could be deleted in this pass to prevent infinite loop
-          break;
         }
       }
       return true;

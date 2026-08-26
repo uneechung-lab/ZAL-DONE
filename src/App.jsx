@@ -5164,15 +5164,20 @@ export default function App() {
                           '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
                           '데이터 초기화 확인',
                           async () => {
-                            if (isConfigured) {
-                              await appwriteService.clearSchedules();
-                              await appwriteService.clearMessages();
-                            }
-                            localStorage.setItem('zal_schedules', JSON.stringify([]));
+                            localStorage.removeItem('zal_schedules');
                             localStorage.removeItem('zal_messages');
                             setSchedules([]);
                             setShowPreviousMessages(false);
                             setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+
+                            if (isConfigured) {
+                              try {
+                                await appwriteService.clearSchedules();
+                                await appwriteService.clearMessages();
+                              } catch (err) {
+                                console.error("Remote clear error:", err);
+                              }
+                            }
                             showLayerAlert('모든 데이터가 초기화되었습니다.', '초기화 완료', 'success');
                           }
                         );

@@ -2343,7 +2343,9 @@ export default function App() {
 
     const approverName = ME.name || '조상무';
     const dateStr = `${target.month}/${target.date}`;
-    const approvalNoticeText = `🎉 ${approverName}님이 ${dateStr} ${target.title}을(를) 승인하셨습니다.`;
+    const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
+    const verb = isLeave ? '승인' : '수락';
+    const approvalNoticeText = `🎉 ${approverName}님이 ${dateStr} "${target.title}" 일정을 ${verb}하셨습니다.`;
     const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
@@ -2357,7 +2359,7 @@ export default function App() {
       setMessages(prev => [...prev, noticeMsg]);
     }
 
-    showLayerAlert(`${target.title} 일정이 승인되었습니다.`, '승인 완료', 'success');
+    showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'success');
   };
 
   const handleRejectSchedule = async (schedId) => {
@@ -2384,7 +2386,7 @@ export default function App() {
 
     const approverName = ME.name || '조상무';
     const dateStr = `${target.month}/${target.date}`;
-    const rejectNoticeText = `❌ ${approverName}님이 ${dateStr} ${target.title}을(를) 반려하셨습니다.`;
+    const rejectNoticeText = `❌ ${approverName}님이 ${dateStr} "${target.title}" 일정을 반려하셨습니다.`;
     const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}`, text: rejectNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
 
     if (isConfigured) {
@@ -3720,7 +3722,12 @@ export default function App() {
                 const subLines = lines.slice(1).join('\n');
 
                 const pendingItems = schedules.filter(s => s.status === 'requested' && isApproverForItem(s));
-                const myRequestedItems = schedules.filter(s => s.status === 'requested' && (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee')));
+                const incomingTaskRequests = schedules.filter(s => 
+                  s.status === 'requested' && 
+                  (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
+                  s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee') &&
+                  !/반차|연차|휴가|병가/i.test(s.title || '')
+                );
 
                 return (
                   <Fragment key={msg.id}>
@@ -3739,7 +3746,7 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Pending Approvals (Approver view) as native AI Answer Bubble */}
+                    {/* Pending Approvals (Leave Approvals for Approver) */}
                     {pendingItems.length > 0 && (
                       <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                         <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
@@ -3850,18 +3857,18 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Pending Requests (Requester view) as native AI Answer Bubble */}
-                    {myRequestedItems.length > 0 && (
+                    {/* Incoming Task Requests (Assignee view, e.g. 정다음 receiving task from 정윤희) */}
+                    {incomingTaskRequests.length > 0 && (
                       <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                         <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              승인 대기중인 신청 {myRequestedItems.length}건이 있습니다.
+                              요청 대기중인 일정 {incomingTaskRequests.length}건이 있습니다.
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {myRequestedItems.map((item, index) => {
-                                const approverMember = TEAM.find(m => m.id === (item.approverId || 'sangmoo')) || { name: '조상무', role: '상무' };
+                              {incomingTaskRequests.map((item, index) => {
+                                const reqMember = TEAM.find(m => m.id === item.requesterId) || { name: '정윤희', role: '부장' };
                                 const dateStr = `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
                                 const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
                                 const cleanDesc = (item.description || '').replace(/^\[YM:.*?\]\s*/, '').replace(/^\[그룹 ID\]\s*g_\w+\s*\|\s*/, '').trim() || '없음';
@@ -3890,8 +3897,8 @@ export default function App() {
                                         <span style={{ color: '#0f172a', fontWeight: '600' }}>{cleanDesc}</span>
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ color: '#64748b', minWidth: '40px' }}>👤 결재자</span>
-                                        <span style={{ color: '#0f172a', fontWeight: '700' }}>{approverMember.name} ({approverMember.role || '상무'})</span>
+                                        <span style={{ color: '#64748b', minWidth: '40px' }}>👤 요청자</span>
+                                        <span style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '부장'})</span>
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{ color: '#64748b', minWidth: '40px' }}>📅 날짜</span>
@@ -3903,54 +3910,49 @@ export default function App() {
                                       </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                                      <span style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                        padding: '4px 10px',
-                                        backgroundColor: '#fffbebfb',
-                                        color: '#d97706',
-                                        border: '1px solid #fde68a',
-                                        borderRadius: '6px',
-                                        fontSize: '11.5px',
-                                        fontWeight: '700'
-                                      }}>
-                                        ⏳ 결재 대기중 ({approverMember.name} {approverMember.role} 결재)
-                                      </span>
-
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                                       <button
-                                        onClick={async () => {
-                                          if (isConfigured) {
-                                            try {
-                                              await appwriteService.deleteSchedule(item.id);
-                                            } catch (e) {
-                                              console.error("Failed to delete schedule in Appwrite:", e);
-                                            }
-                                          }
-                                          setSchedules(prev => prev.filter(s => s.id !== item.id));
-
-                                          const cancelNoticeMsg = {
-                                            id: Date.now(),
-                                            from: 'ai',
-                                            text: `✓ ${item.month}/${item.date} "${item.title}" 신청이 취소되었습니다.`,
-                                            time: formatTime(new Date()),
-                                            createdAt: new Date().toISOString()
-                                          };
-                                          setMessages(prev => [...prev, cancelNoticeMsg]);
-                                        }}
+                                        onClick={() => handleApproveSchedule(item.id)}
                                         style={{
-                                          padding: '5px 12px',
-                                          fontSize: '11.5px',
-                                          fontWeight: '700',
-                                          backgroundColor: '#ffffff',
-                                          color: '#ef4444',
-                                          border: '1px solid #fecaca',
-                                          borderRadius: '6px',
-                                          cursor: 'pointer'
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '800',
+                                          backgroundColor: '#6366f1',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
                                         }}
                                       >
-                                        신청취소
+                                        <span>💙 수락</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectSchedule(item.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '7px 12px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '800',
+                                          backgroundColor: '#ffffff',
+                                          color: '#ef4444',
+                                          border: '1.5px solid #fecaca',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <span>❌ 반려</span>
                                       </button>
                                     </div>
                                   </div>

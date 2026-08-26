@@ -7950,7 +7950,22 @@ export default function App() {
                                             );
                                           }
 
-                                          const lines = (cleanDesc || '-').split('\n');
+                                          const isDelegatedTask = s.memberId && s.memberId !== ME.id && (s.requesterId === ME.id || ME.id === 'sh');
+                                          const delegatedMember = isDelegatedTask ? activeTeam.find(m => m.id === s.memberId) : null;
+                                          const delegatedName = delegatedMember ? delegatedMember.name : (s.memberId === 'daum' ? '정다음' : s.memberId);
+
+                                          let baseDescText = cleanDesc;
+                                          if (isDelegatedTask) {
+                                            if (!baseDescText || baseDescText === '-') {
+                                              baseDescText = `• ${delegatedName} 사원에게 업무 지시`;
+                                            } else {
+                                              baseDescText = `• ${delegatedName} 사원에게 업무 지시 (${baseDescText.replace(/^[-•*\s]+/, '')})`;
+                                            }
+                                          } else if (!baseDescText || baseDescText === '-') {
+                                            baseDescText = '-';
+                                          }
+
+                                          const lines = baseDescText.split('\n');
                                           return lines.map((line, i) => {
                                             const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
                                             const isLastLine = i === lines.length - 1;
@@ -8083,7 +8098,22 @@ export default function App() {
                                             );
                                           }
 
-                                          const lines = (cleanDesc || '-').split('\n');
+                                          const isDelegatedTask = s.memberId && s.memberId !== ME.id && (s.requesterId === ME.id || ME.id === 'sh');
+                                          const delegatedMember = isDelegatedTask ? activeTeam.find(m => m.id === s.memberId) : null;
+                                          const delegatedName = delegatedMember ? delegatedMember.name : (s.memberId === 'daum' ? '정다음' : s.memberId);
+
+                                          let baseDescText = cleanDesc;
+                                          if (isDelegatedTask) {
+                                            if (!baseDescText || baseDescText === '-') {
+                                              baseDescText = `• ${delegatedName} 사원에게 업무 지시`;
+                                            } else {
+                                              baseDescText = `• ${delegatedName} 사원에게 업무 지시 (${baseDescText.replace(/^[-•*\s]+/, '')})`;
+                                            }
+                                          } else if (!baseDescText || baseDescText === '-') {
+                                            baseDescText = '-';
+                                          }
+
+                                          const lines = baseDescText.split('\n');
                                           return lines.map((line, i) => {
                                             const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
                                             const isLastLine = i === lines.length - 1;

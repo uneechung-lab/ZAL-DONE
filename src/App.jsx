@@ -1410,19 +1410,27 @@ export default function App() {
     const u = userObj || { id: 'sh', name: '정윤희' };
     const defaultMsg = { id: 0, from: `ai_${u.id}`, text: getGreetingMsg(u.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() };
     const savedMsg = localStorage.getItem(`zal_messages_${u.id}`);
+    const resetTsStr = localStorage.getItem('zal_reset_timestamp');
+    const resetTs = resetTsStr ? parseInt(resetTsStr, 10) : 0;
+
     if (savedMsg) {
       try {
         const parsed = JSON.parse(savedMsg);
-        const filtered = parsed.filter(msg => 
-          msg && msg.id !== 0 &&
-          !(msg.from && msg.from.startsWith('ai') && msg.text && (
+        const filtered = parsed.filter(msg => {
+          if (!msg || msg.id === 0) return false;
+          if (resetTs) {
+            let createdTime = 0;
+            if (msg.createdAt) createdTime = new Date(msg.createdAt).getTime();
+            if (!createdTime || isNaN(createdTime) || createdTime <= resetTs) return false;
+          }
+          return !(msg.from && msg.from.startsWith('ai') && msg.text && (
             msg.text.includes('안녕하세요') ||
             msg.text.includes('좋은 아침') ||
             msg.text.includes('점심은') ||
             msg.text.includes('수고하셨') ||
             msg.text.includes('수고 많으셨')
-          ))
-        );
+          ));
+        });
         return [defaultMsg, ...filtered];
       } catch (e) {
         return [defaultMsg];
@@ -5242,7 +5250,11 @@ export default function App() {
                             const nowTs = Date.now().toString();
                             localStorage.setItem('zal_reset_timestamp', nowTs);
                             localStorage.setItem('zal_schedules', JSON.stringify([]));
-                            localStorage.removeItem('zal_messages');
+                            Object.keys(localStorage).forEach(key => {
+                              if (key.startsWith('zal_messages')) {
+                                localStorage.removeItem(key);
+                              }
+                            });
                             setSchedules([]);
                             setShowPreviousMessages(false);
                             setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);

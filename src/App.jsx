@@ -2228,23 +2228,40 @@ export default function App() {
 
               setActiveTeam(fullTeamList);
 
-              const actualSchedules = mapped.filter(s => s.title !== '__PROFILE__');
+              const resetTsStr = localStorage.getItem('zal_reset_timestamp');
+              const resetTs = resetTsStr ? parseInt(resetTsStr, 10) : 0;
+
+              const actualSchedules = mapped.filter(s => {
+                if (s.title === '__PROFILE__') return false;
+                if (resetTs && s.createdAt) {
+                  const createdTime = new Date(s.createdAt).getTime();
+                  if (createdTime && createdTime <= resetTs) return false;
+                }
+                return true;
+              });
               setSchedules(actualSchedules);
             }
             const dbMessages = await appwriteService.getMessages();
             if (dbMessages !== null) {
+              const resetTsStr = localStorage.getItem('zal_reset_timestamp');
+              const resetTs = resetTsStr ? parseInt(resetTsStr, 10) : 0;
               const userSuffix = currentUser.$id;
-              const filteredDbMessages = dbMessages.filter(msg => 
-                (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
-                msg && msg.id !== 0 &&
-                !(msg.from && msg.from.startsWith('ai') && msg.text && (
-                  msg.text.includes('안녕하세요') ||
-                  msg.text.includes('좋은 아침') ||
-                  msg.text.includes('점심은') ||
-                  msg.text.includes('수고하셨') ||
-                  msg.text.includes('수고 많으셨')
-                ))
-              );
+
+              const filteredDbMessages = dbMessages.filter(msg => {
+                if (!msg || msg.id === 0) return false;
+                if (resetTs && msg.createdAt) {
+                  const createdTime = new Date(msg.createdAt).getTime();
+                  if (createdTime && createdTime <= resetTs) return false;
+                }
+                return (msg.from === `user_${userSuffix}` || msg.from === `ai_${userSuffix}`) &&
+                  !(msg.from && msg.from.startsWith('ai') && msg.text && (
+                    msg.text.includes('안녕하세요') ||
+                    msg.text.includes('좋은 아침') ||
+                    msg.text.includes('점심은') ||
+                    msg.text.includes('수고하셨') ||
+                    msg.text.includes('수고 많으셨')
+                  ));
+              });
               setMessages([initMsg, ...filteredDbMessages]);
             }
           }
@@ -5174,7 +5191,9 @@ export default function App() {
                           '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
                           '데이터 초기화 확인',
                           async () => {
-                            localStorage.removeItem('zal_schedules');
+                            const nowTs = Date.now().toString();
+                            localStorage.setItem('zal_reset_timestamp', nowTs);
+                            localStorage.setItem('zal_schedules', JSON.stringify([]));
                             localStorage.removeItem('zal_messages');
                             setSchedules([]);
                             setShowPreviousMessages(false);
@@ -5188,7 +5207,7 @@ export default function App() {
                                 console.error("Remote clear error:", err);
                               }
                             }
-                            showLayerAlert('모든 데이터가 초기화되었습니다.', '초기화 완료', 'success');
+                            showLayerAlert('모든 데이터가 성공적으로 초기화되었습니다.', '초기화 완료', 'success');
                           }
                         );
                       }}

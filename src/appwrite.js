@@ -118,6 +118,7 @@ export const appwriteService = {
           description: doc.description || '',
           status: doc.status || 'active',
           requesterId: doc.requesterId || null,
+          createdAt: doc.$createdAt || null
         };
       });
     } catch (e) {

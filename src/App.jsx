@@ -4376,16 +4376,16 @@ export default function App() {
                                            return (
                                              <button
                                                style={{
-                                                 padding: '6px 12px',
-                                                 fontSize: '12px',
-                                                 backgroundColor: 'rgba(239, 68, 68, 0.08)', 
-                                                 color: '#ef4444', 
-                                                 border: '1px solid rgba(239, 68, 68, 0.25)', 
-                                                 borderRadius: '8px',
-                                                 fontWeight: '700',
-                                                 cursor: 'pointer',
-                                                 transition: 'all 0.2s'
-                                               }}
+                                                  padding: '4px 10px',
+                                                  fontSize: '11.5px',
+                                                  backgroundColor: '#fef2f2',
+                                                  color: '#dc2626',
+                                                  border: '1px solid #fca5a5',
+                                                  borderRadius: '6px',
+                                                  fontWeight: '700',
+                                                  cursor: 'pointer',
+                                                  transition: 'all 0.15s ease'
+                                                }}
                                                onClick={async () => {
                                                   const matchGroupId = matchedSchedule && matchedSchedule.description && matchedSchedule.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                                                   const groupId = matchGroupId ? matchGroupId[1] : null;

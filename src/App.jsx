@@ -7443,11 +7443,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Project & Member Selection Bar (Filter Bar) */}
+            {/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
             <div style={{ 
-              padding: '12px 28px', 
-              backgroundColor: '#f8fafc', 
-              borderBottom: '1px solid #e2e8f0', 
+              padding: '14px 28px 4px 28px', 
+              backgroundColor: 'transparent', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
@@ -7455,8 +7454,7 @@ export default function App() {
               flexWrap: 'wrap'
             }}>
               {/* Left: Project Selector Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>프로젝트:</span>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <select
                   value={selectedReportProject}
                   onChange={(e) => setSelectedReportProject(e.target.value)}
@@ -7470,7 +7468,7 @@ export default function App() {
                     borderRadius: '20px',
                     cursor: 'pointer',
                     outline: 'none',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                     appearance: 'none',
                     backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23475569\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/ %3e%3c/svg%3e")',
                     backgroundRepeat: 'no-repeat',
@@ -7485,8 +7483,6 @@ export default function App() {
 
               {/* Right: Member Selection Chips */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginRight: '4px' }}>구성원:</span>
-                
                 {/* All Chip */}
                 <button
                   type="button"
@@ -7498,16 +7494,16 @@ export default function App() {
                     }
                   }}
                   style={{
-                    padding: '5px 12px',
-                    fontSize: '12px',
+                    padding: '5px 13px',
+                    fontSize: '12.5px',
                     fontWeight: '700',
                     borderRadius: '16px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    border: selectedReportMembers.length === activeTeam.length ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
-                    backgroundColor: selectedReportMembers.length === activeTeam.length ? '#e0e7ff' : '#ffffff',
-                    color: selectedReportMembers.length === activeTeam.length ? '#4338ca' : '#64748b',
-                    boxShadow: selectedReportMembers.length === activeTeam.length ? '0 1px 3px rgba(99,102,241,0.2)' : 'none'
+                    border: selectedReportMembers.length === activeTeam.length ? '1.5px solid #000000' : '1px solid #cbd5e1',
+                    backgroundColor: selectedReportMembers.length === activeTeam.length ? '#000000' : '#ffffff',
+                    color: selectedReportMembers.length === activeTeam.length ? '#ffffff' : '#64748b',
+                    boxShadow: selectedReportMembers.length === activeTeam.length ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
                   }}
                 >
                   전체
@@ -7531,16 +7527,16 @@ export default function App() {
                         }
                       }}
                       style={{
-                        padding: '5px 12px',
-                        fontSize: '12px',
+                        padding: '5px 13px',
+                        fontSize: '12.5px',
                         fontWeight: '700',
                         borderRadius: '16px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
-                        border: isSelected ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
-                        backgroundColor: isSelected ? '#6366f1' : '#ffffff',
+                        border: isSelected ? '1.5px solid #000000' : '1px solid #cbd5e1',
+                        backgroundColor: isSelected ? '#000000' : '#ffffff',
                         color: isSelected ? '#ffffff' : '#475569',
-                        boxShadow: isSelected ? '0 2px 4px rgba(99,102,241,0.25)' : 'none'
+                        boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
                       }}
                     >
                       {m.name}

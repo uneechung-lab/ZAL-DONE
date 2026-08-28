@@ -7052,7 +7052,7 @@ export default function App() {
             <table className="timeline-table">
               <thead>
                 <tr>
-                  <th className="col-checkbox" style={{ width: '44px', minWidth: '44px', textAlign: 'center' }}>
+                  <th className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
                       checked={filteredMembers.length > 0 && filteredMembers.every(m => daySelectedMemberIds.includes(m.id))}
@@ -7063,7 +7063,6 @@ export default function App() {
                           setDaySelectedMemberIds([]);
                         }
                       }}
-                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4f46e5' }}
                       title={filteredMembers.every(m => daySelectedMemberIds.includes(m.id)) ? '전체 해제' : '전체 선택'}
                     />
                   </th>
@@ -7091,7 +7090,7 @@ export default function App() {
                   return (
                     <tr key={member.id} style={{ height: `${rowHeight}px` }}>
                       {/* Column 0: Selection Checkbox */}
-                      <td className="col-checkbox" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                      <td className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle' }}>
                         <input
                           type="checkbox"
                           checked={isMemberSelected}
@@ -7102,7 +7101,6 @@ export default function App() {
                                 : [...prev, member.id]
                             );
                           }}
-                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4f46e5' }}
                           title={`${member.name} 숨기기`}
                         />
                       </td>

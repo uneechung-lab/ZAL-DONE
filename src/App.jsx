@@ -5748,9 +5748,9 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div style={{ marginTop: '6px' }}>
+                              <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
                                 {pItem.status === 'requested' ? (
-                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
                                       onClick={() => handleRejectSchedule(pItem.id)}
                                       style={{
@@ -5910,9 +5910,9 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div style={{ marginTop: '6px' }}>
+                              <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
                                 {tItem.status === 'requested' ? (
-                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
                                       onClick={() => handleRejectSchedule(tItem.id)}
                                       style={{

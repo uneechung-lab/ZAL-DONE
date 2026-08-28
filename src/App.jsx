@@ -7052,19 +7052,38 @@ export default function App() {
             <table className="timeline-table">
               <thead>
                 <tr>
-                  <th className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={filteredMembers.length > 0 && filteredMembers.every(m => daySelectedMemberIds.includes(m.id))}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setDaySelectedMemberIds(TEAM.map(m => m.id));
-                        } else {
-                          setDaySelectedMemberIds([]);
-                        }
-                      }}
-                      title={filteredMembers.every(m => daySelectedMemberIds.includes(m.id)) ? '전체 해제' : '전체 선택'}
-                    />
+                  <th className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle', padding: 0 }}>
+                    {(() => {
+                      const isAllSelected = filteredMembers.length > 0 && filteredMembers.every(m => daySelectedMemberIds.includes(m.id));
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isAllSelected) {
+                              setDaySelectedMemberIds([]);
+                            } else {
+                              setDaySelectedMemberIds(TEAM.map(m => m.id));
+                            }
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px'
+                          }}
+                          title={isAllSelected ? '전체 해제' : '전체 선택'}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isAllSelected ? '#000000' : '#cbd5e1'} strokeWidth={isAllSelected ? '2.5' : '2'} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
+                      );
+                    })()}
                   </th>
                   <th className="col-member">구성원</th>
                   {hourSlots.map(h => (
@@ -7090,19 +7109,33 @@ export default function App() {
                   return (
                     <tr key={member.id} style={{ height: `${rowHeight}px` }}>
                       {/* Column 0: Selection Checkbox */}
-                      <td className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <input
-                          type="checkbox"
-                          checked={isMemberSelected}
-                          onChange={() => {
+                      <td className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle', padding: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setDaySelectedMemberIds(prev => 
                               prev.includes(member.id)
                                 ? prev.filter(id => id !== member.id)
                                 : [...prev, member.id]
                             );
                           }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px'
+                          }}
                           title={`${member.name} 숨기기`}
-                        />
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMemberSelected ? '#000000' : '#cbd5e1'} strokeWidth={isMemberSelected ? '2.5' : '2'} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
                       </td>
 
                       {/* Column 1: Member profile info */}

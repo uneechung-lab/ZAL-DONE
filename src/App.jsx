@@ -7318,7 +7318,7 @@ export default function App() {
                           id={`week_th_${d}`}
                           colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', whiteSpace: 'nowrap' }}
+                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', borderLeft: dIdx === 0 ? 'none' : undefined, whiteSpace: 'nowrap' }}
                         >
                           {info.label} ({info.dow})
                         </th>
@@ -7339,6 +7339,7 @@ export default function App() {
                             textAlign: 'center', 
                             padding: '4px 6px', 
                             borderBottom: '2px solid var(--border-light)',
+                            borderLeft: (dIdx === 0 && memberIdx === 0) ? 'none' : undefined,
                             fontWeight: '600',
                             backgroundColor: 'var(--bg-primary)',
                             minWidth: `${memberColWidth}px`,
@@ -7414,7 +7415,7 @@ export default function App() {
                         const isSat = info.dow === '토';
                         const isSun = info.dow === '일';
                         
-                        return weeklyMembers.map(member => {
+                        return weeklyMembers.map((member, memberIdx) => {
                           const daySchedules = schedules.filter(s => {
                             const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
                             return matchesMember && isScheduleInMonth(s, currentYear, info.month) && s.date === info.dayNum;
@@ -7433,6 +7434,7 @@ export default function App() {
                                 padding: '0', 
                                 height: '36px',
                                 position: 'relative',
+                                borderLeft: (dIdx === 0 && memberIdx === 0) ? 'none' : undefined,
                                 borderRight: '1px solid var(--border-light)',
                                 borderBottom: '1px solid var(--border-light)',
                                 backgroundColor: info.month === 6 && info.dayNum === new Date().getDate() ? 'rgba(99, 102, 241, 0.01)' : '',

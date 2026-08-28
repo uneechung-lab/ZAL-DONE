@@ -7268,20 +7268,22 @@ export default function App() {
             }
             const weeklyMembers = filteredMembers.filter(m => daySelectedMemberIds.includes(m.id));
             const numMembers = weeklyMembers.length;
+            const memberColWidth = 105;
+            const totalTableWidth = Math.max(80 + weekDates.length * Math.max(numMembers, 1) * memberColWidth, 1000);
 
             return (
-              <table className="timeline-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+              <table className="timeline-table" style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px`, tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                 <colgroup>
-                  <col style={{ width: '80px' }} />
+                  <col style={{ width: '80px', minWidth: '80px' }} />
                   {weekDates.map(d => 
                     weeklyMembers.map(member => (
-                      <col key={`${d}_${member.id}`} />
+                      <col key={`${d}_${member.id}`} style={{ width: `${memberColWidth}px`, minWidth: `${memberColWidth}px` }} />
                     ))
                   )}
                 </colgroup>
                 <thead>
                   <tr>
-                    <th rowSpan="2" style={{ width: '80px', textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', backgroundColor: 'var(--bg-primary)' }}>시간</th>
+                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: '1px solid var(--border-light)', backgroundColor: '#ffffff', boxShadow: '2px 0 4px rgba(0,0,0,0.03)' }}>시간</th>
                     {weekDates.map(d => {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
@@ -7291,7 +7293,7 @@ export default function App() {
                           key={d} 
                           colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)' }}
+                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', whiteSpace: 'nowrap' }}
                         >
                           {info.label} ({info.dow})
                         </th>
@@ -7310,23 +7312,25 @@ export default function App() {
                           style={{ 
                             fontSize: '11px', 
                             textAlign: 'center', 
-                            padding: '4px 2px', 
+                            padding: '4px 6px', 
                             borderBottom: '2px solid var(--border-light)',
                             fontWeight: '600',
                             backgroundColor: 'var(--bg-primary)',
-                            minWidth: '65px'
+                            minWidth: `${memberColWidth}px`,
+                            width: `${memberColWidth}px`,
+                            whiteSpace: 'nowrap'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', width: '100%' }}>
                             <div 
                               className="member-avatar-circle" 
                               style={{ 
-                                width: '24px', 
-                                height: '24px', 
-                                minWidth: '24px',
-                                minHeight: '24px',
-                                maxWidth: '24px',
-                                maxHeight: '24px',
+                                width: '22px', 
+                                height: '22px', 
+                                minWidth: '22px',
+                                minHeight: '22px',
+                                maxWidth: '22px',
+                                maxHeight: '22px',
                                 aspectRatio: '1 / 1',
                                 borderRadius: '50%',
                                 backgroundColor: '#ffffff', 
@@ -7339,7 +7343,8 @@ export default function App() {
                                 justifyContent: 'center',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
-                                padding: 0
+                                padding: 0,
+                                flexShrink: 0
                               }}
                               title={getMemberRoleText(member, ME)}
                             >
@@ -7349,7 +7354,7 @@ export default function App() {
                                 member.id === 'sh' ? '나' : member.avatar
                               )}
                             </div>
-                            <span style={{ fontSize: '11.5px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                               {getMemberRoleText(member, ME)}
                             </span>
                           </div>
@@ -7363,13 +7368,18 @@ export default function App() {
                     <tr key={h} style={{ height: '36px' }}>
                       <td style={{ 
                         width: '80px', 
+                        minWidth: '80px',
+                        position: 'sticky',
+                        left: 0,
+                        zIndex: 6,
                         textAlign: 'center', 
                         fontSize: '11.5px', 
                         fontWeight: '600', 
                         color: 'var(--text-secondary)',
                         borderRight: '1px solid var(--border-light)',
                         borderBottom: '1px solid var(--border-light)',
-                        backgroundColor: 'var(--bg-primary)',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '2px 0 4px rgba(0,0,0,0.03)',
                         padding: '0'
                       }}>
                         {formatHour(h)}

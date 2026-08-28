@@ -5170,39 +5170,42 @@ export default function App() {
                                                );
                                              }
                                            } else if (matchedSchedule && matchedSchedule.status === 'accepted') {
-                                              const isApprovalItem = /반차|연차|휴가|병가|신청|승인/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId);
+                                               const isDelegatedTask = (matchedSchedule.requesterId === ME.id || (ME.id === 'sh' && matchedSchedule.requesterId === 'yoonhee')) && (matchedSchedule.memberId !== ME.id && !(ME.id === 'sh' && matchedSchedule.memberId === 'yoonhee'));
+                                               const reqTargetMember = TEAM.find(m => m.id === (matchedSchedule.approverId || matchedSchedule.memberId)) || approverMember;
+                                               const isApprovalItem = /반차|연차|휴가|병가|신청|승인/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId);
 
-                                              if (!isApprover && !isApprovalItem) {
-                                                return (
-                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px' }}>
-                                                    <button
-                                                      style={{
-                                                        padding: '6px 12px',
-                                                        fontSize: '12px',
-                                                        backgroundColor: '#fef2f2',
-                                                        color: '#dc2626',
-                                                        border: '1px solid #fca5a5',
-                                                        borderRadius: '8px',
-                                                        fontWeight: '700',
-                                                        cursor: 'pointer'
-                                                      }}
-                                                      onClick={async () => {
-                                                        if (isConfigured) {
-                                                          await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                        }
-                                                        setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                      }}
-                                                    >
-                                                      등록취소
-                                                    </button>
-                                                  </div>
-                                                );
-                                              }
-                                             return (
-                                               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                                 <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                   {isApprover ? '🎉 승인하였습니다' : (/반차|연차|휴가|병가|신청|승인/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId) ? `🎉 승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : '🎉 등록 완료')}
-                                                 </span>
+                                               if (!isApprover && !isApprovalItem && !isDelegatedTask) {
+                                                 return (
+                                                   <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px' }}>
+                                                     <button
+                                                       style={{
+                                                         padding: '7px 14px',
+                                                         fontSize: '12.5px',
+                                                         backgroundColor: '#fef2f2',
+                                                         color: '#dc2626',
+                                                         border: '1px solid #fca5a5',
+                                                         borderRadius: '8px',
+                                                         fontWeight: '700',
+                                                         lineHeight: '1.2',
+                                                         cursor: 'pointer'
+                                                       }}
+                                                       onClick={async () => {
+                                                         if (isConfigured) {
+                                                           await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                         }
+                                                         setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                       }}
+                                                     >
+                                                       등록취소
+                                                     </button>
+                                                   </div>
+                                                 );
+                                               }
+                                              return (
+                                                <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                    {isApprover ? '🎉 승인하였습니다' : (isDelegatedTask ? `🎉 수락 완료 (${reqTargetMember.name} ${reqTargetMember.role || '사원'} 수락)` : (isApprovalItem ? `🎉 승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : '🎉 등록 완료'))}
+                                                  </span>
                                                  {isApprover ? (
                                                    <button
                                                      style={{
@@ -6153,13 +6156,16 @@ export default function App() {
                       const dateStr = aItem.dateStr || `${aItem.year}.${aItem.month < 10 ? '0' : ''}${aItem.month}.${aItem.date < 10 ? '0' : ''}${aItem.date}`;
                       const timeStr = `${formatHour(aItem.startHour)} ~ ${formatHour(aItem.endHour)}`;
                       const isLeave = /반차|연차|휴가|병가/i.test(aItem.title || '');
-                      const approverMember = (aItem.approverId ? TEAM.find(m => m.id === aItem.approverId) : null) || { name: '조상무', role: '상무' };
+                      const isDelegatedTask = (aItem.requesterId === ME.id || (ME.id === 'sh' && aItem.requesterId === 'yoonhee')) && (aItem.memberId !== ME.id && !(ME.id === 'sh' && aItem.memberId === 'yoonhee'));
+                      const targetWorker = TEAM.find(m => m.id === aItem.memberId) || { name: '정다음', role: '사원' };
+                      const approverMember = (aItem.approverId ? TEAM.find(m => m.id === aItem.approverId) : null) || (isDelegatedTask ? targetWorker : { name: '조상무', role: '상무' });
+                      const actualAcceptor = isDelegatedTask ? targetWorker : approverMember;
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
-                              {approverMember.name}님이 {isLeave ? '결재를' : '업무 요청을'} 수락하셨습니다.
+                              {actualAcceptor.name}님이 {isLeave ? '결재를' : '업무 요청을'} 수락하셨습니다.
                             </div>
                             <div 
                               style={{
@@ -6207,18 +6213,19 @@ export default function App() {
 
                               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                 <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                  🎉 {isLeave ? `승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : '수락 완료'}
+                                  🎉 {isLeave ? `승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : `수락 완료 (${actualAcceptor.name} ${actualAcceptor.role || '사원'} 수락)`}
                                 </span>
                                 <button
                                   onClick={() => handleCancelSchedule(aItem.id)}
                                   style={{
-                                    padding: '6px 12px',
-                                    fontSize: '12px',
+                                    padding: '7px 14px',
+                                    fontSize: '12.5px',
                                     backgroundColor: '#fef2f2',
                                     color: '#dc2626',
                                     border: '1px solid #fca5a5',
                                     borderRadius: '8px',
                                     fontWeight: '700',
+                                    lineHeight: '1.2',
                                     marginLeft: 'auto',
                                     cursor: 'pointer'
                                   }}

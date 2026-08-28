@@ -8097,7 +8097,7 @@ export default function App() {
       {/* ──── SCHEDULE DETAIL MODAL ─────────────────── */}
       {isDetailModalOpen && selectedDetailEvent && (
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
-          <div className="modal-content" style={{ width: '100%', maxWidth: '680px', padding: '28px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div className="modal-title" style={{ fontSize: '21px', marginBottom: 0 }}>일정 상세 및 수정</div>
               <button 
@@ -8629,12 +8629,16 @@ export default function App() {
                     className="modal-btn primary" 
                     disabled={isDeletingEvent || isSavingEvent}
                     style={{ 
-                      padding: '9px 18px', 
+                      padding: '9px 20px', 
                       fontSize: '15px', 
-                      fontWeight: '600',
+                      fontWeight: '700',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
+                      backgroundColor: '#6366f1',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      border: 'none',
                       cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
                       opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
                     }} 
@@ -8643,9 +8647,9 @@ export default function App() {
                     {isSavingEvent ? (
                       <>
                         <LoadingSpinner size={16} color="#ffffff" />
-                        저장 중...
+                        수정 중...
                       </>
-                    ) : '저장'}
+                    ) : '수정'}
                   </button>
                 </>
               )}

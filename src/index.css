@@ -1072,6 +1072,9 @@ input:-webkit-autofill:active {
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;

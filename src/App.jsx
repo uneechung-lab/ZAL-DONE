@@ -5726,7 +5726,7 @@ export default function App() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                    <span>신청자</span>
+                                    <span>신청</span>
                                   </div>
                                   <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
                                 </div>

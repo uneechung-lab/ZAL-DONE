@@ -5690,7 +5690,7 @@ export default function App() {
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
-                              {reqMember.name}님이 "{pItem.title}" {/반차|연차|휴가|병가/i.test(pItem.title || '') ? '결재를 요청하셨습니다.' : '업무 결재를 요청하셨습니다.'}
+                              {reqMember.name}님이 결재를 요청하셨습니다.
                             </div>
                             <div 
                               id={'card_' + pItem.id}
@@ -5709,7 +5709,7 @@ export default function App() {
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
-                                "{pItem.title}"
+                                결재 1 : "{pItem.title}"
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
@@ -5852,7 +5852,7 @@ export default function App() {
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
-                              {reqMember.name}님이 "{tItem.title}" 업무를 요청하셨습니다.
+                              {reqMember.name}님이 업무를 요청하셨습니다.
                             </div>
                             <div 
                               id={'card_' + tItem.id}
@@ -5871,7 +5871,7 @@ export default function App() {
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
-                                "{tItem.title}"
+                                요청 1 : "{tItem.title}"
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
@@ -6016,7 +6016,7 @@ export default function App() {
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
-                              {rejecterMember.name}님이 {isLeave ? `"${rItem.title}" 결재를` : `"${rItem.title}" 업무 요청을`} 반려하셨습니다.{reasonText && ` (사유: ${reasonText})`}
+                              {rejecterMember.name}님이 {isLeave ? '결재를' : '업무 요청을'} 반려하셨습니다.{reasonText && ` (사유: ${reasonText})`}
                             </div>
                             <div 
                               style={{
@@ -6033,7 +6033,7 @@ export default function App() {
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
-                                "{rItem.title}"
+                                {isLeave ? '결재 1' : '일정 1'} : "{rItem.title}"
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
@@ -6138,7 +6138,7 @@ export default function App() {
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
-                              {approverMember.name}님이 {isLeave ? `"${aItem.title}" 결재를` : `"${aItem.title}" 업무 요청을`} 수락하셨습니다.
+                              {approverMember.name}님이 {isLeave ? '결재를' : '업무 요청을'} 수락하셨습니다.
                             </div>
                             <div 
                               style={{
@@ -6155,7 +6155,7 @@ export default function App() {
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
-                                "{aItem.title}"
+                                {isLeave ? '결재 1' : '일정 1'} : "{aItem.title}"
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>

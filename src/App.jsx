@@ -758,6 +758,43 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
   return results;
 }
 
+function getSchedulesWithTracks(memberSchedules) {
+  const sorted = [...memberSchedules].sort((a, b) => a.startHour - b.startHour);
+  const tracks = [];
+
+  sorted.forEach(s => {
+    let assignedTrackIndex = -1;
+    for (let i = 0; i < tracks.length; i++) {
+      const trackSchedules = tracks[i];
+      const overlap = trackSchedules.some(ts => {
+        return s.startHour < ts.endHour && ts.startHour < s.endHour;
+      });
+      if (!overlap) {
+        assignedTrackIndex = i;
+        break;
+      }
+    }
+
+    if (assignedTrackIndex === -1) {
+      tracks.push([s]);
+    } else {
+      tracks[assignedTrackIndex].push(s);
+    }
+  });
+
+  const scheduleTrackMap = {};
+  tracks.forEach((track, index) => {
+    track.forEach(s => {
+      scheduleTrackMap[s.id] = index;
+    });
+  });
+
+  return {
+    trackMap: scheduleTrackMap,
+    totalTracks: Math.max(tracks.length, 1),
+  };
+}
+
 function parseScheduleDescription(description = '') {
   const descStr = typeof description === 'string' ? description : (description ? String(description) : '');
   let groupId = '';

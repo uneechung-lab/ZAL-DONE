@@ -7103,10 +7103,10 @@ export default function App() {
                     return matchesMember && matchesDate;
                   }) : [];
                   const { trackMap, totalTracks } = getSchedulesWithTracks(memberSchedules);
-                  const rowHeight = Math.max(totalTracks * 32 + 16, 74);
+                  const rowHeight = isMemberSelected ? Math.max(totalTracks * 32 + 16, 74) : 34;
 
                   return (
-                    <tr key={member.id} style={{ height: `${rowHeight}px`, opacity: isMemberSelected ? 1 : 0.65, transition: 'opacity 0.2s ease' }}>
+                    <tr key={member.id} style={{ height: `${rowHeight}px`, opacity: isMemberSelected ? 1 : 0.65, transition: 'all 0.2s ease' }}>
                       {/* Column 0: Selection Checkbox */}
                       <td className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle', padding: 0 }}>
                         <button
@@ -7138,16 +7138,20 @@ export default function App() {
                       </td>
 
                       {/* Column 1: Member profile info */}
-                      <td className="col-member">
-                        <div className="member-cell-content">
-                          <div className="member-avatar-circle" style={{ backgroundColor: '#ffffff', color: '#ffffff', fontWeight: '700', border: '1px solid #e2e8f0', overflow: 'hidden', padding: 0 }}>
-                            {getMemberAvatarPic(member, index) ? (
-                              <img src={getMemberAvatarPic(member, index)} alt={member.name} style={getMemberAvatarStyle(member, index)} />
-                            ) : (
-                              member.id === 'sh' ? '나' : member.avatar
-                            )}
-                          </div>
-                          <span className="member-role-label">{getMemberRoleText(member, ME)}</span>
+                      <td className="col-member" style={{ padding: isMemberSelected ? undefined : '2px 4px', verticalAlign: 'middle' }}>
+                        <div className="member-cell-content" style={{ gap: isMemberSelected ? '4px' : '0', justifyContent: 'center' }}>
+                          {isMemberSelected && (
+                            <div className="member-avatar-circle" style={{ backgroundColor: '#ffffff', color: '#ffffff', fontWeight: '700', border: '1px solid #e2e8f0', overflow: 'hidden', padding: 0 }}>
+                              {getMemberAvatarPic(member, index) ? (
+                                <img src={getMemberAvatarPic(member, index)} alt={member.name} style={getMemberAvatarStyle(member, index)} />
+                              ) : (
+                                member.id === 'sh' ? '나' : member.avatar
+                              )}
+                            </div>
+                          )}
+                          <span className="member-role-label" style={{ fontSize: isMemberSelected ? undefined : '11.5px', whiteSpace: 'nowrap' }}>
+                            {getMemberRoleText(member, ME)}
+                          </span>
                         </div>
                       </td>
 

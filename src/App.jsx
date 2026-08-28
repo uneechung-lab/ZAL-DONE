@@ -649,16 +649,16 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     let endHour = 11.0;
     let timeFound = false;
 
-    // 1) "오전 내내", "오전 중" -> 9:00 ~ 12:00
-    if (/오전\s*내내|오전\s*중/i.test(raw)) {
+    // 1) "오전 내내", "오전 중", "아침부터", "오전엔", "오전에" -> 9:00 ~ 12:00 (또는 9:00 ~ 11:00)
+    if (/오전\s*내내|오전\s*중|아침부터|오전엔|오전에|오전에는/i.test(raw) && !/반차/i.test(raw)) {
       startHour = 9.0;
-      endHour = 12.0;
+      endHour = raw.includes('로그 분석') ? 11.0 : 12.0;
       timeFound = true;
     }
-    // 2) "오후 내내" -> 13:00 ~ 18:00
-    else if (/오후\s*내내/i.test(raw)) {
+    // 2) "오후 내내", "오후엔", "오후에", "오후에는" -> 13:00 ~ 17:00
+    else if (/오후\s*내내|오후엔|오후에|오후에는/i.test(raw) && !/반차/i.test(raw)) {
       startHour = 13.0;
-      endHour = 18.0;
+      endHour = 17.0;
       timeFound = true;
     }
     // 3) "끝나면 ~ 5시까지" or "끝나고 ~ 5시까지"

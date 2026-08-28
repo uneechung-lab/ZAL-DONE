@@ -2236,8 +2236,15 @@ export default function App() {
   const [reRequestMsgInput, setReRequestMsgInput] = useState('');
 
   const isDetailEditable = selectedDetailEvent
-    ? (selectedDetailEvent.requesterId === 'sh' || 
-       (selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds.includes('sh') : selectedDetailEvent.memberId === 'sh'))
+    ? (
+        selectedDetailEvent.requesterId === ME.id ||
+        (ME.id === 'sh' && selectedDetailEvent.requesterId === 'yoonhee') ||
+        (ME.id === 'yoonhee' && selectedDetailEvent.requesterId === 'sh') ||
+        (ME.id === 'sangmoo' && (selectedDetailEvent.requesterId === 'sangmu' || selectedDetailEvent.requesterId === 'sangmoo')) ||
+        (selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds.includes(ME.id) : selectedDetailEvent.memberId === ME.id) ||
+        (ME.id === 'sh' && (selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds.includes('yoonhee') : selectedDetailEvent.memberId === 'yoonhee')) ||
+        (ME.id === 'sangmoo' && (selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds.includes('sangmu') : selectedDetailEvent.memberId === 'sangmu'))
+      )
     : false;
 
   const openDetailModal = (event) => {
@@ -5068,22 +5075,7 @@ export default function App() {
 
                                               if (!isApprover && !isApprovalItem) {
                                                 return (
-                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px', gap: '6px' }}>
-                                                    <button
-                                                      style={{
-                                                        padding: '6px 12px',
-                                                        fontSize: '12px',
-                                                        backgroundColor: '#f8fafc',
-                                                        color: '#334155',
-                                                        border: '1px solid #cbd5e1',
-                                                        borderRadius: '8px',
-                                                        fontWeight: '700',
-                                                        cursor: 'pointer'
-                                                      }}
-                                                      onClick={() => openDetailModal(matchedSchedule)}
-                                                    >
-                                                      수정
-                                                    </button>
+                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px' }}>
                                                     <button
                                                       style={{
                                                         padding: '6px 12px',

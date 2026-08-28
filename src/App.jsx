@@ -7302,8 +7302,8 @@ export default function App() {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: 'none', backgroundColor: '#ffffff', boxShadow: 'inset -1px 0 0 0 var(--border-light)' }}>시간</th>
-                    {weekDates.map(d => {
+                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: '1px solid var(--border-light)', borderLeft: 'none', backgroundColor: '#ffffff', boxShadow: 'none' }}>시간</th>
+                    {weekDates.map((d, dIdx) => {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
                       const isSun = info.dow === '일';
@@ -7313,7 +7313,7 @@ export default function App() {
                           id={`week_th_${d}`}
                           colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', whiteSpace: 'nowrap' }}
+                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', borderLeft: dIdx === 0 ? 'none' : undefined, whiteSpace: 'nowrap' }}
                         >
                           {info.label} ({info.dow})
                         </th>
@@ -7321,7 +7321,7 @@ export default function App() {
                     })}
                   </tr>
                   <tr>
-                    {weekDates.map(d => {
+                    {weekDates.map((d, dIdx) => {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
                       const isSun = info.dow === '일';
@@ -7395,15 +7395,16 @@ export default function App() {
                         fontSize: '11.5px', 
                         fontWeight: '600', 
                         color: 'var(--text-secondary)',
-                        borderRight: 'none',
+                        borderRight: '1px solid var(--border-light)',
+                        borderLeft: 'none',
                         borderBottom: '1px solid var(--border-light)',
                         backgroundColor: '#ffffff',
-                        boxShadow: 'inset -1px 0 0 0 var(--border-light)',
+                        boxShadow: 'none',
                         padding: '0'
                       }}>
                         {formatHour(h)}
                       </td>
-                      {weekDates.map(d => {
+                      {weekDates.map((d, dIdx) => {
                         const info = getDayLabelAndDow(d);
                         const isSat = info.dow === '토';
                         const isSun = info.dow === '일';

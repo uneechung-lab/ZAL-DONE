@@ -1477,24 +1477,6 @@ export default function App() {
   const [daySelectedMemberIds, setDaySelectedMemberIds] = useState(() => TEAM.map(m => m.id));
   const timelineContainerRef = useRef(null);
 
-  // Auto-scroll timeline container to selected date in WEEK view
-  useEffect(() => {
-    if (timeViewTab === 'weekly' && timelineContainerRef.current) {
-      const timer = setTimeout(() => {
-        const targetTh = document.getElementById(`week_th_${selectedDate}`);
-        if (targetTh && timelineContainerRef.current) {
-          const container = timelineContainerRef.current;
-          const targetLeft = targetTh.offsetLeft - 80;
-          container.scrollTo({
-            left: Math.max(0, targetLeft),
-            behavior: 'smooth'
-          });
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedDate, timeViewTab]);
-
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
     if (!rawFullName) return { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
@@ -2106,6 +2088,24 @@ export default function App() {
       }
     }
   }, [selectedDate, timeViewTab, currentMonth, currentYear]);
+
+  // Auto-scroll timeline container to selected date in WEEK view
+  useEffect(() => {
+    if (timeViewTab === 'weekly' && timelineContainerRef.current) {
+      const timer = setTimeout(() => {
+        const targetTh = document.getElementById(`week_th_${selectedDate}`);
+        if (targetTh && timelineContainerRef.current) {
+          const container = timelineContainerRef.current;
+          const targetLeft = targetTh.offsetLeft - 80;
+          container.scrollTo({
+            left: Math.max(0, targetLeft),
+            behavior: 'smooth'
+          });
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDate, timeViewTab]);
 
   const getWeekRangeStr = (year, month, date) => {
     const current = new Date(year, month - 1, date);

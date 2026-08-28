@@ -3495,7 +3495,17 @@ export default function App() {
             assignedMemberIds = [ME.id];
             isSelf = true;
             schedStatus = 'requested';
-            schedApproverId = ME.id === 'sangmoo' ? 'sangmoo' : (ME.id === 'daum' ? 'sh' : 'sangmoo');
+            // Check explicit approver mention in original text or parsed result
+            if (/조상무|상무님/i.test(text)) {
+              schedApproverId = 'sangmoo';
+            } else if (/정부장|정윤희/i.test(text) && !/정부장\s*브리핑|정부장이랑/i.test(text)) {
+              schedApproverId = 'sh';
+            } else if (parsed.approverId && parsed.approverId !== ME.id) {
+              schedApproverId = parsed.approverId;
+            } else {
+              // Default by role: 사원(daum) → 부장(sh), 부장(sh) → 상무(sangmoo)
+              schedApproverId = (ME.id === 'daum') ? 'sh' : 'sangmoo';
+            }
           } else if (isDelegatedToDaum) {
             // 2) Task delegated to Jung Daeum (정다음 사원)
             assignedMemberId = 'daum';

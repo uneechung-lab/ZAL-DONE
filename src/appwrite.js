@@ -157,8 +157,7 @@ export const appwriteService = {
   async updateSchedule(id, updates) {
     if (!isConfigured) return null;
     try {
-      const docId = id || updates.$id || updates.id;
-      if (!docId) return false;
+      let docId = id || updates.$id || updates.id;
 
       let desc = updates.description;
       if (desc === undefined && updates.desc !== undefined) desc = updates.desc;
@@ -178,7 +177,36 @@ export const appwriteService = {
         cleanData.description = desc;
       }
 
-      const response = await databases.updateDocument(databaseId, schedulesCollectionId, docId, cleanData);
+      let response = null;
+      if (docId && typeof docId === 'string' && !/^\d+$/.test(docId)) {
+        try {
+          response = await databases.updateDocument(databaseId, schedulesCollectionId, docId, cleanData);
+          return response;
+        } catch (err) {
+          console.warn('Direct updateDocument failed, trying title/date fallback:', err);
+        }
+      }
+
+      // Fallback: search by title and date in DB
+      const targetTitle = updates.title;
+      const targetDate = updates.date;
+      const targetStartHour = updates.startHour;
+      if (targetTitle) {
+        const list = await databases.listDocuments(databaseId, schedulesCollectionId, [
+          Query.equal('title', targetTitle),
+          Query.limit(10)
+        ]);
+        const match = list.documents.find(d => 
+          (!targetDate || d.date === targetDate) && 
+          (!targetStartHour || d.startHour === targetStartHour)
+        ) || list.documents[0];
+
+        if (match) {
+          response = await databases.updateDocument(databaseId, schedulesCollectionId, match.$id, cleanData);
+          return response;
+        }
+      }
+
       return response;
     } catch (e) {
       console.error('Appwrite failed to update schedule', e);

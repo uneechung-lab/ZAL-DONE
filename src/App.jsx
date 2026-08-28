@@ -198,6 +198,9 @@ function getApproverMember(sched, currentUserId = 'sh') {
     }
 
     const applicantId = sched.requesterId || sched.memberId || currentUserId;
+    if (applicantId === 'sangmoo' || applicantId === 'sangmu') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    }
     if (applicantId === 'daum') {
       return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }

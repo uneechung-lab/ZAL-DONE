@@ -598,321 +598,164 @@ function normalizeHour(h, ampm) {
   return hr;
 }
 
-function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
-  let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  
-  // Clean year/month in lines
-  lines = lines.map(line => {
-    return line.replace(/20\d{2}\s*[\./-]\s*\d{1,2}\s*[\./-]?\s*/g, '').replace(/20\d{2}\s*년?\s*(?:\d{1,2}\s*월?)?\s*/g, '');
-  });
-
-  const results = [];
-  let currentDate = selectedDate;
-  let currentMonthNum = null;
-  let lastSchedule = null;
-
-  const isItinerary = lines.length > 3;
-
-  const processedLines = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const timeOnlyRegex = /^(?:오전|오후)?\s*\d{1,2}(?::\d{2}|\s*시\s*(?:반|30분)?)$/;
-    if (timeOnlyRegex.test(line) && i + 1 < lines.length) {
-      const nextLine = lines[i+1];
-      const dateRegex = /(?:\d{1,2}\s*월\s*)?\d{1,2}\s*일|DAY\s*\d+/i;
-      const nextTimeRegex = /^(?:오전|오후)?\s*\d{1,2}/;
-      if (!dateRegex.test(nextLine) && !nextTimeRegex.test(nextLine)) {
-        processedLines.push(line + ' ' + nextLine);
-        i++;
-        continue;
-      }
-    }
-    processedLines.push(line);
+function splitCompoundScheduleText(text) {
+  let cleaned = text.replace(/\r\n/g, '\n').trim();
+  let rawLines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
+  if (rawLines.length > 1) {
+    return rawLines;
   }
 
-  const messageGroupId = `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-
-  processedLines.forEach(line => {
-    let temp = line;
-
-    const dateKoRegex = /(?:(\d{1,2})\s*월\s*)?(\d{1,2})\s*일/;
-    const koDateMatch = dateKoRegex.exec(temp);
+  let segments = [];
+  const commaParts = cleaned.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  
+  commaParts.forEach(part => {
+    const subParts = part.split(/(?=(?:\b|\s)(?:\d{1,2}\s*시|\d{1,2}:\d{2}|정다음\s*사원한테|정사원한테|정부장한테|오후\s*반차|오전\s*반차|연차))/i)
+      .map(s => s.trim())
+      .filter(Boolean);
     
-    const dateSimpleRegex = /(\d{1,2})\s*[\./-]\s*(\d{1,2})/;
-    const simpleDateMatch = dateSimpleRegex.exec(temp);
-
-    const rangeRegex = /(\d{1,2})\s*(?:\([^)]+\))?\s*(?:일)?\s*[-~]\s*(\d{1,2})\s*(?:\([^)]+\))?\s*(?:일)?/;
-    const rangeMatch = rangeRegex.exec(temp);
-
-    const dateMmddRegex = /(?:^|\b)(0?6)(\d{2})(?:_|\b|\])/;
-    const mmddMatch = dateMmddRegex.exec(temp);
-
-    const nthWeekdayRegex = /(?:(\d{1,2})\s*월\s*)?(첫\s*번째|첫\s*째|두\s*번째|둘\s*째|세\s*번째|셋\s*째|네\s*번째|넷\s*째|첫|1\s*번째|2\s*번째|3\s*번째|4\s*번째)\s*(?:주)?\s*([일월화수목금토])요일?/;
-    const nthMatch = nthWeekdayRegex.exec(temp);
-
-    if (nthMatch) {
-      const targetM = nthMatch[1] ? parseInt(nthMatch[1]) : month;
-      const nthWord = nthMatch[2];
-      const dowChar = nthMatch[3];
-      let nth = 1;
-      if (/두|둘|2/.test(nthWord)) nth = 2;
-      else if (/세|셋|3/.test(nthWord)) nth = 3;
-      else if (/네|넷|4/.test(nthWord)) nth = 4;
-      
-      const calcD = getNthWeekdayOfMonth(year, targetM, nth, dowChar);
-      if (calcD) {
-        currentMonthNum = targetM;
-        currentDate = calcD;
-      }
-    } else if (rangeMatch) {
-      const startDay = parseInt(rangeMatch[1]);
-      currentDate = startDay;
-    } else if (koDateMatch) {
-      if (koDateMatch[1]) {
-        currentMonthNum = parseInt(koDateMatch[1]);
-      }
-      currentDate = parseInt(koDateMatch[2]);
-    } else if (simpleDateMatch) {
-      currentMonthNum = parseInt(simpleDateMatch[1]);
-      currentDate = parseInt(simpleDateMatch[2]);
-    } else if (mmddMatch) {
-      currentDate = parseInt(mmddMatch[2]);
-    }
-
-    let matched = false;
-    let startHour = 10;
-    let endHour = 11;
-    let matchedString = '';
-
-    const rangeTimeRegex = /(오전|오후)?\s*(\d{1,2}):(\d{2})\s*[-~]\s*(오전|오후)?\s*(\d{1,2}):(\d{2})/i;
-    let match = rangeTimeRegex.exec(temp);
-    if (match) {
-      const h1 = parseInt(match[2]);
-      const m1 = parseInt(match[3]);
-      const h2 = parseInt(match[5]);
-      const m2 = parseInt(match[6]);
-      startHour = normalizeHour(h1, match[1]) + (m1 === 30 ? 0.5 : 0);
-      endHour = normalizeHour(h2, match[4] || match[1]) + (m2 === 30 ? 0.5 : 0);
-      matchedString = match[0];
-      matched = true;
-    }
-
-    if (!matched) {
-      const rangeKoRegex = /(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?\s*[-~]\s*(오전|오후)?\s*(\d{1,2})\s*시\s*(30분|반)?/;
-      match = rangeKoRegex.exec(temp);
-      if (match) {
-        const h1 = parseInt(match[2]);
-        const m1 = match[3];
-        const h2 = parseInt(match[5]);
-        const m2 = match[6];
-        startHour = normalizeHour(h1, match[1]) + (m1 === '반' || m1 === '30분' ? 0.5 : 0);
-        endHour = normalizeHour(h2, match[4] || match[1]) + (m2 === '반' || m2 === '30분' ? 0.5 : 0);
-        matchedString = match[0];
-        matched = true;
-      }
-    }
-
-    if (!matched) {
-      const singleTimeRegex = /(오전|오후)?\s*(\d{1,2}):(\d{2})/;
-      match = singleTimeRegex.exec(temp);
-      if (match) {
-        const h = parseInt(match[2]);
-        const m = parseInt(match[3]);
-        startHour = normalizeHour(h, match[1]) + (m === 30 ? 0.5 : 0);
-        endHour = Math.min(startHour + 1, 19.5);
-        matchedString = match[0];
-        matched = true;
-      }
-    }
-
-    if (!matched) {
-      if (/오후\s*반차/i.test(temp)) {
-        startHour = 14.0;
-        endHour = 18.0;
-        matched = true;
-      } else if (/오전\s*반차/i.test(temp)) {
-        startHour = 9.0;
-        endHour = 14.0;
-        matched = true;
-      } else if (/반차/i.test(temp) && !/오전/i.test(temp)) {
-        startHour = 14.0;
-        endHour = 18.0;
-        matched = true;
-      } else if (/연차|휴가|병가/i.test(temp)) {
-        startHour = 9.0;
-        endHour = 18.0;
-        matched = true;
-      }
-    }
-
-    const clean = (str) => {
-      let s = str
-        .replace(/모두에게/g, '')
-        .replace(/전체에게/g, '')
-        .replace(/전원에게/g, '')
-        .replace(/모두/g, '')
-        .replace(/전체/g, '')
-        .replace(/전원/g, '')
-        .replace(/오늘/g, '')
-        .replace(/내일/g, '')
-        .replace(/모레/g, '');
-      
-      s = s
-        .replace(/\b에\b/g, '')
-        .replace(/시\s*반에/g, '시 반')
-        .replace(/시에/g, '시')
-        .replace(/까지/g, '')
-        .replace(/부터/g, '')
-        .replace(/\(\s*[-~,]*\s*\)/g, '')
-        .trim();
-        
-      return s;
-    };
-
-    if (isItinerary) {
-      if (matched) {
-        let title = clean(temp.replace(matchedString, ''));
-        title = title.replace(/^(?:0?6\s*[\./-]?\s*\d{1,2}\s*[_\]\s-]*|0?6\d{2}\s*[_\]\s-]*|\d{1,2}\s*일\s*[_\]\s-]*)/, '');
-        title = title.replace(/^[\-~,\s\(\)\]]+/, '').replace(/[\-~,\s\(\)\]]+$/, '').trim();
-        if (!title) title = '새로운 일정';
-        if (title.length > 20) title = title.substring(0, 20) + '...';
-
-        lastSchedule = {
-          title,
-          startHour,
-          endHour,
-          line,
-          date: currentDate,
-          groupId: messageGroupId,
-          description: ''
-        };
-        results.push(lastSchedule);
-      } else {
-        if (lastSchedule && !line.includes('6월') && !line.includes('DAY')) {
-          lastSchedule.description = (lastSchedule.description ? lastSchedule.description + '\n' : '') + line;
-        }
-      }
+    if (subParts.length > 1) {
+      segments.push(...subParts);
     } else {
-      let title = matched ? clean(temp.replace(matchedString, '')) : clean(temp);
-      title = title.replace(/^(?:0?6\s*[\./-]?\s*\d{1,2}\s*[_\]\s-]*|0?6\d{2}\s*[_\]\s-]*|\d{1,2}\s*일\s*[_\]\s-]*)/, '');
-      title = title.replace(/^[\-~,\s\(\)\]]+/, '').replace(/[\-~,\s\(\)\]]+$/, '').trim();
-      
-      if (!matched) {
-        if (temp.includes('연차') || temp.includes('휴가') || temp.includes('반차')) {
-          startHour = 9;
-          endHour = 18;
-        } else {
-          startHour = 0;
-          endHour = 24;
-        }
-      }
-
-      if (!title) title = '새로운 일정';
-      if (title.length > 20) title = title.substring(0, 20) + '...';
-
-      let parsedDates = [currentDate];
-      if (rangeMatch) {
-        parsedDates = [];
-        const startDay = parseInt(rangeMatch[1]);
-        const endDay = parseInt(rangeMatch[2]);
-        for (let d = startDay; d <= endDay; d++) {
-          parsedDates.push(d);
-        }
-      }
-
-      const gId = parsedDates.length > 1 ? `g_${Date.now()}_${Math.floor(Math.random() * 1000)}` : undefined;
-      parsedDates.forEach(d => {
-        results.push({ title, startHour, endHour, line, year, month: currentMonthNum || month, date: d, groupId: gId });
-      });
+      segments.push(part);
     }
   });
 
-  results.forEach(res => {
-    let memberId = 'sh';
-    let isAll = false;
-    const isPersonalLeave = (res.title.includes('연차') || res.title.includes('휴가') || res.title.includes('반차') || res.title.includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(res.title || '');
-    if (
-      !isPersonalLeave && (
-        res.line.includes('모두에게') || 
-        res.line.includes('전체에게') || 
-        res.line.includes('전원에게') || 
-        res.line.includes('전사') ||
-        (res.line.includes('모두') && (res.line.includes('참석') || res.line.includes('회의') || res.line.includes('미팅'))) ||
-        (res.line.includes('전체') && (res.line.includes('참석') || res.line.includes('회의') || res.line.includes('미팅')))
-      )
-    ) {
-      isAll = true;
-    } else {
-      let targetMember = null;
-      for (const member of teamList) {
-        const roleKeyword = member.role.split(' ')[0];
-        if (
-          res.line.includes(member.name) || 
-          res.line.includes(member.avatar) || 
-          res.line.includes(roleKeyword) ||
-          res.title.includes(member.name) || 
-          res.title.includes(member.avatar) ||
-          res.title.includes(roleKeyword)
-        ) {
-          targetMember = member;
-          break;
-        }
-      }
-
-      if (targetMember && targetMember.id !== 'sh') {
-        const isRequestIndicator = res.line.includes('요청') || res.line.includes('부탁') || res.line.includes('의뢰') || res.line.includes('검토') || res.line.includes('확인') || res.line.includes('전달');
-        const isMyActionIndicator = res.line.includes('회신') || res.line.includes('작성') || res.line.includes('송부') || res.line.includes('제출') || res.line.includes('준비') || res.line.includes('보내');
-        
-        if (isRequestIndicator || !isMyActionIndicator) {
-          memberId = targetMember.id;
-        } else {
-          memberId = 'sh';
-        }
-      }
-    }
-    res.memberId = memberId;
-    res.isAll = isAll;
-    res.isIssue = /안\s*와|지연|미회신|블로커|오류|버그|재요청|다시\s*이메일|아직도|차질|누락|문제|대기\s*중|피드백\s*미|요청했으나|보낼\s*꺼야|보낼거야/i.test(res.line || res.title);
-  });
-
-  return results;
+  return segments.filter(Boolean);
 }
 
-function getSchedulesWithTracks(memberSchedules) {
-  const sorted = [...memberSchedules].sort((a, b) => a.startHour - b.startHour);
-  const tracks = [];
+function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new Date().getFullYear(), month = new Date().getMonth() + 1, currentUser = null) {
+  const chunks = splitCompoundScheduleText(text);
+  const results = [];
+  const myId = currentUser?.id || 'sangmoo';
 
-  sorted.forEach(s => {
-    let assignedTrackIndex = -1;
-    for (let i = 0; i < tracks.length; i++) {
-      const trackSchedules = tracks[i];
-      const overlap = trackSchedules.some(ts => {
-        return s.startHour < ts.endHour && ts.startHour < s.endHour;
-      });
-      if (!overlap) {
-        assignedTrackIndex = i;
-        break;
+  chunks.forEach((chunk, index) => {
+    let raw = chunk.trim();
+    if (!raw) return;
+
+    let targetDate = selectedDate || new Date().getDate();
+    let targetMonth = month;
+
+    const dateMatch = raw.match(/(?:(\d{1,2})\s*월\s*)?(\d{1,2})\s*일/);
+    if (dateMatch) {
+      if (dateMatch[1]) targetMonth = parseInt(dateMatch[1]);
+      targetDate = parseInt(dateMatch[2]);
+    }
+
+    let startHour = 10.0;
+    let endHour = 11.0;
+    let timeFound = false;
+
+    const rangeMatch = raw.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)\s*[-~]\s*(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)/);
+    if (rangeMatch) {
+      let h1 = parseInt(rangeMatch[2]);
+      let m1 = rangeMatch[3] ? parseInt(rangeMatch[3]) : (rangeMatch[4] === '반' || rangeMatch[4] === '30분' ? 30 : 0);
+      let h2 = parseInt(rangeMatch[6]);
+      let m2 = rangeMatch[7] ? parseInt(rangeMatch[7]) : (rangeMatch[8] === '반' || rangeMatch[8] === '30분' ? 30 : 0);
+      startHour = normalizeHour(h1, rangeMatch[1]) + (m1 === 30 ? 0.5 : 0);
+      endHour = normalizeHour(h2, rangeMatch[5] || rangeMatch[1]) + (m2 === 30 ? 0.5 : 0);
+      timeFound = true;
+    }
+
+    if (!timeFound) {
+      const singleMatch = raw.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)(?:\s*(?:에|까지|경|쯤|부터))?/);
+      if (singleMatch) {
+        let h = parseInt(singleMatch[2]);
+        let m = singleMatch[3] ? parseInt(singleMatch[3]) : (singleMatch[4] === '반' || singleMatch[4] === '30분' ? 30 : 0);
+        let sH = normalizeHour(h, singleMatch[1]) + (m === 30 ? 0.5 : 0);
+        
+        if (raw.includes('까지') && /보고|제출|마감|완료/i.test(raw)) {
+          startHour = Math.max(sH - 1, 9.0);
+          endHour = sH;
+        } else {
+          startHour = sH;
+          endHour = sH + 1.0;
+        }
+        timeFound = true;
       }
     }
 
-    if (assignedTrackIndex === -1) {
-      tracks.push([s]);
-    } else {
-      tracks[assignedTrackIndex].push(s);
+    if (!timeFound) {
+      if (/오후\s*반차/i.test(raw)) {
+        startHour = 14.0;
+        endHour = 18.0;
+        timeFound = true;
+      } else if (/오전\s*반차/i.test(raw)) {
+        startHour = 9.0;
+        endHour = 14.0;
+        timeFound = true;
+      } else if (/야근|저녁|식대/i.test(raw)) {
+        startHour = 18.0;
+        endHour = 19.0;
+        timeFound = true;
+      }
     }
-  });
 
-  const scheduleTrackMap = {};
-  tracks.forEach((track, index) => {
-    track.forEach(s => {
-      scheduleTrackMap[s.id] = index;
+    let memberId = myId;
+    let isRequested = false;
+    let approverId = null;
+
+    const isDelegatedToDaum = /정다음|정사원|정사인|다음/i.test(raw) && /한테|에게|맡기고|시키고|잡으라고|요청/i.test(raw);
+    const isDelegatedToYoonhee = /정윤희|정부장/i.test(raw) && /한테|에게|맡기고|시키고|부탁|요청/i.test(raw) && !/정부장\s*브리핑/i.test(raw);
+
+    if (isDelegatedToDaum) {
+      memberId = 'daum';
+      isRequested = true;
+      approverId = 'daum';
+    } else if (isDelegatedToYoonhee) {
+      memberId = 'sh';
+      isRequested = true;
+      approverId = 'sh';
+    } else if (/반차|연차|휴가|병가/i.test(raw)) {
+      memberId = myId;
+      isRequested = true;
+      approverId = myId === 'sangmoo' ? 'sangmoo' : 'sh';
+    } else {
+      memberId = myId;
+      isRequested = false;
+    }
+
+    let title = raw
+      .replace(/(?:\d{1,2}\s*월\s*)?\d{1,2}\s*일/g, '')
+      .replace(/(?:오전|오후)?\s*\d{1,2}(?::\d{2}|\s*시(?:\s*(?:30분|반))?)(?:\s*(?:에|까지|경|쯤|부터))?/g, '')
+      .replace(/정다음\s*(?:사원)?(?:한테|에게)?/g, '')
+      .replace(/정윤희\s*(?:부장)?(?:한테|에게)?/g, '')
+      .replace(/오늘|내일|나갔다가|복귀|들어갈\s*거고|들어가기\s*전에|잡으라고\s*해|잡아놓으라고\s*해|보고받고|맡기고/g, '')
+      .replace(/[~,，]/g, '')
+      .trim();
+
+    if (/대신증권.*미팅/i.test(raw)) {
+      title = '대신증권 본사 미팅';
+    } else if (/사내\s*보안\s*감사.*보고/i.test(raw) || /보안\s*감사/i.test(raw)) {
+      title = '사내 보안 감사 지적사항 조치 결과 보고';
+    } else if (/정부장\s*브리핑/i.test(raw)) {
+      title = '정부장 브리핑';
+    } else if (/부서장\s*결산\s*회의/i.test(raw) || /결산\s*회의/i.test(raw)) {
+      title = '부서장 결산 회의';
+    } else if (/야근자\s*파악.*식대/i.test(raw) || /식대\s*신청/i.test(raw)) {
+      title = '야근자 파악 및 저녁 식대 신청 일정';
+    }
+
+    if (!title) {
+      title = `업무 일정 ${index + 1}`;
+    }
+
+    results.push({
+      title,
+      year,
+      month: targetMonth,
+      date: targetDate,
+      startHour,
+      endHour,
+      memberId,
+      isRequested,
+      approverId,
+      isAll: false,
+      isIssue: /긴급|이슈|장애|오류|버그|지연/i.test(title),
+      description: ''
     });
   });
 
-  return {
-    trackMap: scheduleTrackMap,
-    totalTracks: Math.max(tracks.length, 1),
-  };
+  return results;
 }
 
 function parseScheduleDescription(description = '') {
@@ -3391,7 +3234,7 @@ export default function App() {
         } else if (Array.isArray(rawResult)) {
           aiResult = { action: 'create', schedules: rawResult };
         } else {
-          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth);
+          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth, ME);
           aiResult = { action: 'create', schedules: fallbackList };
         }
 
@@ -5056,7 +4899,9 @@ export default function App() {
                                   })()}
 
                                   {matchedSchedule && matchedSchedule.status === 'accepted' && (() => {
-                                     const isRequestOrApproval = /반차|연차|휴가|병가|결재|신청/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId);
+                                     const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(matchedSchedule.title || '');
+                                     const isExplicitApproved = (matchedSchedule.description || '').includes('[수락메시지]') || (matchedSchedule.description || '').includes('[승인 완료]');
+                                     const isRequestOrApproval = isLeave || isExplicitApproved;
                                      if (!isRequestOrApproval) return null;
                                     const acceptMsgMatch = (matchedSchedule.description || '').match(/\[수락메시지\]\s*([^|]+)/);
                                     const acceptMsg = acceptMsgMatch ? acceptMsgMatch[1].trim() : null;

@@ -1697,9 +1697,7 @@ export default function App() {
             msg.text.includes('좋은 아침') ||
             msg.text.includes('점심은') ||
             msg.text.includes('수고하셨') ||
-            msg.text.includes('수고 많으셨') ||
-            msg.text.includes('일정을 반려하셨습니다') ||
-            msg.text.includes('일정을 거절하셨습니다')
+            msg.text.includes('수고 많으셨')
           ));
         });
         return [defaultMsg, ...filtered];
@@ -3049,10 +3047,12 @@ export default function App() {
         setMessages(prev => [...prev, myNoticeMsg]);
 
         // 2) Add notification message to requester's chat (e.g. Cho Sangmoo)
-        const requesterId = target.requesterId || (target.memberId === ME.id ? 'sangmoo' : 'sh');
+        const requesterId = target.requesterId || (target.memberId && target.memberId !== ME.id ? target.memberId : (ME.id === 'sh' || ME.id === 'yoonhee' ? 'sangmoo' : 'sh'));
         const reqKeys = [requesterId];
         if (requesterId === 'sh') reqKeys.push('yoonhee');
         if (requesterId === 'yoonhee') reqKeys.push('sh');
+        if (requesterId === 'sangmoo') reqKeys.push('sangmu');
+        if (requesterId === 'sangmu') reqKeys.push('sangmoo');
 
         let reqNoticeText = `❌ ${approverName} ${ME.role || '부장'}님이 "${target.title}" 일정을 ${verb}하셨습니다.`;
         if (cleanReason) {
@@ -3072,13 +3072,28 @@ export default function App() {
           reqKeys.forEach(k => {
             const saved = localStorage.getItem(`zal_messages_${k}`);
             const list = saved ? JSON.parse(saved) : [];
-            list.push(noticeForRequester);
-            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+            const isAlready = list.some(m => m.id === noticeForRequester.id || (m.text === noticeForRequester.text && m.time === noticeForRequester.time));
+            if (!isAlready) {
+              list.push(noticeForRequester);
+              localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+            }
           });
-          const mySaved = localStorage.getItem(`zal_messages_${ME.id}`);
-          const myList = mySaved ? JSON.parse(mySaved) : [];
-          myList.push(myNoticeMsg);
-          localStorage.setItem(`zal_messages_${ME.id}`, JSON.stringify(myList));
+
+          const myKeys = [ME.id];
+          if (ME.id === 'sh') myKeys.push('yoonhee');
+          if (ME.id === 'yoonhee') myKeys.push('sh');
+          if (ME.id === 'sangmoo') myKeys.push('sangmu');
+          if (ME.id === 'sangmu') myKeys.push('sangmoo');
+
+          myKeys.forEach(k => {
+            const mySaved = localStorage.getItem(`zal_messages_${k}`);
+            const myList = mySaved ? JSON.parse(mySaved) : [];
+            const isAlready = myList.some(m => m.id === myNoticeMsg.id || (m.text === myNoticeMsg.text && m.time === myNoticeMsg.time));
+            if (!isAlready) {
+              myList.push(myNoticeMsg);
+              localStorage.setItem(`zal_messages_${k}`, JSON.stringify(myList));
+            }
+          });
         } catch (e) {}
 
         if (isConfigured) {

@@ -2349,12 +2349,12 @@ export default function App() {
       const hasAssigneeChanged = editMemberIds.length !== prevMemberIds.length || !editMemberIds.every(id => prevMemberIds.includes(id));
       
       let newStatus = selectedDetailEvent.status || 'accepted';
-      let newRequesterId = selectedDetailEvent.requesterId || 'sh';
+      let newRequesterId = selectedDetailEvent.requesterId || ME.id;
       
       if (hasAssigneeChanged) {
-        const isAssignedToSelfOnly = editMemberIds.length === 1 && editMemberIds.includes('sh');
+        const isAssignedToSelfOnly = editMemberIds.length === 1 && (editMemberIds.includes(ME.id) || (ME.id === 'sh' && editMemberIds.includes('yoonhee')));
         newStatus = isAssignedToSelfOnly ? 'accepted' : 'requested';
-        newRequesterId = 'sh';
+        newRequesterId = ME.id;
       }
 
       const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
@@ -5042,32 +5042,37 @@ export default function App() {
                                                  </div>
                                                );
                                              } else {
-                                               return (
-                                                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                                   <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                     ⏳ 결재 대기중 ({approverMember.name} {approverMember.role} 결재)
-                                                   </span>
-                                                   <button
-                                                     style={{
-                                                       padding: '6px 12px',
-                                                       fontSize: '12px',
-                                                       backgroundColor: '#fef2f2',
-                                                       color: '#dc2626',
-                                                       border: '1px solid #fca5a5',
-                                                       borderRadius: '8px',
-                                                       fontWeight: '700',
-                                                       cursor: 'pointer'
-                                                     }}
-                                                     onClick={async () => {
-                                                       if (isConfigured) {
-                                                         await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                       }
-                                                       setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                     }}
-                                                   >
-                                                     신청취소
-                                                   </button>
-                                                 </div>
+                                                                                               const isDelegatedTask = (matchedSchedule.requesterId === ME.id || (ME.id === 'sh' && matchedSchedule.requesterId === 'yoonhee')) && (matchedSchedule.memberId !== ME.id && !(ME.id === 'sh' && matchedSchedule.memberId === 'yoonhee'));
+                                                const reqTargetMember = TEAM.find(m => m.id === (matchedSchedule.approverId || matchedSchedule.memberId)) || approverMember;
+
+                                                return (
+                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                      {isDelegatedTask 
+                                                        ? `⏳ 요청 대기중 (${reqTargetMember.name} ${reqTargetMember.role || '사원'}에게 요청)` 
+                                                        : `⏳ 결재 대기중 (${approverMember.name} ${approverMember.role || '상무'} 결재)`}
+                                                    </span>
+                                                    <button
+                                                      style={{
+                                                        padding: '6px 12px',
+                                                        fontSize: '12px',
+                                                        backgroundColor: '#fef2f2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fca5a5',
+                                                        borderRadius: '8px',
+                                                        fontWeight: '700',
+                                                        cursor: 'pointer'
+                                                      }}
+                                                      onClick={async () => {
+                                                        if (isConfigured) {
+                                                          await appwriteService.deleteSchedule(matchedSchedule.id);
+                                                        }
+                                                        setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                      }}
+                                                    >
+                                                      {isDelegatedTask ? '요청취소' : '신청취소'}
+                                                    </button>
+                                                  </div>
                                                );
                                              }
                                            } else if (matchedSchedule && matchedSchedule.status === 'accepted') {
@@ -6998,8 +7003,8 @@ export default function App() {
                               const trackIndex = trackMap[currentEvent.id] ?? 0;
                               const topOffset = totalTracks === 1 ? 24 : trackIndex * 32 + 12;
                               const reqId1 = currentEvent.requesterId || currentEvent.memberId;
-                              const isLeaveOrApprove1 = /반차|연차|휴가|병가|신청|승인/i.test(currentEvent.title || '') || Boolean(currentEvent.approverId && currentEvent.status === 'requested');
-                              const isRequested = currentEvent.status === 'requested' && (isLeaveOrApprove1 || member.id !== reqId1);
+                              const isPersonalLeave1 = /반차|연차|휴가|병가/i.test(currentEvent.title || '');
+                              const isRequested = currentEvent.status === 'requested' && (isPersonalLeave1 ? true : member.id !== reqId1);
                               const isRejected = currentEvent.status === 'rejected' || currentEvent.status === `rejected_${member.id}`;
                               const displayStart = currentEvent.startHour < 8 ? 8 : currentEvent.startHour;
                               const displayEnd = currentEvent.endHour > 19.5 ? 19.5 : currentEvent.endHour;

@@ -1475,6 +1475,25 @@ export default function App() {
 
   // Day view member row visibility selection state (default: all selected)
   const [daySelectedMemberIds, setDaySelectedMemberIds] = useState(() => TEAM.map(m => m.id));
+  const timelineContainerRef = useRef(null);
+
+  // Auto-scroll timeline container to selected date in WEEK view
+  useEffect(() => {
+    if (timeViewTab === 'weekly' && timelineContainerRef.current) {
+      const timer = setTimeout(() => {
+        const targetTh = document.getElementById(`week_th_${selectedDate}`);
+        if (targetTh && timelineContainerRef.current) {
+          const container = timelineContainerRef.current;
+          const targetLeft = targetTh.offsetLeft - 80;
+          container.scrollTo({
+            left: Math.max(0, targetLeft),
+            behavior: 'smooth'
+          });
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDate, timeViewTab]);
 
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
@@ -7047,7 +7066,7 @@ export default function App() {
         )}
 
         {/* Timeline Grid Table */}
-        <div className="timeline-container">
+        <div className="timeline-container" ref={timelineContainerRef}>
           {timeViewTab === 'daily' && (
             <table className="timeline-table">
               <thead>
@@ -7291,6 +7310,7 @@ export default function App() {
                       return (
                         <th 
                           key={d} 
+                          id={`week_th_${d}`}
                           colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
                           style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', whiteSpace: 'nowrap' }}

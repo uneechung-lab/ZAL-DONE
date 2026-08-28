@@ -93,10 +93,15 @@ function isScheduleInMonth(s, year, month) {
 
 function isIssueSchedule(s) {
   if (!s) return false;
-  if (s.isIssue || s.color === 'red') return true;
-  const title = s.title || '';
-  const desc = s.description || '';
-  return title.includes('이슈') || title.includes('안와서') || title.includes('스케치') || title.includes('재요청') || title.includes('미회신') || title.includes('지연') || desc.includes('[이슈]');
+  if (s.category === '이슈') return true;
+  if (s.category === '일반' || s.category === '휴가') return false;
+  if (s.isIssue !== undefined && typeof s.isIssue === 'boolean') return s.isIssue;
+  if (s.color === 'red') return true;
+  const desc = typeof s.description === 'string' ? s.description : '';
+  if (desc.includes('[구분: 이슈]')) return true;
+  if (desc.includes('[구분: 일반]') || desc.includes('[구분: 휴가]')) return false;
+  const title = typeof s.title === 'string' ? s.title : '';
+  return /긴급|이슈|장애|오류|버그|지연|에러|점검|디버깅|블로커/i.test(title + ' ' + desc);
 }
 
 function getNthWeekdayOfMonth(year, month, nth, weekdayStr) {
@@ -114,6 +119,41 @@ function getNthWeekdayOfMonth(year, month, nth, weekdayStr) {
     }
   }
   return null;
+}
+
+
+function ColoredStampIcon({ size = 16 }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      <defs>
+        <linearGradient id="stampWood" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+        <linearGradient id="stampRed" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ff4d4f" />
+          <stop offset="100%" stopColor="#dc2626" />
+        </linearGradient>
+      </defs>
+
+      {/* 손잡이 상단 꼭지 */}
+      <circle cx="12" cy="4" r="2.5" fill="url(#stampWood)" />
+      {/* 손잡이 기둥 */}
+      <path d="M10 6.5C10 6.5 8.5 10.5 8.5 12H15.5C15.5 10.5 14 6.5 14 6.5H10Z" fill="url(#stampWood)" />
+      {/* 도장 중간 금속 밴드 */}
+      <rect x="7" y="12" width="10" height="2" rx="0.5" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.5" />
+      {/* 도장 하단 몸체 */}
+      <rect x="4" y="14" width="16" height="3.5" rx="1" fill="#475569" />
+      {/* 인주가 묻은 도장 인면 (선명한 빨간색) */}
+      <rect x="3" y="17.5" width="18" height="3" rx="0.8" fill="url(#stampRed)" />
+    </svg>
+  );
 }
 
 function IssueWarningIcon({ size = 16, style = {} }) {
@@ -146,6 +186,25 @@ function IssueWarningIcon({ size = 16, style = {} }) {
       />
     </svg>
   );
+}
+
+
+function getApproverMember(sched, currentUserId = 'sh') {
+  if (!sched) return { name: '조상무', role: '상무' };
+  try {
+    if (sched.approverId) {
+      const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo'));
+      if (found) return found;
+    }
+
+    const applicantId = sched.requesterId || sched.memberId || currentUserId;
+    if (applicantId === 'daum') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    }
+    return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+  } catch (e) {
+    return { name: '조상무', role: '상무' };
+  }
 }
 
 function getProgressBgStyle(colorName, progress) {
@@ -529,7 +588,7 @@ function normalizeHour(h, ampm) {
   return hr;
 }
 
-function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
+function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new Date().getFullYear(), month = new Date().getMonth() + 1) {
   let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
   // Clean year/month in lines
@@ -582,7 +641,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
     const nthMatch = nthWeekdayRegex.exec(temp);
 
     if (nthMatch) {
-      const targetM = nthMatch[1] ? parseInt(nthMatch[1]) : currentMonth;
+      const targetM = nthMatch[1] ? parseInt(nthMatch[1]) : month;
       const nthWord = nthMatch[2];
       const dowChar = nthMatch[3];
       let nth = 1;
@@ -590,7 +649,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
       else if (/세|셋|3/.test(nthWord)) nth = 3;
       else if (/네|넷|4/.test(nthWord)) nth = 4;
       
-      const calcD = getNthWeekdayOfMonth(currentYear, targetM, nth, dowChar);
+      const calcD = getNthWeekdayOfMonth(year, targetM, nth, dowChar);
       if (calcD) {
         currentMonthNum = targetM;
         currentDate = calcD;
@@ -753,7 +812,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM) {
 
       const gId = parsedDates.length > 1 ? `g_${Date.now()}_${Math.floor(Math.random() * 1000)}` : undefined;
       parsedDates.forEach(d => {
-        results.push({ title, startHour, endHour, line, year: currentYear, month: currentMonthNum || currentMonth, date: d, groupId: gId });
+        results.push({ title, startHour, endHour, line, year, month: currentMonthNum || month, date: d, groupId: gId });
       });
     }
   });
@@ -847,25 +906,39 @@ function getSchedulesWithTracks(memberSchedules) {
 }
 
 function parseScheduleDescription(description = '') {
+  const descStr = typeof description === 'string' ? description : (description ? String(description) : '');
   let groupId = '';
   let detail = '';
   let memo = '';
   let progress = 0;
+  let category = null;
 
-  const groupMatch = description.match(/\[그룹 ID\]\s*(g_\w+)/);
+  if (!descStr) return { groupId, detail, memo, progress, category };
+
+  const groupMatch = descStr.match(/\[그룹 ID\]\s*(g_\w+)/);
   if (groupMatch) {
     groupId = groupMatch[1];
   }
 
-  const progressMatch = description.match(/\[진척률\]\s*(\d+)%/);
+  const catMatch = descStr.match(/\[구분:\s*([^\]]+)\]/);
+  if (catMatch) {
+    category = catMatch[1].trim();
+  }
+
+  const progressMatch = descStr.match(/\[진척률\]\s*(\d+)%/);
   if (progressMatch) {
     progress = parseInt(progressMatch[1]);
   }
 
-  let remaining = description
+  let remaining = descStr
     .replace(/\[YM:\d{4}\.\d{2}\]\s*\|?\s*/g, '')
     .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/g, '')
+    .replace(/\[구분:\s*[^\]]+\]\s*\|?\s*/g, '')
     .replace(/\[진척률\]\s*\d+%\s*\|?\s*/g, '')
+    .replace(/\[반려\s*사유\].*?(\||$)/g, '')
+    .replace(/\[반려사유\].*?(\||$)/g, '')
+    .replace(/\[재요청\s*메시지\].*?(\||$)/g, '')
+    .replace(/\[수락메시지\].*?(\||$)/g, '')
     .trim();
 
   const detailMatch = remaining.match(/\[상세\]\s*(.*?)(?=\s*\|\s*\[메모\]|\s*\[메모\]|$)/s);
@@ -882,16 +955,19 @@ function parseScheduleDescription(description = '') {
     detail = remaining;
   }
 
-  return { groupId, detail, memo, progress };
+  return { groupId, detail, memo, progress, category };
 }
 
-function formatScheduleDescription(groupId, detail, memo, year = null, month = null, progress = 0) {
+function formatScheduleDescription(groupId, detail, memo, year = null, month = null, progress = 0, category = '일반') {
   let parts = [];
   if (year && month) {
     parts.push(`[YM:${year}.${month < 10 ? '0' : ''}${month}]`);
   }
   if (groupId) {
     parts.push(`[그룹 ID] ${groupId}`);
+  }
+  if (category) {
+    parts.push(`[구분: ${category}]`);
   }
   if (progress > 0) {
     parts.push(`[진척률] ${progress}%`);
@@ -1159,6 +1235,148 @@ function CustomDropdown({ placeholder, value, options, onChange, width, isMulti 
   );
 }
 
+
+// ──── REUSABLE STYLED SELECT DROPDOWN COMPONENT ────
+const StyledSelect = ({ value, onChange, options = [], disabled = false, width = '100%', minWidth = 'auto', style = {} }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const safeOptions = Array.isArray(options) ? options : [];
+  const selectedOption = safeOptions.find(o => (typeof o === 'object' ? o?.value : o) === value) || safeOptions[0] || { value: '', label: '' };
+  const selectedLabel = typeof selectedOption === 'object' ? (selectedOption?.label ?? selectedOption?.value ?? '') : String(selectedOption || '');
+
+  return (
+    <div 
+      ref={dropdownRef} 
+      style={{ 
+        position: 'relative', 
+        width: width, 
+        minWidth: minWidth, 
+        userSelect: 'none',
+        ...style 
+      }}
+    >
+      <div
+        onClick={() => !disabled && setIsOpen(prev => !prev)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '9px 12px',
+          backgroundColor: disabled ? '#f8fafc' : (isOpen ? '#f8fafc' : '#ffffff'),
+          border: isOpen ? '1.5px solid #0f172a' : '1.5px solid #cbd5e1',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '600',
+          color: disabled ? '#94a3b8' : '#0f172a',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          boxSizing: 'border-box',
+          boxShadow: isOpen ? '0 0 0 3px rgba(15, 23, 42, 0.08)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+          transition: 'all 0.15s ease'
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selectedLabel}
+        </span>
+        <svg 
+          width="13" 
+          height="13" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke={isOpen ? '#0f172a' : '#64748b'} 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+          style={{
+            marginLeft: '6px',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            flexShrink: 0
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            backgroundColor: '#ffffff',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '10px',
+            padding: '4px',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.08)',
+            maxHeight: '220px',
+            overflowY: 'auto',
+            animation: 'fadeIn 0.12s ease-out'
+          }}
+        >
+          {safeOptions.map((opt) => {
+            const optVal = typeof opt === 'object' ? opt?.value : opt;
+            const optLabel = typeof opt === 'object' ? opt?.label : opt;
+            const isSelected = optVal === value;
+
+            return (
+              <div
+                key={String(optVal)}
+                onClick={() => {
+                  onChange(optVal);
+                  setIsOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  fontSize: '13.5px',
+                  fontWeight: isSelected ? '700' : '500',
+                  color: isSelected ? '#0f172a' : '#334155',
+                  backgroundColor: isSelected ? '#f1f5f9' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.12s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <span>{optLabel}</span>
+                {isSelected && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 export default function App() {
   const slot = getTimeSlot();
 
@@ -1346,12 +1564,13 @@ export default function App() {
     if (sched.requesterId && (sched.requesterId === ME.id || (ME.id === 'sh' && sched.requesterId === 'yoonhee'))) return false;
     if (sched.memberId === ME.id && (!sched.requesterId || sched.requesterId === ME.id)) return false;
 
+    // 결재 대상(휴가/연차/반차 등) 여부 확인: 일반 업무/태스크 위임은 isApprover 대상이 아님 (incomingTaskRequests로 처리)
+    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|신청/i.test(sched.title || '');
+    if (!isLeaveOrFormalApproval) return false;
+
     if (sched.approverId) {
       return sched.approverId === ME.id || (ME.id === 'sh' && sched.approverId === 'yoonhee');
     }
-
-    const isRequestTitle = /반차|연차|휴가|병가|신청|승인/i.test(sched.title || '');
-    if (!isRequestTitle) return false;
 
     if (ME.id === 'sangmoo' || ME.name === '조상무') {
       return (sched.requesterId === 'sh' || sched.requesterId === 'yoonhee' || sched.memberId === 'sh' || sched.memberId === 'yoonhee');
@@ -1364,12 +1583,41 @@ export default function App() {
     return false;
   };
 
+    const getRejecterMember = (sched) => {
+    if (!sched) return { name: '조상무', role: '상무' };
+    
+    if (sched.approverId) {
+      return TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo')) || { name: '조상무', role: '상무' };
+    }
+
+    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
+    const reqId = sched.requesterId || sched.memberId;
+
+    if (isLeave || sched.memberId === (sched.requesterId || 'sh') || sched.memberId === 'sh' || sched.memberId === 'yoonhee') {
+      if (reqId === 'daum') {
+        return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+      }
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    }
+
+    const targetMemberId = sched.memberId;
+    if (targetMemberId && targetMemberId !== 'sh' && targetMemberId !== 'yoonhee') {
+      return TEAM.find(m => m.id === targetMemberId) || { name: '정다음', role: '사원' };
+    }
+
+    return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+  };
+
   const getCleanDesc = (desc) => {
     if (!desc) return '없음';
     let d = desc;
     d = d.replace(/\[YM:.*?\]/g, '');
     d = d.replace(/\[그룹 ID\]\s*g_[\w_]+\s*\|?/g, '');
-    d = d.replace(/\[진척률\]\s*\d+%s*\|?/g, '');
+    d = d.replace(/\[진척률\]\s*\d+%\s*\|?/g, '');
+    d = d.replace(/\[반려사유\].*?(\||\n|$)/g, '');
+    d = d.replace(/\[재요청메시지\].*?(\||\n|$)/g, '');
+    d = d.replace(/\[수락메시지\].*?(\||\n|$)/g, '');
+    d = d.replace(/\[승인 완료\]\s*\|?/g, '');
     const matchDetail = d.match(/\[상세\]\s*([^|]+)/);
     if (matchDetail) {
       d = matchDetail[1].trim();
@@ -1445,7 +1693,9 @@ export default function App() {
             msg.text.includes('좋은 아침') ||
             msg.text.includes('점심은') ||
             msg.text.includes('수고하셨') ||
-            msg.text.includes('수고 많으셨')
+            msg.text.includes('수고 많으셨') ||
+            msg.text.includes('일정을 반려하셨습니다') ||
+            msg.text.includes('일정을 거절하셨습니다')
           ));
         });
         return [defaultMsg, ...filtered];
@@ -1460,19 +1710,23 @@ export default function App() {
 
   useEffect(() => {
     setMessages(getInitialMessagesForUser(ME));
+    setSelectedReportMembers([ME.id]);
   }, [ME.id, ME.name]);
   const [input, setInput] = useState('');
+  const chatMessagesRef = useRef(null);
+  const [showUnprocessedChip, setShowUnprocessedChip] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [showPreviousMessages, setShowPreviousMessages] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-  const [selectedReportMembers, setSelectedReportMembers] = useState([]);
+  const [selectedReportMembers, setSelectedReportMembers] = useState([ME.id]);
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
 
   const openReportModal = () => {
     setIsEditingReport(false);
+    setSelectedReportMembers([ME.id]);
     setIsReportModalOpen(true);
   };
 
@@ -1486,8 +1740,13 @@ export default function App() {
     isOpen: false,
     title: '안내',
     message: '',
-    type: 'info', // info | success | error | confirm
+    type: 'info', // info | success | error | confirm | prompt
     isConfirm: false,
+    hasInput: false,
+    inputPlaceholder: '',
+    inputValue: '',
+    confirmText: '확인',
+    cancelText: '취소',
     onConfirm: null,
     onCancel: null
   });
@@ -1499,6 +1758,11 @@ export default function App() {
       message,
       type,
       isConfirm: false,
+      hasInput: false,
+      inputPlaceholder: '',
+      inputValue: '',
+      confirmText: '확인',
+      cancelText: '취소',
       onConfirm,
       onCancel: null
     });
@@ -1511,6 +1775,28 @@ export default function App() {
       message,
       type: 'confirm',
       isConfirm: true,
+      hasInput: false,
+      inputPlaceholder: '',
+      inputValue: '',
+      confirmText: '확인',
+      cancelText: '취소',
+      onConfirm,
+      onCancel
+    });
+  };
+
+  const showLayerPrompt = (message, title = '입력', placeholder = '내용을 입력하세요...', confirmText = '확인', onConfirm = null, onCancel = null) => {
+    setLayerDialog({
+      isOpen: true,
+      title,
+      message,
+      type: 'prompt',
+      isConfirm: true,
+      hasInput: true,
+      inputPlaceholder: placeholder,
+      inputValue: '',
+      confirmText,
+      cancelText: '취소',
       onConfirm,
       onCancel
     });
@@ -1518,9 +1804,9 @@ export default function App() {
 
   const closeLayerDialog = (confirmed = false) => {
     setLayerDialog(prev => {
-      if (confirmed && prev.onConfirm) prev.onConfirm();
+      if (confirmed && prev.onConfirm) prev.onConfirm(prev.inputValue);
       if (!confirmed && prev.onCancel) prev.onCancel();
-      return { ...prev, isOpen: false };
+      return { ...prev, isOpen: false, inputValue: '', hasInput: false };
     });
   };
   const [isSavingReport, setIsSavingReport] = useState(false);
@@ -1866,10 +2152,50 @@ export default function App() {
     return savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES;
   });
 
+  const checkCardsVisibility = () => {
+    if (!chatMessagesRef.current) return;
+    const container = chatMessagesRef.current;
+    const containerRect = container.getBoundingClientRect();
+
+    // 화면 내에 처리 대기 중인 요청 카드들 찾기
+    const cards = container.querySelectorAll('[id^="card_"]');
+    if (cards.length === 0) {
+      setShowUnprocessedChip(false);
+      return;
+    }
+
+    let anyVisible = false;
+    cards.forEach(card => {
+      const cardRect = card.getBoundingClientRect();
+      const isVisible = cardRect.top < containerRect.bottom - 10 && cardRect.bottom > containerRect.top + 10;
+      if (isVisible) {
+        anyVisible = true;
+      }
+    });
+
+    // 요청 카드가 하나라도 화면에 보이면 캐릭터 숨김 (false)
+    // 스크롤 때문에 모든 요청 카드가 화면 밖으로 벗어난 경우에만 캐릭터 노출 (true)
+    setShowUnprocessedChip(!anyVisible);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkCardsVisibility();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [schedules, messages, isDrawerOpen]);
+
+  useEffect(() => {
+    const handleResize = () => checkCardsVisibility();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Event modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMember, setModalMember] = useState(null);
   const [addTitle, setAddTitle] = useState('');
+  const [addCategory, setAddCategory] = useState('일반');
   const [addMemberIds, setAddMemberIds] = useState([]);
   const [addStartHour, setAddStartHour] = useState(9);
   const [addEndHour, setAddEndHour] = useState(11);
@@ -1883,6 +2209,7 @@ export default function App() {
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
 
   const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('업무');
   const [editMemberIds, setEditMemberIds] = useState([]);
   const [editStartHour, setEditStartHour] = useState(9);
   const [editEndHour, setEditEndHour] = useState(11);
@@ -1912,6 +2239,19 @@ export default function App() {
     setEditEndHour(event.endHour);
     setEditDescription(event.description || '');
     const parsedDesc = parseScheduleDescription(event.description || '');
+    let initialCategory = event.category || parsedDesc.category;
+    if (!initialCategory) {
+      const titleLower = (event.title || '').toLowerCase();
+      const descLower = (event.description || '').toLowerCase();
+      if (event.isIssue || event.color === 'red' || (event.description || '').includes('[구분: 이슈]') || /긴급|이슈|장애|오류|버그|지연|에러|점검|디버깅|블로커/i.test(titleLower + ' ' + descLower)) {
+        initialCategory = '이슈';
+      } else if (/반차|연차|휴가|병가/i.test(titleLower)) {
+        initialCategory = '휴가';
+      } else {
+        initialCategory = '일반';
+      }
+    }
+    setEditCategory(initialCategory);
     setEditDetail(parsedDesc.detail);
     setEditMemo(parsedDesc.memo);
     setEditProgress(event.progress !== undefined ? event.progress : parsedDesc.progress);
@@ -2024,12 +2364,21 @@ export default function App() {
 
       const newGroupId = dateList.length > 1 ? (oldGroupId || `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`) : null;
       const colors = ['purple', 'blue', 'green', 'orange'];
-      const randomColor = selectedDetailEvent.color || colors[Math.floor(Math.random() * colors.length)];
+      const isNowIssue = editCategory === '이슈';
+      const isNowLeave = editCategory === '휴가';
+      let randomColor;
+      if (isNowIssue) {
+        randomColor = 'red';
+      } else if (selectedDetailEvent.color === 'red') {
+        randomColor = isNowLeave ? 'green' : colors[Math.floor(Math.random() * colors.length)];
+      } else {
+        randomColor = selectedDetailEvent.color || (isNowLeave ? 'green' : colors[Math.floor(Math.random() * colors.length)]);
+      }
 
       const createdSchedules = [];
       for (let idx = 0; idx < dateList.length; idx++) {
         const item = dateList[idx];
-        const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month, editProgress);
+        const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month, editProgress, editCategory);
 
         const schedObj = {
           id: `s_${Date.now()}_${idx}`,
@@ -2037,6 +2386,8 @@ export default function App() {
           month: item.month,
           date: item.date,
           title: editTitle.trim(),
+          category: editCategory,
+          isIssue: editCategory === '이슈',
           memberIds: editMemberIds,
           memberId: editMemberIds[0],
           startHour: parseFloat(editStartHour),
@@ -2464,63 +2815,321 @@ export default function App() {
     }
   }, [messages, ME.id]);
 
-    const handleApproveSchedule = async (schedId) => {
+    const handleApproveSchedule = (schedId) => {
     const target = schedules.find(s => s.id === schedId);
     if (!target) return;
 
-    const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
-    const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
-
-    let targetItems = [target];
-    if (groupId) {
-      targetItems = schedules.filter(s => {
-        const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
-        return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
-      });
-    }
-
-    const targetIds = targetItems.map(s => s.id);
-
-    if (isConfigured) {
-      try {
-        for (const item of targetItems) {
-          let dbSched = { ...item, status: 'accepted' };
-          if (isCurrentUserYoonhee) {
-            dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
-            dbSched.memberIds = item.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-            dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
-          }
-          await appwriteService.updateSchedule(item.id, dbSched);
-        }
-      } catch (e) {
-        console.error("Failed to update schedule status:", e);
-      }
-    }
-
-    setSchedules(prev => prev.map(s => targetIds.includes(s.id) ? { ...s, status: 'accepted' } : s));
-
-    const approverName = ME.name || '조상무';
     const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
     const verb = isLeave ? '승인' : '수락';
-    const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
-    const approvalNoticeText = `🎉 ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`;
-    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: approvalNoticeText, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const approverName = ME.name || '조상무';
 
-    if (isConfigured) {
-      try {
-        const dbMsg = await appwriteService.createMessage(noticeMsg);
-        setMessages(prev => [...prev, dbMsg || noticeMsg]);
-      } catch (e) {
-        setMessages(prev => [...prev, noticeMsg]);
+    showLayerPrompt(
+      `"${target.title}" 일정을 ${verb}하시겠습니까?\n전달할 메시지를 입력해 주세요.`,
+      `일정 ${verb}`,
+      `${verb} 메시지를 입력하세요 (선택 사항)`,
+      `${verb}하기`,
+      async (userMsg) => {
+        const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+        const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+
+        let targetItems = [target];
+        if (groupId) {
+          targetItems = schedules.filter(s => {
+            const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+            return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+          });
+        }
+
+        const targetIds = targetItems.map(s => s.id);
+        const cleanMsg = (userMsg || '').trim();
+
+        if (isConfigured) {
+          try {
+            for (const item of targetItems) {
+              let updatedDesc = item.description || '';
+              if (cleanMsg) {
+                updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
+                updatedDesc += ` | [수락메시지] ${cleanMsg}`;
+              }
+              let dbSched = { ...item, status: 'accepted', description: updatedDesc };
+              if (isCurrentUserYoonhee) {
+                dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+                dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+              }
+              await appwriteService.updateSchedule(item.id, dbSched);
+            }
+          } catch (e) {
+            console.error("Failed to update schedule status:", e);
+          }
+        }
+
+        setSchedules(prev => prev.map(s => {
+          if (!targetIds.includes(s.id)) return s;
+          let updatedDesc = s.description || '';
+          if (cleanMsg) {
+            updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
+            updatedDesc += ` | [수락메시지] ${cleanMsg}`;
+          }
+          return { ...s, status: 'accepted', description: updatedDesc };
+        }));
+
+        // Notify requester
+        const requesterId = target.requesterId || target.memberId || 'sh';
+        const reqKeys = [requesterId];
+        if (requesterId === 'sh') reqKeys.push('yoonhee');
+        if (requesterId === 'yoonhee') reqKeys.push('sh');
+
+        let reqNoticeText = `🎉 ${approverName}님이 "${target.title}" 일정을 ${verb}하셨습니다.`;
+        if (cleanMsg) {
+          reqNoticeText += `\n💬 메시지: "${cleanMsg}"`;
+        }
+
+        const noticeMsg = {
+          id: Date.now() + 2,
+          from: `ai_${requesterId}`,
+          text: reqNoticeText,
+          time: formatTime(new Date()),
+          createdAt: new Date().toISOString()
+        };
+
+        try {
+          reqKeys.forEach(k => {
+            const saved = localStorage.getItem(`zal_messages_${k}`);
+            const list = saved ? JSON.parse(saved) : [];
+            list.push(noticeMsg);
+            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+          });
+        } catch (e) {}
+
+        showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'success');
       }
-    } else {
-      setMessages(prev => [...prev, noticeMsg]);
-    }
-
-    showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'success');
+    );
   };
 
-    const handleRejectSchedule = async (schedId) => {
+    const handleRejectSchedule = (schedId) => {
+    const target = schedules.find(s => s.id === schedId);
+    if (!target) return;
+
+    const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
+    const verb = isLeave ? '반려' : '거절';
+    const approverName = ME.name || '정윤희';
+
+    showLayerPrompt(
+      `"${target.title}" 일정을 ${verb}하시겠습니까?\n${verb} 사유나 전달할 메시지를 입력해 주세요.`,
+      `일정 ${verb}`,
+      `${verb} 사유를 입력하세요 (선택 사항)`,
+      `${verb}하기`,
+      async (reasonText) => {
+        const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+        const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+
+        let targetItems = [target];
+        if (groupId) {
+          targetItems = schedules.filter(s => {
+            const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+            return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+          });
+        }
+
+        const targetIds = targetItems.map(s => s.id);
+        const cleanReason = (reasonText || '').trim();
+
+        if (isConfigured) {
+          try {
+            for (const item of targetItems) {
+              let updatedDesc = item.description || '';
+              if (cleanReason) {
+                updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
+                updatedDesc += ` | [반려사유] ${cleanReason}`;
+              }
+              let dbSched = { ...item, status: 'rejected', description: updatedDesc };
+              if (isCurrentUserYoonhee) {
+                dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+                dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+              }
+              await appwriteService.updateSchedule(item.id, dbSched);
+            }
+          } catch (e) {
+            console.error("Failed to update schedule status:", e);
+          }
+        }
+
+        setSchedules(prev => prev.map(s => {
+          if (!targetIds.includes(s.id)) return s;
+          let updatedDesc = s.description || '';
+          if (cleanReason) {
+            updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
+            updatedDesc += ` | [반려사유] ${cleanReason}`;
+          }
+          return { ...s, status: 'rejected', description: updatedDesc };
+        }));
+
+        // 1) Add notification message to rejecter's chat
+        let myNoticeText = `❌ "${target.title}" 일정을 ${verb}하셨습니다.`;
+        if (cleanReason) {
+          myNoticeText += `\n사유: ${cleanReason}`;
+        }
+        const myNoticeMsg = {
+          id: Date.now() + 1,
+          from: `ai_${ME.id}`,
+          text: myNoticeText,
+          time: formatTime(new Date()),
+          createdAt: new Date().toISOString(),
+          targetScheduleId: target.id,
+          targetTitle: target.title
+        };
+        setMessages(prev => [...prev, myNoticeMsg]);
+
+        // 2) Add notification message to requester's chat (e.g. Cho Sangmoo)
+        const requesterId = target.requesterId || (target.memberId === ME.id ? 'sangmoo' : 'sh');
+        const reqKeys = [requesterId];
+        if (requesterId === 'sh') reqKeys.push('yoonhee');
+        if (requesterId === 'yoonhee') reqKeys.push('sh');
+
+        let reqNoticeText = `❌ ${approverName} ${ME.role || '부장'}님이 "${target.title}" 일정을 ${verb}하셨습니다.`;
+        if (cleanReason) {
+          reqNoticeText += `\n사유: ${cleanReason}`;
+        }
+        const noticeForRequester = {
+          id: Date.now() + 2,
+          from: `ai_${requesterId}`,
+          text: reqNoticeText,
+          time: formatTime(new Date()),
+          createdAt: new Date().toISOString(),
+          targetScheduleId: target.id,
+          targetTitle: target.title
+        };
+
+        try {
+          reqKeys.forEach(k => {
+            const saved = localStorage.getItem(`zal_messages_${k}`);
+            const list = saved ? JSON.parse(saved) : [];
+            list.push(noticeForRequester);
+            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+          });
+          const mySaved = localStorage.getItem(`zal_messages_${ME.id}`);
+          const myList = mySaved ? JSON.parse(mySaved) : [];
+          myList.push(myNoticeMsg);
+          localStorage.setItem(`zal_messages_${ME.id}`, JSON.stringify(myList));
+        } catch (e) {}
+
+        if (isConfigured) {
+          try {
+            await appwriteService.createMessage(myNoticeMsg);
+            await appwriteService.createMessage(noticeForRequester);
+          } catch (e) {}
+        }
+
+        showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'info');
+      }
+    );
+  };
+
+  const handleResubmitSchedule = (schedId) => {
+    const target = schedules.find(s => s.id === schedId);
+    if (!target) return;
+
+    const targetMember = getRejecterMember(target);
+    const roleSuffix = targetMember.role ? `${targetMember.role}님` : '님';
+
+    showLayerPrompt(
+      `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하시겠습니까?\n전달할 메시지나 변경 사항을 입력해 주세요.`,
+      '일정 다시요청',
+      '다시 요청 메시지를 입력하세요 (선택 사항)',
+      '다시요청',
+      async (userMsg) => {
+        const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+        const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+
+        let targetItems = [target];
+        if (groupId) {
+          targetItems = schedules.filter(s => {
+            const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+            return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+          });
+        }
+
+        const targetIds = targetItems.map(s => s.id);
+        const cleanMsg = (userMsg || '').trim();
+
+        if (isConfigured) {
+          try {
+            for (const item of targetItems) {
+              let updatedDesc = item.description || '';
+              if (cleanMsg) {
+                updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
+                updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
+              }
+              let dbSched = { ...item, status: 'requested', description: updatedDesc };
+              if (isCurrentUserYoonhee) {
+                dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+                dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+              }
+              await appwriteService.updateSchedule(item.id, dbSched);
+            }
+          } catch (e) {
+            console.error("Failed to resubmit schedule:", e);
+          }
+        }
+
+        setSchedules(prev => prev.map(s => {
+          if (!targetIds.includes(s.id)) return s;
+          let updatedDesc = s.description || '';
+          if (cleanMsg) {
+            updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
+            updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
+          }
+          return { ...s, status: 'requested', description: updatedDesc };
+        }));
+
+        const newMsgId = Date.now();
+        let messageText = `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`;
+        if (cleanMsg) {
+          messageText += `\n💬 메시지: "${cleanMsg}"`;
+        }
+
+        const noticeMsg = { 
+          id: newMsgId, 
+          from: `ai_${ME.id}`, 
+          text: messageText, 
+          time: formatTime(new Date()), 
+          createdAt: new Date().toISOString() 
+        };
+
+        // Save to localStorage for instant UI persistence
+        try {
+          const keysToSave = [ME.id];
+          if (ME.id === 'sh') keysToSave.push('yoonhee');
+          if (ME.id === 'yoonhee') keysToSave.push('sh');
+          keysToSave.forEach(k => {
+            const saved = localStorage.getItem(`zal_messages_${k}`);
+            const list = saved ? JSON.parse(saved) : [];
+            list.push(noticeMsg);
+            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+          });
+        } catch (e) {}
+
+        if (isConfigured) {
+          try {
+            await appwriteService.createMessage(noticeMsg);
+          } catch (e) {
+            console.error("Failed to save message to DB:", e);
+          }
+        }
+        setMessages(prev => {
+          const isAlready = prev.some(m => m.id === noticeMsg.id || (m.text === noticeMsg.text && m.time === noticeMsg.time));
+          return isAlready ? prev : [...prev, noticeMsg];
+        });
+
+        showLayerAlert(`"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`, '다시요청 완료', 'success');
+      }
+    );
+  };
+
+  const handleCancelSchedule = async (schedId) => {
     const target = schedules.find(s => s.id === schedId);
     if (!target) return;
 
@@ -2540,39 +3149,15 @@ export default function App() {
     if (isConfigured) {
       try {
         for (const item of targetItems) {
-          let dbSched = { ...item, status: 'rejected' };
-          if (isCurrentUserYoonhee) {
-            dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
-            dbSched.memberIds = item.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-            dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
-          }
-          await appwriteService.updateSchedule(item.id, dbSched);
+          await appwriteService.deleteSchedule(item.id);
         }
       } catch (e) {
-        console.error("Failed to update schedule status:", e);
+        console.error("Failed to delete schedule:", e);
       }
     }
 
-    setSchedules(prev => prev.map(s => targetIds.includes(s.id) ? { ...s, status: 'rejected' } : s));
-
-    const approverName = ME.name || '조상무';
-    const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
-    const verb = isLeave ? '반려' : '거절';
-    const rangeNotice = targetItems.length > 1 ? `${targetItems[0].month}/${targetItems[0].date} ~ ${targetItems[targetItems.length-1].month}/${targetItems[targetItems.length-1].date}` : `${target.month}/${target.date}`;
-    const noticeMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: `❌ ${approverName}님이 ${rangeNotice} "${target.title}" 일정을 ${verb}하셨습니다.`, time: formatTime(new Date()), createdAt: new Date().toISOString() };
-
-    if (isConfigured) {
-      try {
-        const dbMsg = await appwriteService.createMessage(noticeMsg);
-        setMessages(prev => [...prev, dbMsg || noticeMsg]);
-      } catch (e) {
-        setMessages(prev => [...prev, noticeMsg]);
-      }
-    } else {
-      setMessages(prev => [...prev, noticeMsg]);
-    }
-
-    showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'info');
+    setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
+    showLayerAlert(`"${target.title}" 일정 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };
 
   const handleSend = () => {
@@ -2599,7 +3184,7 @@ export default function App() {
         } else if (Array.isArray(rawResult)) {
           aiResult = { action: 'create', schedules: rawResult };
         } else {
-          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam);
+          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth);
           aiResult = { action: 'create', schedules: fallbackList };
         }
 
@@ -2763,12 +3348,17 @@ export default function App() {
             endHour = 18.0;
           }
 
-          const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가/i.test(parsed.title || '');
+          const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가|결재/i.test(titleAndText);
           // Detect mentions of Jung Daeum (정사원/정사인/정다음) in individual item title/description
           const itemTextOnly = (parsed.title || '') + ' ' + (parsed.description || '');
           const mentionsDaum = /정사원|정사인|정다음|다음/i.test(itemTextOnly);
 
-          if (ME.id === 'sh' && mentionsDaum && !isPersonalLeave) {
+          if (isLeaveOrApproval) {
+            // Approval/Leave/Expense requests always belong to the applicant (current logged-in user ME)
+            assignedMemberId = ME.id;
+            assignedMemberIds = [ME.id];
+            isSelf = true;
+          } else if (ME.id === 'sh' && mentionsDaum) {
             assignedMemberId = 'daum';
             assignedMemberIds = ['daum'];
           }
@@ -2780,7 +3370,16 @@ export default function App() {
 
           if (isLeaveOrApproval) {
             schedStatus = 'requested';
-            schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
+            const mentionsSangmoo = /상무|조상무/i.test(text + ' ' + titleAndText);
+            const mentionsYoonheeExplicit = /정부장|정윤희|부장님/i.test(text + ' ' + titleAndText);
+            
+            if (mentionsYoonheeExplicit || parsed.approverId === 'sh' || parsed.approverId === 'yoonhee') {
+              schedApproverId = 'sh';
+            } else if (mentionsSangmoo || parsed.approverId === 'sangmoo') {
+              schedApproverId = 'sangmoo';
+            } else {
+              schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
+            }
           } else if (isDelegatedToColleague || parsed.isRequested) {
             schedStatus = 'requested';
             schedApproverId = assignedMemberId;
@@ -3100,7 +3699,7 @@ export default function App() {
       const createdSchedules = [];
       for (let idx = 0; idx < dateList.length; idx++) {
         const item = dateList[idx];
-        const newDesc = formatScheduleDescription(newGroupId, addDetail.trim(), addMemo.trim(), item.year, item.month, addProgress);
+        const newDesc = formatScheduleDescription(newGroupId, addDetail.trim(), addMemo.trim(), item.year, item.month, addProgress, addCategory);
 
         const schedObj = {
           id: `s_${Date.now()}_${idx}`,
@@ -3108,6 +3707,8 @@ export default function App() {
           month: item.month,
           date: item.date,
           title: addTitle.trim(),
+          category: addCategory,
+          isIssue: addCategory === '이슈',
           memberIds: addMemberIds,
           memberId: addMemberIds[0],
           startHour: parseFloat(addStartHour),
@@ -3942,10 +4543,15 @@ export default function App() {
 
 
 
-        <div className="chat-messages">
+        <div 
+          className="chat-messages" 
+          ref={chatMessagesRef}
+          onScroll={checkCardsVisibility}
+        >
           {(() => {
             const uniqueMessages = [];
             const seenIds = new Set();
+            const seenContents = new Set();
 
             (messages || []).forEach(msg => {
               if (!msg) return;
@@ -3962,8 +4568,16 @@ export default function App() {
                   msg.text.includes('수고하셨') ||
                   msg.text.includes('수고 많으셨')
                 );
-                if (!isGreeting && !seenIds.has(msg.id)) {
-                  seenIds.add(msg.id);
+
+                const idKey = msg.id || msg.$id;
+                const contentKey = (msg.text || '').trim() + '_' + (msg.time || '') + '_' + (msg.from || '');
+
+                if (!isGreeting) {
+                  if (idKey && seenIds.has(idKey)) return;
+                  if (contentKey && seenContents.has(contentKey)) return;
+
+                  if (idKey) seenIds.add(idKey);
+                  if (contentKey) seenContents.add(contentKey);
                   uniqueMessages.push(msg);
                 }
               }
@@ -3971,6 +4585,40 @@ export default function App() {
 
             const todayMessages = uniqueMessages.filter(msg => isTodayMessage(msg));
             const previousMessages = uniqueMessages.filter(msg => !isTodayMessage(msg));
+
+            const isApprovalTarget = (s) => {
+              const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(s.title || '');
+              if (isLeave) return true;
+              const isReqByMe = s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee');
+              const isAssignedToOther = s.memberId !== ME.id && !(ME.id === 'sh' && s.memberId === 'yoonhee');
+              return isReqByMe && isAssignedToOther;
+            };
+
+            const rejectedOutgoingRequests = schedules.filter(s => 
+              (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /\[?반차|연차|휴가|병가\]?/i.test(s.title || ''))) && 
+              (s.status === 'rejected' || (s.status && s.status.startsWith('rejected'))) &&
+              isApprovalTarget(s)
+            );
+            const groupedRejectedOutgoingRequests = groupList(rejectedOutgoingRequests);
+
+            const acceptedOutgoingRequests = schedules.filter(s => 
+              (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /\[?반차|연차|휴가|병가\]?/i.test(s.title || ''))) && 
+              s.status === 'accepted' &&
+              isApprovalTarget(s) &&
+              ((s.description || '').includes('[수락메시지]') || (s.description || '').includes('[승인 완료]') || (s.description || '').includes('[재요청메시지]'))
+            );
+            const groupedAcceptedOutgoingRequests = groupList(acceptedOutgoingRequests);
+            const pendingItems = schedules.filter(s => isApproverForItem(s));
+            const requestedPendingCount = pendingItems.filter(s => s.status === 'requested').length;
+            const incomingTaskRequests = schedules.filter(s => 
+              (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
+              s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee') &&
+              !/반차|연차|휴가|병가/i.test(s.title || '')
+            );
+            const requestedTaskCount = incomingTaskRequests.filter(s => s.status === 'requested').length;
+
+            const groupedPendingItems = groupList(pendingItems);
+            const groupedIncomingTaskRequests = groupList(incomingTaskRequests);
 
             const renderBubble = (msg) => {
               if (msg.id === 0) {
@@ -3980,18 +4628,6 @@ export default function App() {
                 const lines = msg.text.split('\n');
                 const titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
                 const subLines = lines.slice(1).join('\n');
-
-                const pendingItems = schedules.filter(s => isApproverForItem(s));
-                const requestedPendingCount = pendingItems.filter(s => s.status === 'requested').length;
-                const incomingTaskRequests = schedules.filter(s => 
-                  (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
-                  s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee') &&
-                  !/반차|연차|휴가|병가/i.test(s.title || '')
-                );
-                const requestedTaskCount = incomingTaskRequests.filter(s => s.status === 'requested').length;
-
-                const groupedPendingItems = groupList(pendingItems);
-                const groupedIncomingTaskRequests = groupList(incomingTaskRequests);
 
                 return (
                   <Fragment key={msg.id}>
@@ -4009,352 +4645,6 @@ export default function App() {
                         </div>
                       )}
                     </div>
-
-                    {/* Pending Approvals (Leave Approvals for Approver - Cho Sangmoo) */}
-                    {groupedPendingItems.length > 0 && (
-                      <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                        <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              {requestedPendingCount > 0 ? `결재 대기 ${requestedPendingCount}건이 있습니다.` : `결재 관리 항목 (${groupedPendingItems.length}건)`}
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {groupedPendingItems.map((item, index) => {
-                                const reqMember = TEAM.find(m => m.id === item.requesterId || m.id === item.memberId) || { name: '정윤희', role: '부장' };
-                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
-                                const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
-                                const cleanDesc = getCleanDesc(item.description);
-
-                                return (
-                                  <div 
-                                    key={item.id} 
-                                    style={{
-                                      backgroundColor: '#ffffff',
-                                      border: '1.5px solid #cbd5e1',
-                                      borderRadius: '12px',
-                                      padding: '12px 14px',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '8px',
-                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
-                                    }}
-                                  >
-                                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                      일정 {index + 1}: "{item.title}"
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                          <span>상세</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                          <span>담당</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name}</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                          <span>날짜</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                          <span>시간</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                      </div>
-                                    </div>
-
-                                    <div style={{ marginTop: '6px' }}>
-                                       {item.status === 'requested' ? (
-                                         <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                           <button
-                                             onClick={() => handleRejectSchedule(item.id)}
-                                             style={{
-                                               padding: '6px 12px',
-                                               fontSize: '12px',
-                                               fontWeight: '700',
-                                               backgroundColor: '#fef2f2',
-                                               color: '#dc2626',
-                                               border: '1px solid #fca5a5',
-                                               borderRadius: '8px',
-                                               cursor: 'pointer',
-                                               transition: 'all 0.15s ease',
-                                               display: 'inline-flex',
-                                               alignItems: 'center',
-                                               gap: '4px'
-                                             }}
-                                           >
-                                             <span>❌ 반려</span>
-                                           </button>
-                                           <button
-                                             onClick={() => handleApproveSchedule(item.id)}
-                                             style={{
-                                               padding: '6px 12px',
-                                               fontSize: '12px',
-                                               fontWeight: '700',
-                                               backgroundColor: '#ecfdf5',
-                                               color: '#059669',
-                                               border: '1px solid #a7f3d0',
-                                               borderRadius: '8px',
-                                               cursor: 'pointer',
-                                               transition: 'all 0.15s ease',
-                                               display: 'inline-flex',
-                                               alignItems: 'center',
-                                               gap: '4px'
-                                             }}
-                                           >
-                                             <span>💙 승인</span>
-                                           </button>
-                                         </div>
-                                       ) : item.status === 'accepted' ? (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              🎉 승인하였습니다
-                                             </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#fef2f2',
-                                                color: '#dc2626',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer'
-                                              }}
-                                              onClick={() => handleRejectSchedule(item.id)}
-                                            >
-                                              승인 취소
-                                            </button>
-                                          </div>
-                                       ) : (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              ❌ 반려하였습니다
-                                             </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#ecfdf5',
-                                                color: '#059669',
-                                                border: '1px solid #a7f3d0',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px'
-                                              }}
-                                              onClick={() => handleApproveSchedule(item.id)}
-                                            >
-                                              <span>💙 재승인</span>
-                                            </button>
-                                          </div>
-                                       )}
-                                     </div>
-                                   </div>
-                                 );
-                               })}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
-                          <span className="chat-meta-sender">AI 잘됨이</span>
-                          <span className="chat-meta-time">{formatTime(new Date())}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Incoming Task Requests (Assignee view, e.g. 정다음 receiving task from 정윤희) */}
-                    {groupedIncomingTaskRequests.length > 0 && (
-                      <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                        <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                              {requestedTaskCount > 0 ? `요청 대기중인 일정 ${requestedTaskCount}건이 있습니다.` : `요청 관리 일정 (${groupedIncomingTaskRequests.length}건)`}
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {groupedIncomingTaskRequests.map((item, index) => {
-                                const reqMember = TEAM.find(m => m.id === item.requesterId) || { name: '정윤희', role: '부장' };
-                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
-                                const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
-                                const cleanDesc = getCleanDesc(item.description);
-
-                                return (
-                                  <div 
-                                    key={item.id} 
-                                    style={{
-                                      backgroundColor: '#ffffff',
-                                      border: '1.5px solid #cbd5e1',
-                                      borderRadius: '12px',
-                                      padding: '12px 14px',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '8px',
-                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
-                                    }}
-                                  >
-                                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                      일정 {index + 1}: "{item.title}"
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                          <span>상세</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                          <span>요청자</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '부장'})</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                          <span>날짜</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                      </div>
-
-                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                          <span>시간</span>
-                                        </div>
-                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                      </div>
-                                    </div>
-
-                                    <div style={{ marginTop: '6px' }}>
-                                      {item.status === 'requested' ? (
-                                        <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                          <button
-                                            onClick={() => handleRejectSchedule(item.id)}
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#fef2f2',
-                                              color: '#dc2626',
-                                              border: '1px solid #fca5a5',
-                                              borderRadius: '8px',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px'
-                                            }}
-                                          >
-                                            <span>❌ 반려</span>
-                                          </button>
-                                          <button
-                                            onClick={() => handleApproveSchedule(item.id)}
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#ecfdf5',
-                                              color: '#059669',
-                                              border: '1px solid #a7f3d0',
-                                              borderRadius: '8px',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px'
-                                            }}
-                                          >
-                                            <span>💙 수락</span>
-                                          </button>
-                                        </div>
-                                      ) : item.status === 'accepted' ? (
-                                        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                            🎉 수락하였습니다
-                                          </span>
-                                          <button
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#fef2f2',
-                                              color: '#dc2626',
-                                              border: '1px solid #fca5a5',
-                                              borderRadius: '8px',
-                                              marginLeft: 'auto',
-                                              cursor: 'pointer'
-                                            }}
-                                            onClick={() => handleRejectSchedule(item.id)}
-                                          >
-                                            수락 취소
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                            ❌ 거절하였습니다
-                                          </span>
-                                          <button
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#ecfdf5',
-                                              color: '#059669',
-                                              border: '1px solid #a7f3d0',
-                                              borderRadius: '8px',
-                                              marginLeft: 'auto',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px'
-                                            }}
-                                            onClick={() => handleApproveSchedule(item.id)}
-                                          >
-                                            <span>💙 재수락</span>
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
-                          <span className="chat-meta-sender">AI 잘됨이</span>
-                          <span className="chat-meta-time">{formatTime(new Date())}</span>
-                        </div>
-                      </div>
-                    )}
                   </Fragment>
                 );
               }
@@ -4516,7 +4806,7 @@ export default function App() {
                                   <div style={{ marginTop: '8px' }}>
                                        {!isCancellationMsg ? (
                                          (() => {
-                                           const approverMember = matchedSchedule ? (TEAM.find(m => m.id === (matchedSchedule.approverId || 'sangmoo')) || { name: '조상무', role: '상무' }) : { name: '조상무', role: '상무' };
+                                           const approverMember = matchedSchedule ? getApproverMember(matchedSchedule, ME.id) : { name: '조상무', role: '상무' };
                                            const isApprover = matchedSchedule ? isApproverForItem(matchedSchedule) : false;
 
                                            if (matchedSchedule && matchedSchedule.status === 'requested') {
@@ -4672,58 +4962,70 @@ export default function App() {
                                                  )}
                                                </div>
                                              );
-                                           } else if (matchedSchedule && matchedSchedule.status === 'rejected') {
-                                             return (
-                                               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                                 <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                                   {isApprover ? '❌ 반려하였습니다' : `❌ 반려됨 (${approverMember.name} ${approverMember.role} 반려)`}
-                                                 </span>
-                                                 {isApprover ? (
-                                                   <button
-                                                     style={{
-                                                       padding: '6px 12px',
-                                                       fontSize: '12px',
-                                                       fontWeight: '700',
-                                                       backgroundColor: '#ecfdf5',
-                                                       color: '#059669',
-                                                       border: '1px solid #a7f3d0',
-                                                       borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px'
-                                              }}
-                                              onClick={() => handleApproveSchedule(matchedSchedule.id)}
-                                                   >
-                                                     <span>💙 재승인</span>
-                                                   </button>
-                                                 ) : (
-                                                   <button
-                                                     style={{
-                                                       padding: '6px 12px',
-                                                       fontSize: '12px',
-                                                       backgroundColor: '#fef2f2',
-                                                       color: '#dc2626',
-                                                       border: '1px solid #fca5a5',
-                                                       borderRadius: '8px',
-                                                       fontWeight: '700',
-                                                       cursor: 'pointer'
-                                                     }}
-                                                     onClick={async () => {
-                                                       if (isConfigured) {
-                                                         await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                       }
-                                                       setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
-                                                     }}
-                                                   >
-                                                     신청취소
-                                                   </button>
-                                                 )}
-                                               </div>
-                                             );
-                                           }
+                                           } else if (matchedSchedule && (matchedSchedule.status === 'rejected' || (matchedSchedule.status && matchedSchedule.status.startsWith('rejected')))) {
+                                              const rejecterMember = getRejecterMember(matchedSchedule);
+                                              return (
+                                                <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                    {isApprover ? '❌ 반려하였습니다' : `❌ 반려됨 (${rejecterMember.name} ${rejecterMember.role || '사원'} 반려)`}
+                                                  </span>
+                                                  {isApprover ? (
+                                                    <button
+                                                      style={{
+                                                        padding: '6px 12px',
+                                                        fontSize: '12px',
+                                                        fontWeight: '700',
+                                                        backgroundColor: '#ecfdf5',
+                                                        color: '#059669',
+                                                        border: '1px solid #a7f3d0',
+                                                        borderRadius: '8px',
+                                                        marginLeft: 'auto',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s ease'
+                                                      }}
+                                                      onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                                    >
+                                                      재승인
+                                                    </button>
+                                                  ) : (
+                                                    <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
+                                                      <button
+                                                        style={{
+                                                          padding: '6px 12px',
+                                                          fontSize: '12px',
+                                                          backgroundColor: '#fef2f2',
+                                                          color: '#dc2626',
+                                                          border: '1px solid #fca5a5',
+                                                          borderRadius: '8px',
+                                                          fontWeight: '700',
+                                                          cursor: 'pointer',
+                                                          transition: 'all 0.15s ease'
+                                                        }}
+                                                        onClick={() => handleCancelSchedule(matchedSchedule.id)}
+                                                      >
+                                                        요청취소
+                                                      </button>
+                                                      <button
+                                                        style={{
+                                                          padding: '6px 12px',
+                                                          fontSize: '12px',
+                                                          fontWeight: '700',
+                                                          backgroundColor: '#f0fdf4',
+                                                          color: '#15803d',
+                                                          border: '1px solid #86efac',
+                                                          borderRadius: '8px',
+                                                          cursor: 'pointer',
+                                                          transition: 'all 0.15s ease'
+                                                        }}
+                                                        onClick={() => handleResubmitSchedule(matchedSchedule.id)}
+                                                      >
+                                                        다시요청
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            }
 
                                            return (
                                              <button
@@ -4827,7 +5129,57 @@ export default function App() {
                         </div>
                       );
                     })() : (
-                      msg.text
+                      isUser ? msg.text : (() => {
+                        const isNotice = msg.text && (msg.text.includes('반려') || msg.text.includes('거절') || msg.text.includes('승인') || msg.text.includes('수락') || msg.text.includes('요청'));
+                        const targetTitleMatch = msg.text.match(/"([^"]+)"/);
+                        const targetTitle = msg.targetTitle || (targetTitleMatch ? targetTitleMatch[1] : null);
+
+                        return (
+                          <div 
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '16px',
+                              borderTopLeftRadius: '4px',
+                              borderBottomLeftRadius: '16px',
+                              padding: '9px 15px',
+                              color: '#0f172a',
+                              fontWeight: '600',
+                              fontSize: '13.5px',
+                              lineHeight: '1.5',
+                              display: 'inline-block',
+                              maxWidth: '100%',
+                              cursor: isNotice ? 'pointer' : 'default',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={isNotice ? (e) => { 
+                              e.currentTarget.style.backgroundColor = '#f8fafc'; 
+                              e.currentTarget.style.borderColor = '#94a3b8'; 
+                            } : undefined}
+                            onMouseLeave={isNotice ? (e) => { 
+                              e.currentTarget.style.backgroundColor = 'transparent'; 
+                              e.currentTarget.style.borderColor = '#cbd5e1'; 
+                            } : undefined}
+                            onClick={isNotice ? () => {
+                              let el = null;
+                              if (msg.targetScheduleId) el = document.getElementById('card_' + msg.targetScheduleId);
+                              if (!el && targetTitle) el = document.querySelector(`[data-card-title="${targetTitle}"]`);
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+                                el.style.borderColor = '#3b82f6';
+                                el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.2)';
+                                setTimeout(() => {
+                                  el.style.borderColor = '#cbd5e1';
+                                  el.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
+                                }, 1600);
+                              }
+                            } : undefined}
+                          >
+                            {msg.text}
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
                   <div className="chat-meta-row" style={{ alignSelf: isUser ? 'flex-end' : 'flex-start' }}>
@@ -4909,6 +5261,606 @@ export default function App() {
                 )}
 
                 {todayMessages.map(msg => renderBubble(msg))}
+
+                {/* Pending Approvals (Leave Approvals for Approver) */}
+                {groupedPendingItems.length > 0 && (
+                  <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                    <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                          {requestedPendingCount > 0 ? `결재 대기 ${requestedPendingCount}건이 있습니다.` : `결재 관리 항목 (${groupedPendingItems.length}건)`}
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {groupedPendingItems.map((item, index) => {
+                            const reqMember = TEAM.find(m => m.id === item.requesterId || m.id === item.memberId) || { name: '정윤희', role: '부장' };
+                            const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                            const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
+                            const cleanDesc = getCleanDesc(item.description);
+                            const resubmitMsgMatch = (item.description || '').match(/\[재요청메시지\]\s*([^|]+)/);
+                            const resubmitMsg = resubmitMsgMatch ? resubmitMsgMatch[1].trim() : null;
+
+                            return (
+                              <div 
+                                key={item.id} 
+                                id={'card_' + item.id}
+                                data-card-title={item.title}
+                                style={{
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid #cbd5e1',
+                                  borderRadius: '12px',
+                                  padding: '12px 14px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '8px',
+                                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                }}
+                              >
+                                <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                  일정 {index + 1}: "{item.title}"
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                  {resubmitMsg && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#2563eb', alignItems: 'flex-start' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#2563eb' }}>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                        <span>메시지</span>
+                                      </div>
+                                      <div style={{ color: '#1e40af', fontWeight: '700', wordBreak: 'break-all' }}>{resubmitMsg}</div>
+                                    </div>
+                                  )}
+
+                                  {cleanDesc && cleanDesc !== '없음' && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                        <span>상세</span>
+                                      </div>
+                                      <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                      <span>신청자</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                      <span>날짜</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                      <span>시간</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  </div>
+                                </div>
+
+                                <div style={{ marginTop: '6px' }}>
+                                  {item.status === 'requested' ? (
+                                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                      <button
+                                        onClick={() => handleRejectSchedule(item.id)}
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        ❌ 반려
+                                      </button>
+                                      <button
+                                        onClick={() => handleApproveSchedule(item.id)}
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#ecfdf5',
+                                          color: '#059669',
+                                          border: '1px solid #a7f3d0',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        💚 수락
+                                      </button>
+                                    </div>
+                                  ) : item.status === 'accepted' ? (
+                                    <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                        🎉 승인하였습니다
+                                      </span>
+                                      <button
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5',
+                                          borderRadius: '8px',
+                                          marginLeft: 'auto',
+                                          cursor: 'pointer'
+                                        }}
+                                        onClick={() => handleRejectSchedule(item.id)}
+                                      >
+                                        승인 취소
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                        ❌ 반려하였습니다
+                                      </span>
+                                      <button
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#ecfdf5',
+                                          color: '#059669',
+                                          border: '1px solid #a7f3d0',
+                                          borderRadius: '8px',
+                                          marginLeft: 'auto',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        onClick={() => handleApproveSchedule(item.id)}
+                                      >
+                                        <span>💚 재승인</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                      <span className="chat-meta-sender">AI 잘됨이</span>
+                      <span className="chat-meta-time">{formatTime(new Date())}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Incoming Task / Meeting Requests from Superiors/Colleagues */}
+                {groupedIncomingTaskRequests.length > 0 && (
+                  <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                    <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                          요청받은 일정 {groupedIncomingTaskRequests.length}건이 있습니다.
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {groupedIncomingTaskRequests.map((item, index) => {
+                            const reqMember = TEAM.find(m => m.id === item.requesterId || (item.requesterId === 'sangmu' && m.id === 'sangmoo') || (item.requesterId === 'sh' && m.id === 'yoonhee')) || { name: '조상무', role: '상무' };
+                            const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                            const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
+                            const cleanDesc = getCleanDesc(item.description);
+                            const resubmitMsgMatch = (item.description || '').match(/\[재요청메시지\]\s*([^|]+)/);
+                            const resubmitMsg = resubmitMsgMatch ? resubmitMsgMatch[1].trim() : null;
+
+                            return (
+                              <div 
+                                key={item.id} 
+                                id={'card_' + item.id}
+                                data-card-title={item.title}
+                                style={{
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid #cbd5e1',
+                                  borderRadius: '12px',
+                                  padding: '12px 14px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '8px',
+                                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                }}
+                              >
+                                <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                  일정 {index + 1}: "{item.title}"
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                  {resubmitMsg && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#2563eb', alignItems: 'flex-start' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#2563eb' }}>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                        <span>메시지</span>
+                                      </div>
+                                      <div style={{ color: '#1e40af', fontWeight: '700', wordBreak: 'break-all' }}>{resubmitMsg}</div>
+                                    </div>
+                                  )}
+
+                                  {cleanDesc && cleanDesc !== '없음' && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                        <span>상세</span>
+                                      </div>
+                                      <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                      <span>요청자</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '상무'})</div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                      <span>날짜</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                      <span>시간</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  </div>
+                                </div>
+
+                                <div style={{ marginTop: '6px' }}>
+                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                    <button
+                                      onClick={() => handleRejectSchedule(item.id)}
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      <span>❌ 반려</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleApproveSchedule(item.id)}
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        border: '1px solid #a7f3d0',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      <span>💚 수락</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                      <span className="chat-meta-sender">AI 잘됨이</span>
+                      <span className="chat-meta-time">{formatTime(new Date())}</span>
+                    </div>
+                  </div>
+                )}
+
+                
+
+                {/* Accepted Outgoing Requests (Requester/Member view of Approved items) */}
+                    {groupedAcceptedOutgoingRequests.length > 0 && (
+                      <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                        <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                              요청 {groupedAcceptedOutgoingRequests.length}건이 승인되었습니다.
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              {groupedAcceptedOutgoingRequests.map((item, index) => {
+                                const schedMember = TEAM.find(m => m.id === item.memberId) || { name: '정윤희', role: '부장' };
+                                const approverMember = getRejecterMember(item);
+                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                                const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
+                                const cleanDesc = getCleanDesc(item.description);
+                                const acceptMsgMatch = (item.description || '').match(/\[수락메시지\]\s*([^|]+)/);
+                                const acceptMsg = acceptMsgMatch ? acceptMsgMatch[1].trim() : null;
+
+                                return (
+                                  <div 
+                                    key={item.id} 
+                                    id={'card_' + item.id}
+                                    data-card-title={item.title}
+                                    style={{
+                                      backgroundColor: '#ffffff',
+                                      border: '1.5px solid #cbd5e1',
+                                      borderRadius: '12px',
+                                      padding: '12px 14px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '8px',
+                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                    }}
+                                  >
+                                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                      일정 {index + 1}: "{item.title}"
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                          <span>상태</span>
+                                        </div>
+                                        <div style={{ color: '#059669', fontWeight: '700' }}>승인 완료</div>
+                                      </div>
+
+                                      {acceptMsg && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#059669', alignItems: 'flex-start' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#059669' }}>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                            <span>메시지</span>
+                                          </div>
+                                          <div style={{ color: '#047857', fontWeight: '700', wordBreak: 'break-all' }}>{acceptMsg}</div>
+                                        </div>
+                                      )}
+
+                                      {cleanDesc && cleanDesc !== '없음' && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                            <span>상세</span>
+                                          </div>
+                                          <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                        </div>
+                                      )}
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                          <span>담당</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{schedMember.name} ({schedMember.role || '팀원'})</div>
+                                      </div>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                          <span>날짜</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                      </div>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                          <span>시간</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Footer: Left Approval Message, Right Action Button */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                        🎉 승인 완료 ({approverMember.name} {approverMember.role || '상무'} 승인)
+                                      </span>
+                                      <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
+                                        <button
+                                          onClick={() => handleCancelSchedule(item.id)}
+                                          style={{
+                                            padding: '6px 12px',
+                                            fontSize: '12px',
+                                            fontWeight: '700',
+                                            backgroundColor: '#fef2f2',
+                                            color: '#dc2626',
+                                            border: '1px solid #fca5a5',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                        >
+                                          등록취소
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                          <span className="chat-meta-sender">AI 잘됨이</span>
+                          <span className="chat-meta-time">{formatTime(new Date())}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rejected Outgoing Requests (Requester view, e.g. 정윤희 seeing requests rejected by 정다음) */}
+                    {groupedRejectedOutgoingRequests.length > 0 && (
+                      <div className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                        <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                              요청 {groupedRejectedOutgoingRequests.length}건이 반려되었습니다.
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              {groupedRejectedOutgoingRequests.map((item, index) => {
+                                const schedMember = TEAM.find(m => m.id === item.memberId) || { name: '정윤희', role: '부장' };
+                                const rejecterMember = getRejecterMember(item);
+                                const dateStr = item.dateStr || `${item.year}.${item.month < 10 ? '0' : ''}${item.month}.${item.date < 10 ? '0' : ''}${item.date}`;
+                                const timeStr = `${formatHour(item.startHour)} ~ ${formatHour(item.endHour)}`;
+                                const cleanDesc = getCleanDesc(item.description);
+                                const rejectReasonMatch = (item.description || '').match(/\[반려사유\]\s*([^|]+)/);
+                                const rejectReason = rejectReasonMatch ? rejectReasonMatch[1].trim() : null;
+
+                                return (
+                                  <div 
+                                    key={item.id} 
+                                    id={'card_' + item.id}
+                                    data-card-title={item.title}
+                                    style={{
+                                      backgroundColor: '#ffffff',
+                                      border: '1.5px solid #cbd5e1',
+                                      borderRadius: '12px',
+                                      padding: '12px 14px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '8px',
+                                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                    }}
+                                  >
+                                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                      일정 {index + 1}: "{item.title}"
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                          <span>상태</span>
+                                        </div>
+                                        <div style={{ color: '#dc2626', fontWeight: '700' }}>반려</div>
+                                      </div>
+
+                                      {rejectReason && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                            <span>사유</span>
+                                          </div>
+                                          <div style={{ color: '#dc2626', fontWeight: '700', wordBreak: 'break-all' }}>{rejectReason}</div>
+                                        </div>
+                                      )}
+
+                                      {cleanDesc && cleanDesc !== '없음' && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                            <span>상세</span>
+                                          </div>
+                                          <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                        </div>
+                                      )}
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                          <span>담당</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '700' }}>{schedMember.name} ({schedMember.role || '팀원'})</div>
+                                      </div>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                          <span>날짜</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                      </div>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                          <span>시간</span>
+                                        </div>
+                                        <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                      </div>
+                                    </div>
+
+                                    {/* Footer: Left Rejection Message, Right Action Buttons */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                        ❌ 반려됨 ({rejecterMember.name} {rejecterMember.role || '상무'} 반려)
+                                      </span>
+                                      <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
+                                        <button
+                                          onClick={() => handleCancelSchedule(item.id)}
+                                          style={{
+                                            padding: '6px 12px',
+                                            fontSize: '12px',
+                                            fontWeight: '700',
+                                            backgroundColor: '#fef2f2',
+                                            color: '#dc2626',
+                                            border: '1px solid #fca5a5',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                        >
+                                          요청취소
+                                        </button>
+                                        <button
+                                          onClick={() => handleResubmitSchedule(item.id)}
+                                          style={{
+                                            padding: '6px 12px',
+                                            fontSize: '12px',
+                                            fontWeight: '700',
+                                            backgroundColor: '#f0fdf4',
+                                            color: '#15803d',
+                                            border: '1px solid #86efac',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                        >
+                                          다시요청
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                          <span className="chat-meta-sender">AI 잘됨이</span>
+                          <span className="chat-meta-time">{formatTime(new Date())}</span>
+                        </div>
+                      </div>
+                    )}
               </>
             );
           })()}
@@ -4930,6 +5882,115 @@ export default function App() {
           )}
           <div ref={bottomRef} />
         </div>
+
+        {/* Floating Approval Request Character Mascot & Speech Bubble Tooltip */}
+        {(() => {
+          const pendingApprovalCount = schedules.filter(s => isApproverForItem(s) && s.status === 'requested').length;
+          const incomingTaskCount = schedules.filter(s => 
+            (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
+            s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee') &&
+            !/반차|연차|휴가|병가/i.test(s.title || '') &&
+            s.status === 'requested'
+          ).length;
+          const totalUnprocessedRequestsCount = pendingApprovalCount + incomingTaskCount;
+
+          if (totalUnprocessedRequestsCount > 0 && showUnprocessedChip) {
+            return (
+              <div 
+                style={{ 
+                  position: 'absolute', 
+                  right: '20px', 
+                  bottom: '76px', 
+                  zIndex: 50, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'flex-end',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  animation: 'floatCharacterIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onClick={() => {
+                  const firstCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
+                  if (firstCard) {
+                    firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+                    firstCard.style.borderColor = '#10b981';
+                    firstCard.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.2)';
+                    setTimeout(() => {
+                      firstCard.style.borderColor = '#cbd5e1';
+                      firstCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
+                    }, 1600);
+                  } else if (chatMessagesRef.current) {
+                    chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
+                  }
+                }}
+              >
+                {/* Speech Bubble Tooltip */}
+                <div 
+                  style={{
+                    position: 'relative',
+                    marginBottom: '8px',
+                    marginRight: '6px',
+                    backgroundColor: '#18181b',
+                    color: '#ffffff',
+                    padding: '5px 9px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  <span style={{ fontSize: '13px', lineHeight: 1, margin: 0, padding: 0 }}>💡</span>
+                  <span>받은 요청 {totalUnprocessedRequestsCount}건</span>
+
+                  {/* Bottom Pointer Beak / Tail */}
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      bottom: '-6px',
+                      right: '26px',
+                      width: 0,
+                      height: 0,
+                      borderLeft: '6px solid transparent',
+                      borderRight: '6px solid transparent',
+                      borderTop: '6px solid #18181b'
+                    }}
+                  />
+                </div>
+
+                {/* Character Button with Ground Shadow */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <button 
+                    type="button"
+                    className="ai-toggle-floating-btn"
+                    style={{ position: 'relative', right: 0, bottom: 0, cursor: 'pointer' }}
+                    title="결재 요청건 보기"
+                  >
+                    <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </button>
+
+                  {/* Ground Shadow Effect */}
+                  <div 
+                    style={{
+                      width: '46px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(0, 0, 0, 0.22)',
+                      marginTop: '-6px',
+                      filter: 'blur(2px)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         <div className="chat-input-area">
           <div className="chat-input-box">
@@ -6134,11 +7195,13 @@ export default function App() {
                           const isCompleted = sampleProgress === 100;
 
                           const isIssue = isIssueSchedule(sample) || isIssueSchedule(evt);
+                          const isRequested = (sample && sample.status === 'requested') || evt.status === 'requested';
+                          const isRejected = (sample && (sample.status === 'rejected' || (sample.status && sample.status.startsWith('rejected_')))) || evt.status === 'rejected';
 
                           return (
                             <div
                               key={evt.key}
-                              className={`schedule-block ${isIssue ? 'issue' : evt.color} ${isCompleted ? 'completed' : ''}`}
+                              className={`schedule-block ${isIssue ? 'issue' : evt.color} ${isCompleted ? 'completed' : ''} ${isRequested ? 'status-requested' : ''} ${isRejected ? 'status-rejected' : ''}`}
                               style={{
                                 position: 'absolute',
                                 top: `${topPx}px`,
@@ -6170,6 +7233,7 @@ export default function App() {
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '6px' }}>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                   {isIssue && <IssueWarningIcon size={15} />}
+                                  {isRequested && !isIssue && '⏳ '}
                                   {evt.title}
                                 </span>
                                 <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
@@ -6525,17 +7589,29 @@ export default function App() {
             </div>
 
             <div className="modal-detail-body" style={{ margin: '16px 0', fontSize: '16px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
-                <input 
-                  type="text" 
-                  className="modal-input" 
-                  placeholder="일정 제목을 입력하세요"
-                  value={addTitle} 
-                  onChange={(e) => setAddTitle(e.target.value)} 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '15.5px' }}
-                  autoFocus
-                />
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
+                  <input 
+                    type="text" 
+                    className="modal-input" 
+                    placeholder="일정 제목을 입력하세요"
+                    value={addTitle} 
+                    onChange={(e) => setAddTitle(e.target.value)} 
+                    style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '15.5px', boxSizing: 'border-box' }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ width: '115px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>구분</label>
+                  <StyledSelect
+                    value={addCategory}
+                    onChange={(val) => setAddCategory(val)}
+                    options={['일반', '휴가', '이슈']}
+                    width="100%"
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -6552,35 +7628,20 @@ export default function App() {
                           setAddEndDateStr(e.target.value);
                         }
                       }} 
-                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      style={{ flex: 1, padding: '9px 10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
                     />
-                    <select 
-                      value={addStartHour} 
-                      onChange={(e) => {
-                        const newStart = parseFloat(e.target.value);
+                    <StyledSelect
+                      value={addStartHour}
+                      onChange={(val) => {
+                        const newStart = parseFloat(val);
                         setAddStartHour(newStart);
                         if (addEndHour <= newStart) {
                           setAddEndHour(newStart + 1);
                         }
                       }}
-                      style={{ 
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        width: 'auto', 
-                        minWidth: '105px', 
-                        padding: '9px 28px 9px 12px', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
-                        fontSize: '14px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {hourSlots.map(h => (
-                        <option key={h} value={h}>{formatHour(h)}</option>
-                      ))}
-                    </select>
+                      options={hourSlots.map(h => ({ value: h, label: formatHour(h) }))}
+                      width="110px"
+                    />
                   </div>
 
                   <span style={{ fontWeight: '700', color: 'var(--text-tertiary)', padding: '0 2px' }}>~</span>
@@ -6591,29 +7652,14 @@ export default function App() {
                       className="modal-input" 
                       value={addEndDateStr} 
                       onChange={(e) => setAddEndDateStr(e.target.value)} 
-                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      style={{ flex: 1, padding: '9px 10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
                     />
-                    <select 
-                      value={addEndHour} 
-                      onChange={(e) => setAddEndHour(parseFloat(e.target.value))}
-                      style={{ 
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        width: 'auto', 
-                        minWidth: '105px', 
-                        padding: '9px 28px 9px 12px', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
-                        fontSize: '14px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {getAddEndHourOptions().map(h => (
-                        <option key={h} value={h}>{formatHour(h)}</option>
-                      ))}
-                    </select>
+                    <StyledSelect
+                      value={addEndHour}
+                      onChange={(val) => setAddEndHour(parseFloat(val))}
+                      options={getAddEndHourOptions().map(h => ({ value: h, label: formatHour(h) }))}
+                      width="110px"
+                    />
                   </div>
                 </div>
               </div>
@@ -6842,11 +7888,9 @@ export default function App() {
                           <button 
                             className="modal-btn" 
                             style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
-                            onClick={() => {
-                              setIsRejecting(true);
-                            }}
+                            onClick={() => setIsRejecting(true)}
                           >
-                            거부
+                            반려
                           </button>
                         </div>
                       </div>
@@ -6871,11 +7915,9 @@ export default function App() {
                                 showLayerAlert('반려 사유를 입력해야 거부할 수 있습니다.', '사유 입력 필요', 'error');
                                 return;
                               }
-                              const cleanedDesc = (selectedDetailEvent.description || '')
-                                .replace(/\[반려 사유\].*$/g, '')
-                                .trim();
+                              const cleanedDesc = (selectedDetailEvent.description || '').trim();
                               const newDesc = `${cleanedDesc}${cleanedDesc ? '\n' : ''}[반려 사유] ${rejectReasonInput.trim()}`;
-
+                              
                               const rejectedStatus = 'rejected_sh';
                               if (isConfigured) {
                                 let dbSched = { 
@@ -7013,16 +8055,29 @@ export default function App() {
             })()}
             
             <div className="modal-detail-body" style={{ margin: '16px 0', fontSize: '16px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
-                <input 
-                  type="text" 
-                  className="modal-input" 
-                  value={editTitle} 
-                  onChange={(e) => setEditTitle(e.target.value)} 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '15.5px' }}
-                  disabled={!isDetailEditable}
-                />
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
+                  <input 
+                    type="text" 
+                    className="modal-input" 
+                    value={editTitle} 
+                    onChange={(e) => setEditTitle(e.target.value)} 
+                    style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '15.5px', boxSizing: 'border-box' }}
+                    disabled={!isDetailEditable}
+                  />
+                </div>
+
+                <div style={{ width: '115px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>구분</label>
+                  <StyledSelect
+                    value={editCategory}
+                    onChange={(val) => setEditCategory(val)}
+                    options={['일반', '휴가', '이슈']}
+                    disabled={!isDetailEditable}
+                    width="100%"
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -7039,37 +8094,22 @@ export default function App() {
                           setEditEndDateStr(e.target.value);
                         }
                       }} 
-                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      style={{ flex: 1, padding: '9px 10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
                       disabled={!isDetailEditable}
                     />
-                    <select 
-                      value={editStartHour} 
-                      onChange={(e) => {
-                        const newStart = parseFloat(e.target.value);
+                    <StyledSelect
+                      value={editStartHour}
+                      onChange={(val) => {
+                        const newStart = parseFloat(val);
                         setEditStartHour(newStart);
                         if (editEndHour <= newStart) {
                           setEditEndHour(newStart + 1);
                         }
                       }}
-                      style={{ 
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        width: 'auto', 
-                        minWidth: '105px', 
-                        padding: '9px 28px 9px 12px', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
-                        fontSize: '14px',
-                        cursor: 'pointer'
-                      }}
+                      options={hourSlots.map(h => ({ value: h, label: formatHour(h) }))}
                       disabled={!isDetailEditable}
-                    >
-                      {hourSlots.map(h => (
-                        <option key={h} value={h}>{formatHour(h)}</option>
-                      ))}
-                    </select>
+                      width="110px"
+                    />
                   </div>
 
                   <span style={{ fontWeight: '700', color: 'var(--text-tertiary)', padding: '0 2px' }}>~</span>
@@ -7080,31 +8120,16 @@ export default function App() {
                       className="modal-input" 
                       value={editEndDateStr} 
                       onChange={(e) => setEditEndDateStr(e.target.value)} 
-                      style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', fontSize: '14px', background: '#fff' }}
+                      style={{ flex: 1, padding: '9px 10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
                       disabled={!isDetailEditable}
                     />
-                    <select 
-                      value={editEndHour} 
-                      onChange={(e) => setEditEndHour(parseFloat(e.target.value))}
-                      style={{ 
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        width: 'auto', 
-                        minWidth: '105px', 
-                        padding: '9px 28px 9px 12px', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        background: `#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center`, 
-                        fontSize: '14px',
-                        cursor: 'pointer'
-                      }}
+                    <StyledSelect
+                      value={editEndHour}
+                      onChange={(val) => setEditEndHour(parseFloat(val))}
+                      options={getEndHourOptions().map(h => ({ value: h, label: formatHour(h) }))}
                       disabled={!isDetailEditable}
-                    >
-                      {getEndHourOptions().map(h => (
-                        <option key={h} value={h}>{formatHour(h)}</option>
-                      ))}
-                    </select>
+                      width="110px"
+                    />
                   </div>
                 </div>
               </div>
@@ -7468,7 +8493,7 @@ export default function App() {
               style={{ 
                 flex: 1, 
                 overflowY: 'auto', 
-                padding: '20px 28px', 
+                padding: '0px 28px 20px 28px', 
                 fontFamily: 'sans-serif', 
                 color: '#1e293b', 
                 lineHeight: '1.6',
@@ -7476,16 +8501,18 @@ export default function App() {
               }}
             >
 
-{/* Project & Member Selection Bar (Clean Filter Bar - No BG, No Labels, No Bottom Border, Black Selected Chips) */}
+            {/* Project & Member Selection Bar (Light Gray BG, Dropdown & Toggle Chips) */}
             <div className="report-filter-bar" style={{ 
-              padding: '0px 0px 12px 0px', 
-              marginTop: '-4px',
-              marginBottom: '6px',
-              backgroundColor: 'transparent', 
+              padding: '10px 16px', 
+              marginTop: '0px',
+              marginBottom: '16px',
+              backgroundColor: '#f8fafc', 
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
-              gap: '16px',
+              gap: '14px',
               flexWrap: 'wrap'
             }}>
               {/* Left: Custom Project Selector Pill & Dropdown Box */}
@@ -7497,18 +8524,20 @@ export default function App() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    padding: '6px 14px 6px 0px',
-                    fontSize: '15px',
+                    padding: '6px 12px',
+                    fontSize: '14px',
                     fontWeight: '700',
                     color: '#0f172a',
                     backgroundColor: '#ffffff',
-                    border: 'none',
-                    borderRadius: '20px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     outline: 'none',
-                    boxShadow: 'none',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                     transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#94a3b8'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
                 >
                   <span>{selectedReportProject}</span>
                   <svg 
@@ -7611,14 +8640,14 @@ export default function App() {
                   type="button"
                   onClick={() => {
                     if (selectedReportMembers.length === activeTeam.length) {
-                      setSelectedReportMembers([ME.id]);
+                      setSelectedReportMembers([]);
                     } else {
                       setSelectedReportMembers(activeTeam.map(m => m.id));
                     }
                   }}
                   style={{
-                    padding: '6px 14px',
-                    fontSize: '13.5px',
+                    padding: '5px 13px',
+                    fontSize: '12.5px',
                     fontWeight: '700',
                     borderRadius: '16px',
                     cursor: 'pointer',
@@ -7642,9 +8671,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         if (isSelected) {
-                          if (selectedReportMembers.length > 1) {
-                            setSelectedReportMembers(prev => prev.filter(id => id !== m.id));
-                          }
+                          setSelectedReportMembers(prev => prev.filter(id => id !== m.id));
                         } else {
                           setSelectedReportMembers(prev => [...prev, m.id]);
                         }
@@ -7676,7 +8703,8 @@ export default function App() {
               {(() => {
                 const isScheduleForCurrentUser = (s) => {
                   if (!s) return false;
-                  const selectedIds = selectedReportMembers.length > 0 ? selectedReportMembers : [ME.id];
+                  if (selectedReportMembers.length === 0) return false;
+                  const selectedIds = selectedReportMembers;
                   const matchesSelected = id => selectedIds.some(uid => id === uid || (uid === 'sh' && id === 'yoonhee') || (uid === 'yoonhee' && id === 'sh') || (uid === 'sangmoo' && id === 'sangmu') || (uid === 'sangmu' && id === 'sangmoo'));
                   if (matchesSelected(s.memberId)) return true;
                   if (s.memberIds && Array.isArray(s.memberIds) && s.memberIds.some(matchesSelected)) return true;
@@ -8692,9 +9720,39 @@ export default function App() {
             <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
               {layerDialog.title}
             </div>
-            <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '22px' }}>
+            <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: layerDialog.hasInput ? '14px' : '22px' }}>
               {layerDialog.message}
             </div>
+
+            {layerDialog.hasInput && (
+              <div style={{ marginBottom: '18px', textAlign: 'left' }}>
+                <textarea
+                  value={layerDialog.inputValue}
+                  onChange={(e) => setLayerDialog(prev => ({ ...prev, inputValue: e.target.value }))}
+                  placeholder={layerDialog.inputPlaceholder}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    minHeight: '75px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '13.5px',
+                    color: '#0f172a',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                    outline: 'none'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      closeLayerDialog(true);
+                    }
+                  }}
+                />
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               {layerDialog.isConfirm && (
                 <button
@@ -8712,7 +9770,7 @@ export default function App() {
                   }}
                   onClick={() => closeLayerDialog(false)}
                 >
-                  취소
+                  {layerDialog.cancelText || '취소'}
                 </button>
               )}
               <button
@@ -8721,7 +9779,7 @@ export default function App() {
                   padding: '10px 0',
                   fontSize: '14.5px',
                   fontWeight: '700',
-                  backgroundColor: layerDialog.type === 'error' || layerDialog.isConfirm ? '#ef4444' : '#000000',
+                  backgroundColor: layerDialog.type === 'error' ? '#ef4444' : '#000000',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '8px',
@@ -8731,7 +9789,7 @@ export default function App() {
                 }}
                 onClick={() => closeLayerDialog(true)}
               >
-                확인
+                {layerDialog.confirmText || '확인'}
               </button>
             </div>
           </div>

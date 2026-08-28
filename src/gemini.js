@@ -9,6 +9,7 @@ export const parseMessageWithGemini = async (text, todayDate, teamList, year = n
     return null;
   }
 
+  let responseText = '';
   try {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
@@ -113,21 +114,26 @@ Values for "schedules" fields:
     2) "오전 반차" (Morning Half-day Leave): MUST set startHour: 9.0, endHour: 14.0 (09:00 ~ 14:00).
     3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
     4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
-    5) LEAVE MEMBER ASSIGNMENT: For any leave/vacation ("연차", "반차", "휴가", "병가"), "memberId" MUST ALWAYS BE the current user "${currentUser?.id || 'sh'}" who is taking the leave! Even if the input mentions a manager (e.g. "조상무님한테 9월 1일 오후 반차 승인 요청"), "memberId" MUST BE "${currentUser?.id || 'sh'}" (the applicant), and "approverId" MUST BE "sangmoo"! Never assign the leave schedule memberId to the manager!
+    5) LEAVE & EXPENSE / APPROVAL REQUEST RULES:
+       For any leave/vacation ("연차", "반차", "휴가", "병가") or approval request ("신청", "식대 신청", "야근 신청", "승인 요청", "비용 신청", "보고서 결재"):
+       - "memberId" MUST ALWAYS BE the applicant user "${currentUser?.id || 'sh'}"!
+       - The schedule belongs to the applicant's calendar, NEVER to the manager/approver!
+       - "approverId" MUST BE the target approver (e.g. if requesting to 정윤희/정부장 -> "sh", if requesting to 조상무/상무님 -> "sangmoo", if unspecified and applicant is "daum" -> "sh", if applicant is "sh" -> "sangmoo").
 - "endHour" (number): End time (24h format, e.g. 18.0).
 - "memberId" (string): Assigned member ID. CRITICAL MEMBER ASSIGNMENT & ALIAS RULES:
-  1) If the input mentions assigning or delegating a task to another specific team member (e.g. "정사원한테/정다음한테/정사인한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!
-  2) Otherwise, default "memberId" to the current user "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}").
-  3) Korean Team Aliases & IDs:
-     - "정다음", "정사원", "정사인", "다음", "정사원한테", "정사인한테", "정다음한테" -> ALWAYS map "memberId" to "daum" and "approverId" to "daum"!
+  1) For approval/leave requests ("신청", "승인", "반차", "연차"), ALWAYS set memberId to "${currentUser?.id || 'sh'}".
+  2) If the input mentions assigning or delegating a task to another specific team member (e.g. "정사원한테/정다음한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!
+  3) Otherwise, default "memberId" to the current user "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}").
+  4) Korean Team Aliases & IDs:
+     - "정다음", "정사원", "정사인", "다음", "정사원한테", "정사인한테", "정다음한테" -> "daum"
      - "정윤희", "정부장", "윤희", "정부장한테" -> "sh" (정윤희 부장)
      - "조상무", "상무님", "조상무님", "상무님한테" -> "sangmoo" (조상무 상무)
 - "isAll" (boolean): true if for all members.
 - "isRequested" (boolean): Set to true if:
-  1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청").
+  1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청", "신청", "식대 신청").
   2) The current user is assigning/delegating a task or meeting request to another colleague (e.g. "정사원한테 로그 분석 맡기고" -> isRequested: true, assigned to "daum").
   3) Otherwise, for personal work tasks performed by the logged-in user, set "isRequested": false.
-- "approverId" (string): Target approver ID (e.g. if applicant is 정윤희/sh -> set to "sangmoo" (조상무 상무), otherwise set to "sh" (정윤희 부장)).
+- "approverId" (string): Target approver ID (e.g. if applicant requests to 정윤희/정부장 -> "sh", if applicant requests to 조상무/상무님 -> "sangmoo"). Default: for "daum" -> "sh", for "sh" -> "sangmoo".
 - "isIssue" (boolean): CRITICAL ISSUE CLASSIFICATION RULE:
   Set to true ONLY if the specific task itself is an unexpected incident, system error, bug, or emergency debugging ("긴급 디버깅", "장애 파기", "이슈 처리", "버그 수정").
   Regular work tasks such as writing reports/documents ("경영진 보고서 작성", "보고서 작성", "자료 작성", "문서 작성"), meetings ("회의", "대책 회의", "리뷰"), and development ("API 연동", "개발", "점검") MUST ALWAYS HAVE "isIssue": false!
@@ -170,7 +176,7 @@ The output must be EXACTLY a single valid JSON object matching one of the format
 `;
 
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    responseText = result.response.text();
     let cleanedText = responseText.trim();
     if (cleanedText.includes('```')) {
       cleanedText = cleanedText.replace(/^[\s\S]*?```(?:json)?\s*/i, '').replace(/\s*```[\s\S]*$/i, '').trim();
@@ -179,7 +185,7 @@ The output must be EXACTLY a single valid JSON object matching one of the format
   } catch (error) {
     console.error("Failed to parse message with Gemini", error);
     try {
-      if (typeof responseText === 'string') {
+      if (typeof responseText === 'string' && responseText) {
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           return JSON.parse(jsonMatch[0]);

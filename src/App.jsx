@@ -5754,7 +5754,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleRejectSchedule(pItem.id)}
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5770,7 +5770,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleApproveSchedule(pItem.id)}
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -5791,7 +5791,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5813,7 +5813,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -5916,7 +5916,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleRejectSchedule(tItem.id)}
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5932,7 +5932,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleAcceptSchedule(tItem.id)}
                                       style={{
-                                        padding: '5px 12px',
+                                        padding: '6px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',

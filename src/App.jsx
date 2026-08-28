@@ -5470,7 +5470,7 @@ export default function App() {
                     id: 'tasks_' + groupedIncomingTaskRequests.map(s => s.id).join('_'),
                     createdAt: getSafeGroupTs(groupedIncomingTaskRequests),
                     data: groupedIncomingTaskRequests,
-                    requestedCount: requestedIncomingCount
+                    requestedCount: requestedTaskCount
                   }] : [];
 
                   const rejectedOutgoingItems = groupedRejectedOutgoingRequests.length > 0 ? [{

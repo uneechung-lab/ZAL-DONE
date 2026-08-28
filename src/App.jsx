@@ -7096,18 +7096,17 @@ export default function App() {
               <tbody>
                 {filteredMembers.map((member, index) => {
                   const isMemberSelected = daySelectedMemberIds.includes(member.id);
-                  if (!isMemberSelected) return null;
 
-                  const memberSchedules = schedules.filter(s => {
+                  const memberSchedules = isMemberSelected ? schedules.filter(s => {
                     const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
                     const matchesDate = isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate;
                     return matchesMember && matchesDate;
-                  });
+                  }) : [];
                   const { trackMap, totalTracks } = getSchedulesWithTracks(memberSchedules);
                   const rowHeight = Math.max(totalTracks * 32 + 16, 74);
 
                   return (
-                    <tr key={member.id} style={{ height: `${rowHeight}px` }}>
+                    <tr key={member.id} style={{ height: `${rowHeight}px`, opacity: isMemberSelected ? 1 : 0.65, transition: 'opacity 0.2s ease' }}>
                       {/* Column 0: Selection Checkbox */}
                       <td className="col-checkbox" style={{ width: '28px', minWidth: '28px', maxWidth: '28px', textAlign: 'center', verticalAlign: 'middle', padding: 0 }}>
                         <button

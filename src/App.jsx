@@ -4924,6 +4924,8 @@ export default function App() {
                                   })()}
 
                                   {matchedSchedule && matchedSchedule.status === 'accepted' && (() => {
+                                     const isRequestOrApproval = /반차|연차|휴가|병가|결재|신청/i.test(matchedSchedule.title || '') || (matchedSchedule.requesterId && matchedSchedule.requesterId !== matchedSchedule.memberId);
+                                     if (!isRequestOrApproval) return null;
                                     const acceptMsgMatch = (matchedSchedule.description || '').match(/\[수락메시지\]\s*([^|]+)/);
                                     const acceptMsg = acceptMsgMatch ? acceptMsgMatch[1].trim() : null;
 

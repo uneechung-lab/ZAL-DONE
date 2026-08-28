@@ -4776,10 +4776,29 @@ export default function App() {
               return isReqByMe && isAssignedToOther;
             };
 
+            // Collect all schedule IDs that are already rendered inside chat message bubbles
+            const renderedScheduleIdsInMessages = new Set();
+            todayMessages.forEach(msg => {
+              if (msg.from && (msg.from === 'ai' || msg.from.startsWith('ai_'))) {
+                const { schedules: schedList } = parseMessageToSchedulesList(msg.text);
+                schedList.forEach(s => {
+                  const matched = schedules.find(sched => 
+                    sched.title === s.title && 
+                    sched.date === s.date && 
+                    sched.startHour === s.startHour
+                  );
+                  if (matched) {
+                    renderedScheduleIdsInMessages.add(matched.id);
+                  }
+                });
+              }
+            });
+
             const rejectedOutgoingRequests = schedules.filter(s => 
               (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /\[?반차|연차|휴가|병가\]?/i.test(s.title || ''))) && 
               (s.status === 'rejected' || (s.status && s.status.startsWith('rejected'))) &&
-              isApprovalTarget(s)
+              isApprovalTarget(s) &&
+              !renderedScheduleIdsInMessages.has(s.id)
             );
             const groupedRejectedOutgoingRequests = groupList(rejectedOutgoingRequests);
 
@@ -4788,6 +4807,7 @@ export default function App() {
               if (!isMyReq) return false;
               if (s.status !== 'accepted') return false;
               if (!isApprovalTarget(s)) return false;
+              if (renderedScheduleIdsInMessages.has(s.id)) return false;
               return (s.description || '').includes('[수락메시지]') || (s.description || '').includes('[승인 완료]');
             });
             const groupedAcceptedOutgoingRequests = groupList(acceptedOutgoingRequests);
@@ -5527,6 +5547,22 @@ export default function App() {
                                 {(() => {
                   const getSafeItemTs = (item) => {
                     if (!item) return Date.now();
+                    if (item.from && (item.from === 'ai' || item.from.startsWith('ai_'))) {
+                      const { schedules: schedList } = parseMessageToSchedulesList(item.text);
+                      let maxStatusTs = 0;
+                      schedList.forEach(s => {
+                        const matched = schedules.find(sched => 
+                          sched.title === s.title && 
+                          sched.date === s.date && 
+                          sched.startHour === s.startHour
+                        );
+                        if (matched && matched.statusUpdatedAt && matched.statusUpdatedAt > maxStatusTs) {
+                          maxStatusTs = matched.statusUpdatedAt;
+                        }
+                      });
+                      if (maxStatusTs > 0) return maxStatusTs;
+                    }
+
                     if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     if (item.updatedAt) {
                       const t = new Date(item.updatedAt).getTime();

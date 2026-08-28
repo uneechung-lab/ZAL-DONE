@@ -2642,6 +2642,14 @@ export default function App() {
                   if (createdTime && createdTime <= effectiveResetTs) return false;
                 }
                 return true;
+              }).map(s => {
+                // Sanitize: If personal meeting/briefing created by sangmoo accidentally included 'sh' in memberIds, fix to sangmoo only
+                if (s.requesterId === 'sangmoo' && /브리핑|미팅|회의|보고/i.test(s.title || '') && !/신청|식대|야근/i.test(s.title || '')) {
+                  if (s.memberIds && (s.memberIds.includes('sh') || s.memberIds.includes('yoonhee')) && s.memberIds.includes('sangmoo')) {
+                    return { ...s, memberId: 'sangmoo', memberIds: ['sangmoo'] };
+                  }
+                }
+                return s;
               });
               setSchedules(actualSchedules);
             }
@@ -3423,17 +3431,10 @@ export default function App() {
             assignedMemberId = ME.id;
             isSelf = true;
           } else {
-            // Default assignee is the current logged-in user (ME)
+            // Default assignee is the target member specified by AI or the current logged-in user (ME)
             const targetMember = activeTeam.find(m => m.id === parsed.memberId);
             assignedMemberId = targetMember ? targetMember.id : ME.id;
-
-            if (mentionsYoonhee && assignedMemberId === ME.id) {
-              const yoonheeMember = activeTeam.find(m => m.id === 'sh' || m.id === 'yoonhee');
-              assignedMemberIds = yoonheeMember ? [ME.id, yoonheeMember.id] : [ME.id];
-            } else {
-              assignedMemberIds = [assignedMemberId];
-            }
-
+            assignedMemberIds = [assignedMemberId];
             isSelf = assignedMemberId === ME.id || (ME.id === 'sh' && assignedMemberId === 'yoonhee');
           }
 

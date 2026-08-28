@@ -4877,7 +4877,7 @@ export default function App() {
                       });
 
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                           {introText && <div style={{ fontWeight: '600' }}>{renderTextWithLinks(introText)}</div>}
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
@@ -5688,7 +5688,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {reqMember.name}님이 "{pItem.title}" {/반차|연차|휴가|병가/i.test(pItem.title || '') ? '결재를 요청하셨습니다.' : '업무 결재를 요청하셨습니다.'}
                             </div>
@@ -5714,37 +5714,37 @@ export default function App() {
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 {cleanDesc && cleanDesc !== '없음' && (
-                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                       <span>상세</span>
                                     </div>
-                                    <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                    <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{cleanDesc}</div>
                                   </div>
                                 )}
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     <span>신청자</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     <span>날짜</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{dateStr}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     <span>시간</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{timeStr}</div>
                                 </div>
                               </div>
 
@@ -5850,7 +5850,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {reqMember.name}님이 "{tItem.title}" 업무를 요청하셨습니다.
                             </div>
@@ -5876,37 +5876,37 @@ export default function App() {
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 {cleanDesc && cleanDesc !== '없음' && (
-                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                       <span>상세</span>
                                     </div>
-                                    <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                    <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{cleanDesc}</div>
                                   </div>
                                 )}
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     <span>요청자</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '팀원'})</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{reqMember.name} ({reqMember.role || '팀원'})</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     <span>날짜</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{dateStr}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     <span>시간</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{timeStr}</div>
                                 </div>
                               </div>
 
@@ -6014,7 +6014,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {rejecterMember.name}님이 {isLeave ? `"${rItem.title}" 결재를` : `"${rItem.title}" 업무 요청을`} 반려하셨습니다.{reasonText && ` (사유: ${reasonText})`}
                             </div>
@@ -6037,42 +6037,42 @@ export default function App() {
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     <span>담당</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{TEAM.find(m => m.id === rItem.memberId)?.name || '담당자'}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{TEAM.find(m => m.id === rItem.memberId)?.name || '담당자'}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     <span>날짜</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{dateStr}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     <span>시간</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{timeStr}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#dc2626', alignItems: 'center' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#dc2626', marginTop: '2px', alignItems: 'center' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#dc2626' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                     <span>상태</span>
                                   </div>
                                   <div style={{ fontWeight: '800' }}>반려</div>
                                 </div>
 
                                 {reasonText && (
-                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#b91c1c', alignItems: 'flex-start' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#b91c1c', marginTop: '2px', alignItems: 'flex-start' }}>
                                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#b91c1c' }}>
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                       <span>사유</span>
                                     </div>
                                     <div style={{ fontWeight: '700', wordBreak: 'break-all' }}>{reasonText}</div>
@@ -6136,7 +6136,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {approverMember.name}님이 {isLeave ? `"${aItem.title}" 결재를` : `"${aItem.title}" 업무 요청을`} 수락하셨습니다.
                             </div>
@@ -6159,28 +6159,28 @@ export default function App() {
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     <span>담당</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{TEAM.find(m => m.id === aItem.memberId)?.name || '담당자'}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{TEAM.find(m => m.id === aItem.memberId)?.name || '담당자'}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     <span>날짜</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{dateStr}</div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     <span>시간</span>
                                   </div>
-                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{timeStr}</div>
                                 </div>
                               </div>
 

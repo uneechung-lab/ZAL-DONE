@@ -536,7 +536,14 @@ function getTimeSlot() {
 }
 
 function formatTime(date) {
-  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  if (!date) return '';
+  try {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '';
+  }
 }
 
 function formatHour(h) {
@@ -5425,17 +5432,35 @@ export default function App() {
                 )}
 
                                 {(() => {
+                  const getSafeItemTs = (item) => {
+                    if (!item) return Date.now();
+                    if (item.createdAt) {
+                      const t = new Date(item.createdAt).getTime();
+                      if (!isNaN(t) && t > 0) return t;
+                    }
+                    if (typeof item.id === 'number' && item.id > 1000000000) return item.id;
+                    const numId = parseInt(String(item.id).replace(/\D/g, ''), 10);
+                    if (!isNaN(numId) && numId > 1000000000) return numId;
+                    return Date.now();
+                  };
+
+                  const getSafeGroupTs = (items) => {
+                    if (!items || items.length === 0) return Date.now();
+                    const validTs = items.map(getSafeItemTs).filter(t => !isNaN(t) && t > 0);
+                    return validTs.length > 0 ? Math.min(...validTs) : Date.now();
+                  };
+
                   const messageItems = todayMessages.map(msg => ({
                     type: 'message',
                     id: 'msg_' + msg.id,
-                    createdAt: msg.createdAt ? new Date(msg.createdAt).getTime() : (typeof msg.id === 'number' && msg.id > 1000000000 ? msg.id : 0),
+                    createdAt: getSafeItemTs(msg),
                     data: msg
                   }));
 
                   const pendingApprovalItems = groupedPendingItems.length > 0 ? [{
                     type: 'pending_approvals',
                     id: 'pending_' + groupedPendingItems.map(s => s.id).join('_'),
-                    createdAt: Math.min(...groupedPendingItems.map(s => s.createdAt ? new Date(s.createdAt).getTime() : (typeof s.id === 'number' && s.id > 1000000000 ? s.id : Date.now()))),
+                    createdAt: getSafeGroupTs(groupedPendingItems),
                     data: groupedPendingItems,
                     requestedCount: requestedPendingCount
                   }] : [];
@@ -5443,7 +5468,7 @@ export default function App() {
                   const incomingTaskItems = groupedIncomingTaskRequests.length > 0 ? [{
                     type: 'incoming_tasks',
                     id: 'tasks_' + groupedIncomingTaskRequests.map(s => s.id).join('_'),
-                    createdAt: Math.min(...groupedIncomingTaskRequests.map(s => s.createdAt ? new Date(s.createdAt).getTime() : (typeof s.id === 'number' && s.id > 1000000000 ? s.id : Date.now()))),
+                    createdAt: getSafeGroupTs(groupedIncomingTaskRequests),
                     data: groupedIncomingTaskRequests,
                     requestedCount: requestedIncomingCount
                   }] : [];
@@ -5451,14 +5476,14 @@ export default function App() {
                   const rejectedOutgoingItems = groupedRejectedOutgoingRequests.length > 0 ? [{
                     type: 'rejected_outgoing',
                     id: 'rejected_' + groupedRejectedOutgoingRequests.map(s => s.id).join('_'),
-                    createdAt: Math.min(...groupedRejectedOutgoingRequests.map(s => s.createdAt ? new Date(s.createdAt).getTime() : (typeof s.id === 'number' && s.id > 1000000000 ? s.id : Date.now()))),
+                    createdAt: getSafeGroupTs(groupedRejectedOutgoingRequests),
                     data: groupedRejectedOutgoingRequests
                   }] : [];
 
                   const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.length > 0 ? [{
                     type: 'accepted_outgoing',
                     id: 'accepted_' + groupedAcceptedOutgoingRequests.map(s => s.id).join('_'),
-                    createdAt: Math.min(...groupedAcceptedOutgoingRequests.map(s => s.createdAt ? new Date(s.createdAt).getTime() : (typeof s.id === 'number' && s.id > 1000000000 ? s.id : Date.now()))),
+                    createdAt: getSafeGroupTs(groupedAcceptedOutgoingRequests),
                     data: groupedAcceptedOutgoingRequests
                   }] : [];
 

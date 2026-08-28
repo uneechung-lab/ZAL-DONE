@@ -7789,7 +7789,7 @@ export default function App() {
                 timeViewTab === 'monthly' ? '월간 업무 보고서 생성' : '업무 보고서 생성'
               }
             >
-              <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/bi5.png" alt="Report Character" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </button>
 
             {/* Ground Shadow Effect Under Character Feet */}

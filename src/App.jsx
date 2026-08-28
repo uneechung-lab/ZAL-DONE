@@ -7079,8 +7079,8 @@ export default function App() {
                           title={isAllSelected ? '전체 해제' : '전체 선택'}
                         >
                           <div style={{
-                            width: '18px',
-                            height: '18px',
+                            width: '15px',
+                            height: '15px',
                             borderRadius: '50%',
                             backgroundColor: isAllSelected ? '#000000' : '#e2e8f0',
                             display: 'flex',
@@ -7088,7 +7088,7 @@ export default function App() {
                             justifyContent: 'center',
                             transition: 'background-color 0.15s ease'
                           }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           </div>
@@ -7143,8 +7143,8 @@ export default function App() {
                           title={isMemberSelected ? `${member.name} 숨기기` : `${member.name} 보이기`}
                         >
                           <div style={{
-                            width: '18px',
-                            height: '18px',
+                            width: '15px',
+                            height: '15px',
                             borderRadius: '50%',
                             backgroundColor: isMemberSelected ? '#000000' : '#e2e8f0',
                             display: 'flex',
@@ -7152,7 +7152,7 @@ export default function App() {
                             justifyContent: 'center',
                             transition: 'background-color 0.15s ease'
                           }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           </div>

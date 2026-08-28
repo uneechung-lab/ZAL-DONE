@@ -5765,7 +5765,7 @@ export default function App() {
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      ❌ 반려
+                                      요청반려
                                     </button>
                                     <button
                                       onClick={() => handleApproveSchedule(pItem.id)}
@@ -5781,7 +5781,7 @@ export default function App() {
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      💚 수락
+                                      요청수락
                                     </button>
                                   </div>
                                 ) : pItem.status === 'accepted' ? (
@@ -5927,7 +5927,7 @@ export default function App() {
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      ❌ 거절
+                                      요청반려
                                     </button>
                                     <button
                                       onClick={() => handleAcceptSchedule(tItem.id)}
@@ -5943,7 +5943,7 @@ export default function App() {
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      💚 수락
+                                      요청수락
                                     </button>
                                   </div>
                                 ) : tItem.status === 'accepted' ? (

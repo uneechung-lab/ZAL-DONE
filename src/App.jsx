@@ -4812,8 +4812,8 @@ export default function App() {
               
               if (!isAssignedToMe || !isNotMyRequest || !isNotLeave) return false;
               
-              // 실제 요청 상태이거나 수락/반려/재요청 마커가 있는 경우만 필터링
-              return s.status === 'requested' || (s.description && (
+              // 요청 대기, 수락 완료, 반려 상태인 모든 인커밍 업무 카드를 유지
+              return s.status === 'requested' || s.status === 'accepted' || s.status === 'rejected' || (s.status && s.status.startsWith('rejected')) || (s.description && (
                 s.description.includes('[수락메시지]') || 
                 s.description.includes('[반려사유]') || 
                 s.description.includes('[재요청메시지]')
@@ -5619,11 +5619,13 @@ export default function App() {
                   const getCardTs = (item) => {
                     if (!item) return 0;
                     const id = String(item.id || item.$id || '');
-                    // If status was changed by user action, use that time
-                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
-                    // Otherwise sync to the AI message that registered it
                     if (scheduleToMsgTs[id]) return scheduleToMsgTs[id];
-                    // Fallback to getSafeItemTs
+                    const cAt = item.createdAt || item.data?.createdAt;
+                    if (cAt) {
+                      const t = new Date(cAt).getTime();
+                      if (!isNaN(t) && t > 0) return t;
+                    }
+                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     return getSafeItemTs(item);
                   };
 

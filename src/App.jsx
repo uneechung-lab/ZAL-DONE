@@ -5558,35 +5558,33 @@ export default function App() {
                     data: msg
                   }));
 
-                  const pendingApprovalItems = groupedPendingItems.length > 0 ? [{
-                    type: 'pending_approvals',
-                    id: 'pending_' + groupedPendingItems.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(groupedPendingItems),
-                    data: groupedPendingItems,
-                    requestedCount: requestedPendingCount
-                  }] : [];
+                  const pendingApprovalItems = groupedPendingItems.map(group => ({
+                    type: 'pending_approval_single',
+                    id: 'pending_' + group.map(s => s.id).join('_'),
+                    createdAt: getSafeGroupTs(group),
+                    data: group
+                  }));
 
-                  const incomingTaskItems = groupedIncomingTaskRequests.length > 0 ? [{
-                    type: 'incoming_tasks',
-                    id: 'tasks_' + groupedIncomingTaskRequests.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(groupedIncomingTaskRequests),
-                    data: groupedIncomingTaskRequests,
-                    requestedCount: requestedTaskCount
-                  }] : [];
+                  const incomingTaskItems = groupedIncomingTaskRequests.map(group => ({
+                    type: 'incoming_task_single',
+                    id: 'tasks_' + group.map(s => s.id).join('_'),
+                    createdAt: getSafeGroupTs(group),
+                    data: group
+                  }));
 
-                  const rejectedOutgoingItems = groupedRejectedOutgoingRequests.length > 0 ? [{
-                    type: 'rejected_outgoing',
-                    id: 'rejected_' + groupedRejectedOutgoingRequests.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(groupedRejectedOutgoingRequests),
-                    data: groupedRejectedOutgoingRequests
-                  }] : [];
+                  const rejectedOutgoingItems = groupedRejectedOutgoingRequests.map(group => ({
+                    type: 'rejected_outgoing_single',
+                    id: 'rejected_' + group.map(s => s.id).join('_'),
+                    createdAt: getSafeGroupTs(group),
+                    data: group
+                  }));
 
-                  const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.length > 0 ? [{
-                    type: 'accepted_outgoing',
-                    id: 'accepted_' + groupedAcceptedOutgoingRequests.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(groupedAcceptedOutgoingRequests),
-                    data: groupedAcceptedOutgoingRequests
-                  }] : [];
+                  const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.map(group => ({
+                    type: 'accepted_outgoing_single',
+                    id: 'accepted_' + group.map(s => s.id).join('_'),
+                    createdAt: getSafeGroupTs(group),
+                    data: group
+                  }));
 
                   const allChronologicalItems = [
                     ...otherMessageItems,
@@ -5605,175 +5603,153 @@ export default function App() {
                     if (item.type === 'message') {
                       return renderBubble(item.data);
                     }
-                    if (item.type === 'pending_approvals') {
+                    if (item.type === 'pending_approval_single') {
+                      const pItem = item.data[0];
+                      if (!pItem) return null;
+                      const reqMember = TEAM.find(m => m.id === pItem.requesterId || m.id === pItem.memberId) || { name: '정윤희', role: '부장' };
+                      const dateStr = pItem.dateStr || `${pItem.year}.${pItem.month < 10 ? '0' : ''}${pItem.month}.${pItem.date < 10 ? '0' : ''}${pItem.date}`;
+                      const timeStr = `${formatHour(pItem.startHour)} ~ ${formatHour(pItem.endHour)}`;
+                      const cleanDesc = getCleanDesc(pItem.description);
+
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                                {item.requestedCount > 0 ? `결재 대기 ${item.requestedCount}건이 있습니다.` : `결재 관리 항목 (${item.data.length}건)`}
+                            <div 
+                              id={'card_' + pItem.id}
+                              data-card-title={pItem.title}
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1.5px solid #cbd5e1',
+                                borderRadius: '12px',
+                                padding: '12px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                              }}
+                            >
+                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                "{pItem.title}"
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {item.data.map((pItem, index) => {
-                                  const reqMember = TEAM.find(m => m.id === pItem.requesterId || m.id === pItem.memberId) || { name: '정윤희', role: '부장' };
-                                  const dateStr = pItem.dateStr || `${pItem.year}.${pItem.month < 10 ? '0' : ''}${pItem.month}.${pItem.date < 10 ? '0' : ''}${pItem.date}`;
-                                  const timeStr = `${formatHour(pItem.startHour)} ~ ${formatHour(pItem.endHour)}`;
-                                  const cleanDesc = getCleanDesc(pItem.description);
-                                  const resubmitMsgMatch = (pItem.description || '').match(/\[재요청메시지\]\s*([^|]+)/);
-                                  const resubmitMsg = resubmitMsgMatch ? resubmitMsgMatch[1].trim() : null;
 
-                                  return (
-                                    <div 
-                                      key={pItem.id} 
-                                      id={'card_' + pItem.id}
-                                      data-card-title={pItem.title}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                {cleanDesc && cleanDesc !== '없음' && (
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                      <span>상세</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <span>신청자</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span>날짜</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span>시간</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: '6px' }}>
+                                {pItem.status === 'requested' ? (
+                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                    <button
+                                      onClick={() => handleRejectSchedule(pItem.id)}
                                       style={{
-                                        backgroundColor: '#ffffff',
-                                        border: '1.5px solid #cbd5e1',
-                                        borderRadius: '12px',
-                                        padding: '12px 14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                        일정 {index + 1}: "{pItem.title}"
-                                      </div>
-
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                        {resubmitMsg && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#2563eb', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#2563eb' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                              <span>메시지</span>
-                                            </div>
-                                            <div style={{ color: '#1e40af', fontWeight: '700', wordBreak: 'break-all' }}>{resubmitMsg}</div>
-                                          </div>
-                                        )}
-
-                                        {cleanDesc && cleanDesc !== '없음' && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                              <span>상세</span>
-                                            </div>
-                                            <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                          </div>
-                                        )}
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            <span>신청자</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '사원'})</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                            <span>날짜</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <span>시간</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                        </div>
-                                      </div>
-
-                                      <div style={{ marginTop: '6px' }}>
-                                        {pItem.status === 'requested' ? (
-                                          <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                            <button
-                                              onClick={() => handleRejectSchedule(pItem.id)}
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#fef2f2',
-                                                color: '#dc2626',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                            >
-                                              ❌ 반려
-                                            </button>
-                                            <button
-                                              onClick={() => handleApproveSchedule(pItem.id)}
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#ecfdf5',
-                                                color: '#059669',
-                                                border: '1px solid #a7f3d0',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                            >
-                                              💚 수락
-                                            </button>
-                                          </div>
-                                        ) : pItem.status === 'accepted' ? (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              🎉 승인하였습니다
-                                            </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#fef2f2',
-                                                color: '#dc2626',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer'
-                                              }}
-                                              onClick={() => handleRejectSchedule(pItem.id)}
-                                            >
-                                              승인 취소
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              ❌ 반려하였습니다
-                                            </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#ecfdf5',
-                                                color: '#059669',
-                                                border: '1px solid #a7f3d0',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                              onClick={() => handleApproveSchedule(pItem.id)}
-                                            >
-                                              재승인
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                      ❌ 반려
+                                    </button>
+                                    <button
+                                      onClick={() => handleApproveSchedule(pItem.id)}
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        border: '1px solid #a7f3d0',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                    >
+                                      💚 수락
+                                    </button>
+                                  </div>
+                                ) : pItem.status === 'accepted' ? (
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                      🎉 승인하였습니다
+                                    </span>
+                                    <button
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        marginLeft: 'auto',
+                                        cursor: 'pointer'
+                                      }}
+                                      onClick={() => handleRejectSchedule(pItem.id)}
+                                    >
+                                      승인 취소
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                      ❌ 반려하였습니다
+                                    </span>
+                                    <button
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        border: '1px solid #a7f3d0',
+                                        borderRadius: '8px',
+                                        marginLeft: 'auto',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      onClick={() => handleApproveSchedule(pItem.id)}
+                                    >
+                                      재승인
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -5784,175 +5760,153 @@ export default function App() {
                         </div>
                       );
                     }
-                    if (item.type === 'incoming_tasks') {
+                    if (item.type === 'incoming_task_single') {
+                      const tItem = item.data[0];
+                      if (!tItem) return null;
+                      const reqMember = TEAM.find(m => m.id === tItem.requesterId) || { name: '정윤희', role: '부장' };
+                      const dateStr = tItem.dateStr || `${tItem.year}.${tItem.month < 10 ? '0' : ''}${tItem.month}.${tItem.date < 10 ? '0' : ''}${tItem.date}`;
+                      const timeStr = `${formatHour(tItem.startHour)} ~ ${formatHour(tItem.endHour)}`;
+                      const cleanDesc = getCleanDesc(tItem.description);
+
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                                {item.requestedCount > 0 ? `요청받은 업무 ${item.requestedCount}건이 있습니다.` : `요청받은 업무 항목 (${item.data.length}건)`}
+                            <div 
+                              id={'card_' + tItem.id}
+                              data-card-title={tItem.title}
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1.5px solid #cbd5e1',
+                                borderRadius: '12px',
+                                padding: '12px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                              }}
+                            >
+                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                "{tItem.title}"
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {item.data.map((tItem, index) => {
-                                  const reqMember = TEAM.find(m => m.id === tItem.requesterId) || { name: '정윤희', role: '부장' };
-                                  const dateStr = tItem.dateStr || `${tItem.year}.${tItem.month < 10 ? '0' : ''}${tItem.month}.${tItem.date < 10 ? '0' : ''}${tItem.date}`;
-                                  const timeStr = `${formatHour(tItem.startHour)} ~ ${formatHour(tItem.endHour)}`;
-                                  const cleanDesc = getCleanDesc(tItem.description);
-                                  const resubmitMsgMatch = (tItem.description || '').match(/\[재요청메시지\]\s*([^|]+)/);
-                                  const resubmitMsg = resubmitMsgMatch ? resubmitMsgMatch[1].trim() : null;
 
-                                  return (
-                                    <div 
-                                      key={tItem.id} 
-                                      id={'card_' + tItem.id}
-                                      data-card-title={tItem.title}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                {cleanDesc && cleanDesc !== '없음' && (
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                      <span>상세</span>
+                                    </div>
+                                    <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <span>요청자</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '팀원'})</div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span>날짜</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span>시간</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                </div>
+                              </div>
+
+                              <div style={{ marginTop: '6px' }}>
+                                {tItem.status === 'requested' ? (
+                                  <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                    <button
+                                      onClick={() => handleRejectSchedule(tItem.id)}
                                       style={{
-                                        backgroundColor: '#ffffff',
-                                        border: '1.5px solid #cbd5e1',
-                                        borderRadius: '12px',
-                                        padding: '12px 14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
                                       }}
                                     >
-                                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                        일정 {index + 1}: "{tItem.title}"
-                                      </div>
-
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                        {resubmitMsg && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#2563eb', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#2563eb' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                              <span>메시지</span>
-                                            </div>
-                                            <div style={{ color: '#1e40af', fontWeight: '700', wordBreak: 'break-all' }}>{resubmitMsg}</div>
-                                          </div>
-                                        )}
-
-                                        {cleanDesc && cleanDesc !== '없음' && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                              <span>상세</span>
-                                            </div>
-                                            <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                          </div>
-                                        )}
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            <span>요청자</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '700' }}>{reqMember.name} ({reqMember.role || '팀원'})</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                            <span>날짜</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <span>시간</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                        </div>
-                                      </div>
-
-                                      <div style={{ marginTop: '6px' }}>
-                                        {tItem.status === 'requested' ? (
-                                          <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                                            <button
-                                              onClick={() => handleRejectSchedule(tItem.id)}
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#fef2f2',
-                                                color: '#dc2626',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                            >
-                                              ❌ 반려
-                                            </button>
-                                            <button
-                                              onClick={() => handleApproveSchedule(tItem.id)}
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#ecfdf5',
-                                                color: '#059669',
-                                                border: '1px solid #a7f3d0',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                            >
-                                              💚 수락
-                                            </button>
-                                          </div>
-                                        ) : tItem.status === 'accepted' ? (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              🎉 수락하였습니다
-                                            </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#fef2f2',
-                                                color: '#dc2626',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer'
-                                              }}
-                                              onClick={() => handleRejectSchedule(tItem.id)}
-                                            >
-                                              수락 취소
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                            <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                              ❌ 반려하였습니다
-                                            </span>
-                                            <button
-                                              style={{
-                                                padding: '6px 12px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                backgroundColor: '#ecfdf5',
-                                                color: '#059669',
-                                                border: '1px solid #a7f3d0',
-                                                borderRadius: '8px',
-                                                marginLeft: 'auto',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease'
-                                              }}
-                                              onClick={() => handleApproveSchedule(tItem.id)}
-                                            >
-                                              재수락
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                      ❌ 거절
+                                    </button>
+                                    <button
+                                      onClick={() => handleAcceptSchedule(tItem.id)}
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        border: '1px solid #a7f3d0',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                    >
+                                      💚 수락
+                                    </button>
+                                  </div>
+                                ) : tItem.status === 'accepted' ? (
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                      🎉 수락하였습니다
+                                    </span>
+                                    <button
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        marginLeft: 'auto',
+                                        cursor: 'pointer'
+                                      }}
+                                      onClick={() => handleRejectSchedule(tItem.id)}
+                                    >
+                                      수락 취소
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                      ❌ 반려하였습니다
+                                    </span>
+                                    <button
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        border: '1px solid #a7f3d0',
+                                        borderRadius: '8px',
+                                        marginLeft: 'auto',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      onClick={() => handleAcceptSchedule(tItem.id)}
+                                    >
+                                      재수락
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -5963,140 +5917,115 @@ export default function App() {
                         </div>
                       );
                     }
-                    if (item.type === 'rejected_outgoing') {
+                    if (item.type === 'rejected_outgoing_single') {
+                      const rItem = item.data[0];
+                      if (!rItem) return null;
+                      const rejecterMember = getRejecterMember(rItem);
+                      const dateStr = rItem.dateStr || `${rItem.year}.${rItem.month < 10 ? '0' : ''}${rItem.month}.${rItem.date < 10 ? '0' : ''}${rItem.date}`;
+                      const timeStr = `${formatHour(rItem.startHour)} ~ ${formatHour(rItem.endHour)}`;
+                      const isLeave = /반차|연차|휴가|병가/i.test(rItem.title || '');
+                      const reasonMatch = (rItem.description || '').match(/\[반려사유\]\s*([^|]+)/);
+                      const reasonText = reasonMatch ? reasonMatch[1].trim() : null;
+
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                                요청 {item.data.length}건이 반려되었습니다.
+                            <div 
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1.5px solid #cbd5e1',
+                                borderRadius: '12px',
+                                padding: '12px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                              }}
+                            >
+                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                "{rItem.title}"
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {item.data.map((rItem, index) => {
-                                  const schedMember = TEAM.find(m => m.id === rItem.memberId) || { name: '정윤희', role: '부장' };
-                                  const rejecterMember = getRejecterMember(rItem);
-                                  const dateStr = rItem.dateStr || `${rItem.year}.${rItem.month < 10 ? '0' : ''}${rItem.month}.${rItem.date < 10 ? '0' : ''}${rItem.date}`;
-                                  const timeStr = `${formatHour(rItem.startHour)} ~ ${formatHour(rItem.endHour)}`;
-                                  const cleanDesc = getCleanDesc(rItem.description);
-                                  const rejectReasonMatch = (rItem.description || '').match(/\[반려사유\]\s*([^|]+)/);
-                                  const rejectReason = rejectReasonMatch ? rejectReasonMatch[1].trim() : null;
 
-                                  return (
-                                    <div 
-                                      key={rItem.id} 
-                                      id={'card_' + rItem.id}
-                                      data-card-title={rItem.title}
-                                      style={{
-                                        backgroundColor: '#ffffff',
-                                        border: '1.5px solid #cbd5e1',
-                                        borderRadius: '12px',
-                                        padding: '12px 14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
-                                      }}
-                                    >
-                                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                        일정 {index + 1}: "{rItem.title}"
-                                      </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <span>담당</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{TEAM.find(m => m.id === rItem.memberId)?.name || '담당자'}</div>
+                                </div>
 
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                            <span>상태</span>
-                                          </div>
-                                          <div style={{ color: '#dc2626', fontWeight: '700' }}>반려</div>
-                                        </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span>날짜</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                </div>
 
-                                        {rejectReason && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#dc2626' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                              <span>사유</span>
-                                            </div>
-                                            <div style={{ color: '#dc2626', fontWeight: '700', wordBreak: 'break-all' }}>{rejectReason}</div>
-                                          </div>
-                                        )}
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span>시간</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                </div>
 
-                                        {cleanDesc && cleanDesc !== '없음' && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                              <span>상세</span>
-                                            </div>
-                                            <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                          </div>
-                                        )}
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#dc2626', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#dc2626' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <span>상태</span>
+                                  </div>
+                                  <div style={{ fontWeight: '800' }}>반려</div>
+                                </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            <span>담당</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '700' }}>{schedMember.name} ({schedMember.role || '팀원'})</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                            <span>날짜</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <span>시간</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                        </div>
-                                      </div>
-
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '8px' }}>
-                                        <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                          ❌ 반려됨 ({rejecterMember.name} {rejecterMember.role || '부장'} 반려)
-                                        </span>
-                                        <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
-                                          <button
-                                            onClick={() => handleCancelSchedule(rItem.id)}
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#fef2f2',
-                                              color: '#dc2626',
-                                              border: '1px solid #fca5a5',
-                                              borderRadius: '8px',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                          >
-                                            요청취소
-                                          </button>
-                                          <button
-                                            onClick={() => handleResubmitSchedule(rItem.id)}
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#f0fdf4',
-                                              color: '#15803d',
-                                              border: '1px solid #86efac',
-                                              borderRadius: '8px',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                          >
-                                            다시요청
-                                          </button>
-                                        </div>
-                                      </div>
+                                {reasonText && (
+                                  <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#b91c1c', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '700', color: '#b91c1c' }}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                      <span>사유</span>
                                     </div>
-                                  );
-                                })}
+                                    <div style={{ fontWeight: '700', wordBreak: 'break-all' }}>{reasonText}</div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                  ❌ 반려됨 ({rejecterMember.name} {rejecterMember.role || '사원'} 반려)
+                                </span>
+                                <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                                  <button
+                                    onClick={() => handleCancelSchedule(rItem.id)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: '12px',
+                                      backgroundColor: '#fef2f2',
+                                      color: '#dc2626',
+                                      border: '1px solid #fca5a5',
+                                      borderRadius: '8px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {isLeave ? '신청취소' : '요청취소'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleResubmitSchedule(rItem.id)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: '12px',
+                                      backgroundColor: '#f0fdf4',
+                                      color: '#16a34a',
+                                      border: '1px solid #86efac',
+                                      borderRadius: '8px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    다시요청
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -6107,124 +6036,79 @@ export default function App() {
                         </div>
                       );
                     }
-                    if (item.type === 'accepted_outgoing') {
+                    if (item.type === 'accepted_outgoing_single') {
+                      const aItem = item.data[0];
+                      if (!aItem) return null;
+                      const dateStr = aItem.dateStr || `${aItem.year}.${aItem.month < 10 ? '0' : ''}${aItem.month}.${aItem.date < 10 ? '0' : ''}${aItem.date}`;
+                      const timeStr = `${formatHour(aItem.startHour)} ~ ${formatHour(aItem.endHour)}`;
+                      const isLeave = /반차|연차|휴가|병가/i.test(aItem.title || '');
+                      const approverMember = (aItem.approverId ? TEAM.find(m => m.id === aItem.approverId) : null) || { name: '조상무', role: '상무' };
+
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                                요청 {item.data.length}건이 승인되었습니다.
+                            <div 
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1.5px solid #a7f3d0',
+                                borderRadius: '12px',
+                                padding: '12px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.04)'
+                              }}
+                            >
+                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                "{aItem.title}"
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {item.data.map((aItem, index) => {
-                                  const schedMember = TEAM.find(m => m.id === aItem.memberId) || { name: '정윤희', role: '부장' };
-                                  const approverMember = getApproverMember(aItem, ME.id);
-                                  const dateStr = aItem.dateStr || `${aItem.year}.${aItem.month < 10 ? '0' : ''}${aItem.month}.${aItem.date < 10 ? '0' : ''}${aItem.date}`;
-                                  const timeStr = `${formatHour(aItem.startHour)} ~ ${formatHour(aItem.endHour)}`;
-                                  const cleanDesc = getCleanDesc(aItem.description);
-                                  const acceptMsgMatch = (aItem.description || '').match(/\[수락메시지\]\s*([^|]+)/);
-                                  const acceptMsg = acceptMsgMatch ? acceptMsgMatch[1].trim() : null;
 
-                                  return (
-                                    <div 
-                                      key={aItem.id} 
-                                      id={'card_' + aItem.id}
-                                      data-card-title={aItem.title}
-                                      style={{
-                                        backgroundColor: '#ffffff',
-                                        border: '1.5px solid #cbd5e1',
-                                        borderRadius: '12px',
-                                        padding: '12px 14px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
-                                      }}
-                                    >
-                                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
-                                        일정 {index + 1}: "{aItem.title}"
-                                      </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <span>담당</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '700' }}>{TEAM.find(m => m.id === aItem.memberId)?.name || '담당자'}</div>
+                                </div>
 
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                                            <span>상태</span>
-                                          </div>
-                                          <div style={{ color: '#059669', fontWeight: '700' }}>승인 완료</div>
-                                        </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span>날짜</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
+                                </div>
 
-                                        {acceptMsg && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#059669', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#059669' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                              <span>메시지</span>
-                                            </div>
-                                            <div style={{ color: '#047857', fontWeight: '700', wordBreak: 'break-all' }}>{acceptMsg}</div>
-                                          </div>
-                                        )}
+                                <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span>시간</span>
+                                  </div>
+                                  <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
+                                </div>
+                              </div>
 
-                                        {cleanDesc && cleanDesc !== '없음' && (
-                                          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                              <span>상세</span>
-                                            </div>
-                                            <div style={{ color: '#0f172a', fontWeight: '600', wordBreak: 'break-all' }}>{cleanDesc}</div>
-                                          </div>
-                                        )}
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            <span>담당</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '700' }}>{schedMember.name} ({schedMember.role || '팀원'})</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                            <span>날짜</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{dateStr}</div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <span>시간</span>
-                                          </div>
-                                          <div style={{ color: '#0f172a', fontWeight: '600' }}>{timeStr}</div>
-                                        </div>
-                                      </div>
-
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '8px' }}>
-                                        <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                          🎉 승인 완료 ({approverMember.name} {approverMember.role || '상무'} 승인)
-                                        </span>
-                                        <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
-                                          <button
-                                            onClick={() => handleCancelSchedule(aItem.id)}
-                                            style={{
-                                              padding: '6px 12px',
-                                              fontSize: '12px',
-                                              fontWeight: '700',
-                                              backgroundColor: '#fef2f2',
-                                              color: '#dc2626',
-                                              border: '1px solid #fca5a5',
-                                              borderRadius: '8px',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                          >
-                                            등록취소
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                  🎉 {isLeave ? `승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : '수락 완료'}
+                                </span>
+                                <button
+                                  onClick={() => handleCancelSchedule(aItem.id)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#dc2626',
+                                    border: '1px solid #fca5a5',
+                                    borderRadius: '8px',
+                                    fontWeight: '700',
+                                    marginLeft: 'auto',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {isLeave ? '신청취소' : '요청취소'}
+                                </button>
                               </div>
                             </div>
                           </div>

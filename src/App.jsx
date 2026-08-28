@@ -3484,12 +3484,9 @@ export default function App() {
             } else {
               schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
             }
-          } else if (isDelegatedToColleague || parsed.isRequested) {
+          } else if (parsed.isRequested || isDelegatedToColleague) {
             schedStatus = 'requested';
             schedApproverId = assignedMemberId;
-          } else if (mentionsYoonhee && ME.id !== 'sh') {
-            schedStatus = 'requested';
-            schedApproverId = 'sh';
           } else {
             schedStatus = 'accepted';
             schedApproverId = null;

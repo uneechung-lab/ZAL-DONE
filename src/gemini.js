@@ -48,6 +48,7 @@ Analyze the user's input message and determine the correct action to take.
 Context Information:
 - Current Year/Month: ${year}.${monthStr}
 - Today's Date: ${year}.${monthStr}.${todayDate} (${todayDOW}) (Use this as reference for relative dates like "오늘", "내일", "다음주", "이번주", etc.)
+- Current Logged-in User: ${currentUser ? `${currentUser.name} (${currentUser.role || '멤버'}, ID: "${currentUser.id}")` : '정윤희 (부장, ID: "sh")'}
 - Calendar Cheat Sheet (CRITICAL - USE THIS EXACT MAPPING FOR ALL DATES AND WEEKDAYS):
 ${calendarGuide}
 - Team Members list:
@@ -59,11 +60,21 @@ User Input:
 Instructions:
 Determine if the user wants to CREATE new schedules, UPDATE existing schedules, or DELETE schedules.
 
+CRITICAL COMPOUND SENTENCE & MULTI-SCHEDULE EXTRACTION RULE:
+When the user's message contains MULTIPLE events, meetings, briefings, conferences, reports, or delegated tasks connected in a complex sentence (e.g. connected by "~갔다가", "~복귀해서", "~들어갈 거고", "~전에", "~보고받고", "~라고 해", "~하고", "~하며", commas, etc.):
+- You MUST extract EVERY SINGLE DISTINCT ACTIVITY as a separate schedule object in the "schedules" array!
+- Do NOT merge or compress multiple separate tasks into a single schedule!
+- Determine the correct startHour/endHour, title, and memberId for each distinct activity:
+  * Example 1: "11시 대신증권 본사 미팅 나갔다가" -> title: "대신증권 본사 미팅", startHour: 11.0, endHour: 12.0, memberId: "${currentUser?.id || 'sangmoo'}", isRequested: false
+  * Example 2: "2시까지 사내 보안 감사 지적사항 조치 결과 보고받고" -> title: "사내 보안 감사 지적사항 조치 결과 보고", startHour: 13.0, endHour: 14.0, memberId: "${currentUser?.id || 'sangmoo'}", isRequested: false
+  * Example 3: "3시에 정부장 브리핑 들어갈 거고" -> title: "정부장 브리핑", startHour: 15.0, endHour: 16.0, memberId: "${currentUser?.id || 'sangmoo'}", isRequested: false
+  * Example 4: "4시 반에 부서장 결산 회의" -> title: "부서장 결산 회의", startHour: 16.5, endHour: 17.5, memberId: "${currentUser?.id || 'sangmoo'}", isRequested: false
+  * Example 5: "정다음 사원한테 오늘 야근자 파악해서 저녁 식대 신청 일정 잡으라고 해" -> title: "야근자 파악 및 저녁 식대 신청 일정", startHour: 18.0, endHour: 19.0, memberId: "daum", isRequested: true, approverId: "daum"
+
 CRITICAL SINGLE-TASK DELEGATION RULE:
-When the input describes a cause/incident and a delegated task together (e.g. "아침부터 인증 서버 지연 이슈 떠서 정사인한테 로그 분석 맡기고"):
-- Do NOT split this into two separate schedules ("이슈" and "로그 분석")!
-- Combine them into a SINGLE schedule item: title "인증 서버 지연 로그 분석" (or "인증 서버 로그 분석"), memberId: "daum", isIssue: true, isRequested: true, approverId: "daum"!
-- The schedule MUST belong ONLY to the assigned team member ("daum"), NOT to the manager writing the message!
+When the input describes an unexpected system incident and a delegated task together (e.g. "아침부터 인증 서버 지연 이슈 떠서 정사인한테 로그 분석 맡기고"):
+- Combine them into a SINGLE schedule item: title "인증 서버 지연 로그 분석", memberId: "daum", isIssue: true, isRequested: true, approverId: "daum"!
+- The schedule MUST belong to the assigned team member ("daum")!
 
 Return a JSON object in one of the following formats:
 

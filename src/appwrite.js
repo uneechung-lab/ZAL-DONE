@@ -159,12 +159,15 @@ export const appwriteService = {
     try {
       let docId = id || updates.$id || updates.id;
 
-      let desc = updates.description;
-      if (desc === undefined && updates.desc !== undefined) desc = updates.desc;
+      let desc = updates.description !== undefined ? updates.description : (updates.desc !== undefined ? updates.desc : '');
+      if (updates.year && updates.month && !desc.includes('[YM:')) {
+        desc = `[YM:${updates.year}.${updates.month}] ${desc}`.trim();
+      }
 
-      const validFields = ['title', 'date', 'month', 'year', 'memberId', 'memberIds', 'startHour', 'endHour', 'color', 'description', 'status', 'requesterId'];
+      // Appwrite schedules schema only has these attributes:
+      const schemaFields = ['title', 'date', 'memberId', 'memberIds', 'startHour', 'endHour', 'color', 'description', 'status', 'requesterId'];
       const cleanData = {};
-      validFields.forEach(field => {
+      schemaFields.forEach(field => {
         if (updates[field] !== undefined) {
           if (field === 'memberIds' && Array.isArray(updates[field])) {
             cleanData[field] = JSON.stringify(updates[field]);
@@ -173,38 +176,42 @@ export const appwriteService = {
           }
         }
       });
-      if (desc !== undefined) {
+      if (desc) {
         cleanData.description = desc;
       }
 
       let response = null;
-      if (docId && typeof docId === 'string' && !/^\d+$/.test(docId)) {
+      // 1) Try direct update if docId looks like an Appwrite ID (string without purely digits)
+      if (docId && typeof docId === 'string' && isNaN(Number(docId))) {
         try {
           response = await databases.updateDocument(databaseId, schedulesCollectionId, docId, cleanData);
-          return response;
+          if (response) return response;
         } catch (err) {
-          console.warn('Direct updateDocument failed, trying title/date fallback:', err);
+          console.warn('Direct updateDocument failed for docId:', docId, err);
         }
       }
 
-      // Fallback: search by title and date in DB
+      // 2) Safe Fallback: fetch document list without Query.equal (avoids missing index errors) and find matching document
       const targetTitle = updates.title;
       const targetDate = updates.date;
       const targetStartHour = updates.startHour;
-      if (targetTitle) {
+
+      try {
         const list = await databases.listDocuments(databaseId, schedulesCollectionId, [
-          Query.equal('title', targetTitle),
-          Query.limit(10)
+          Query.limit(100)
         ]);
         const match = list.documents.find(d => 
+          d.title === targetTitle && 
           (!targetDate || d.date === targetDate) && 
           (!targetStartHour || d.startHour === targetStartHour)
-        ) || list.documents[0];
+        ) || list.documents.find(d => d.title === targetTitle);
 
         if (match) {
           response = await databases.updateDocument(databaseId, schedulesCollectionId, match.$id, cleanData);
           return response;
         }
+      } catch (listErr) {
+        console.error('Fallback listDocuments failed:', listErr);
       }
 
       return response;

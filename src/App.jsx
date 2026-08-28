@@ -5685,7 +5685,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {reqMember.name}님이 "{pItem.title}" {/반차|연차|휴가|병가/i.test(pItem.title || '') ? '결재를 요청하셨습니다.' : '업무 결재를 요청하셨습니다.'}
                             </div>
@@ -5694,20 +5694,20 @@ export default function App() {
                               data-card-title={pItem.title}
                               style={{
                                 backgroundColor: '#ffffff',
-                                border: '1.5px solid #cbd5e1',
-                                borderRadius: '12px',
-                                padding: '12px 14px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                gap: '4px',
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
                               }}
                             >
-                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
                                 "{pItem.title}"
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 {cleanDesc && cleanDesc !== '없음' && (
                                   <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
                                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
@@ -5749,7 +5749,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleRejectSchedule(pItem.id)}
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5765,7 +5765,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleApproveSchedule(pItem.id)}
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -5786,7 +5786,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5808,7 +5808,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -5845,7 +5845,7 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {reqMember.name}님이 "{tItem.title}" 업무를 요청하셨습니다.
                             </div>
@@ -5854,20 +5854,20 @@ export default function App() {
                               data-card-title={tItem.title}
                               style={{
                                 backgroundColor: '#ffffff',
-                                border: '1.5px solid #cbd5e1',
-                                borderRadius: '12px',
-                                padding: '12px 14px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                gap: '4px',
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
                               }}
                             >
-                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
                                 "{tItem.title}"
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 {cleanDesc && cleanDesc !== '없음' && (
                                   <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
                                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
@@ -5909,7 +5909,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleRejectSchedule(tItem.id)}
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5925,7 +5925,7 @@ export default function App() {
                                     <button
                                       onClick={() => handleAcceptSchedule(tItem.id)}
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -5946,7 +5946,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
@@ -5968,7 +5968,7 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
+                                        padding: '5px 12px',
                                         fontSize: '12px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
@@ -6007,27 +6007,27 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {rejecterMember.name}님이 {isLeave ? `"${rItem.title}" 결재를` : `"${rItem.title}" 업무 요청을`} 반려하셨습니다.{reasonText && ` (사유: ${reasonText})`}
                             </div>
                             <div 
                               style={{
                                 backgroundColor: '#ffffff',
-                                border: '1.5px solid #cbd5e1',
-                                borderRadius: '12px',
-                                padding: '12px 14px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)'
+                                gap: '4px',
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
                               }}
                             >
-                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
                                 "{rItem.title}"
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -6079,7 +6079,7 @@ export default function App() {
                                   <button
                                     onClick={() => handleCancelSchedule(rItem.id)}
                                     style={{
-                                      padding: '6px 12px',
+                                      padding: '5px 12px',
                                       fontSize: '12px',
                                       backgroundColor: '#fef2f2',
                                       color: '#dc2626',
@@ -6094,7 +6094,7 @@ export default function App() {
                                   <button
                                     onClick={() => handleResubmitSchedule(rItem.id)}
                                     style={{
-                                      padding: '6px 12px',
+                                      padding: '5px 12px',
                                       fontSize: '12px',
                                       backgroundColor: '#f0fdf4',
                                       color: '#16a34a',
@@ -6127,27 +6127,27 @@ export default function App() {
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
-                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line' }}>
                             <div style={{ fontWeight: '600', marginBottom: '10px' }}>
                               {approverMember.name}님이 {isLeave ? `"${aItem.title}" 결재를` : `"${aItem.title}" 업무 요청을`} 수락하셨습니다.
                             </div>
                             <div 
                               style={{
                                 backgroundColor: '#ffffff',
-                                border: '1.5px solid #a7f3d0',
-                                borderRadius: '12px',
-                                padding: '12px 14px',
+                                border: '1px solid #a7f3d0',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '8px',
-                                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.04)'
+                                gap: '4px',
+                                boxShadow: '0 1px 3px rgba(16, 185, 129, 0.04)'
                               }}
                             >
-                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
                                 "{aItem.title}"
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12.5px', color: '#334155' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
                                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

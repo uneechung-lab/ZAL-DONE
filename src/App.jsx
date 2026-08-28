@@ -2158,7 +2158,18 @@ export default function App() {
   // Schedule Data
   const [schedules, setSchedules] = useState(() => {
     const savedSched = localStorage.getItem('zal_schedules');
-    return savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES;
+    const list = savedSched ? JSON.parse(savedSched) : INITIAL_SCHEDULES;
+    return (list || []).map(s => {
+      if (s.title && s.title.includes('정부장 브리핑')) {
+        if (s.memberIds && (s.memberIds.includes('sh') || s.memberIds.includes('yoonhee')) && (s.memberIds.includes('sangmoo') || s.memberId === 'sangmoo' || s.requesterId === 'sangmoo')) {
+          return {
+            ...s,
+            requesterId: 'sangmoo'
+          };
+        }
+      }
+      return s;
+    });
   });
 
   const checkCardsVisibility = () => {
@@ -2650,10 +2661,12 @@ export default function App() {
                 }
                 return true;
               }).map(s => {
-                // Sanitize: If personal meeting/briefing created by sangmoo accidentally included 'sh' in memberIds, fix to sangmoo only
-                if (s.requesterId === 'sangmoo' && /브리핑|미팅|회의|보고/i.test(s.title || '') && !/신청|식대|야근/i.test(s.title || '')) {
-                  if (s.memberIds && (s.memberIds.includes('sh') || s.memberIds.includes('yoonhee')) && s.memberIds.includes('sangmoo')) {
-                    return { ...s, memberId: 'sangmoo', memberIds: ['sangmoo'] };
+                if (s.title && s.title.includes('정부장 브리핑')) {
+                  if (s.memberIds && (s.memberIds.includes('sh') || s.memberIds.includes('yoonhee')) && (s.memberIds.includes('sangmoo') || s.memberId === 'sangmoo' || s.requesterId === 'sangmoo')) {
+                    return {
+                      ...s,
+                      requesterId: 'sangmoo'
+                    };
                   }
                 }
                 return s;

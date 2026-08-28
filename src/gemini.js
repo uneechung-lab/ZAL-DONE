@@ -73,8 +73,20 @@ When the user's message contains MULTIPLE events, meetings, briefings, conferenc
 
 CRITICAL SINGLE-TASK DELEGATION RULE:
 When the input describes an unexpected system incident and a delegated task together (e.g. "아침부터 인증 서버 지연 이슈 떠서 정사인한테 로그 분석 맡기고"):
-- Combine them into a SINGLE schedule item: title "인증 서버 지연 로그 분석", memberId: "daum", isIssue: true, isRequested: true, approverId: "daum"!
-- The schedule MUST belong to the assigned team member ("daum")!
+- Extract TWO SEPARATE schedule items:
+  1. The incident issue itself: title "인증 서버 지연 이슈", memberId: "${currentUser?.id || 'sangmoo'}", isIssue: true, isRequested: false (this belongs to the current user!)
+  2. The delegated task: title "로그 분석", memberId: "daum", isIssue: false, isRequested: true, approverId: "daum" (delegated to daum)
+- NEVER combine them into a single item!
+- The incident issue ALWAYS belongs to the CURRENT USER, not daum!
+- The delegated log analysis task ALWAYS belongs to daum!
+
+CRITICAL TITLE EXTRACTION RULES:
+- Remove trailing connective words from titles: "~떠서", "~해서", "~하고", "~이후", "~맡기고", "~잡으라고", "~들어갈 거고" etc.
+- "아침부터 인증 서버 지연 이슈 떠서" -> title: "인증 서버 지연 이슈" (NOT "인증 서버 지연 이슈 떠서")
+- "정사원한테 로그 분석 맡기고" -> title: "로그 분석" (NOT "정사원한테 로그 분석 맡기고")
+- "11시에 회의실B에서 긴급 대책 회의 들어감" -> title: "긴급 대책 회의" (NOT include 들어감, 회의실B)
+- "오후엔 경영진 보고서 쓰고" -> title: "경영진 보고서 작성" (NOT "경영진 보고서 쓰고")
+- "조상무님한테 9월 1일 오후 반차 승인 요청도 올려놔" -> title: "오후 반차", month: 9, date: 1, startHour: 14.0, endHour: 18.0, memberId: "${currentUser?.id || 'sh'}", isRequested: true, approverId: "sangmoo"
 
 Return a JSON object in one of the following formats:
 

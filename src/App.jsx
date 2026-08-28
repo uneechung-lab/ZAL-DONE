@@ -5558,6 +5558,38 @@ export default function App() {
                   const greetingMsg = todayMessages.find(msg => msg.id === 0);
                   const otherMessages = todayMessages.filter(msg => msg.id !== 0);
 
+                  // Build a map: schedule ID -> timestamp of the AI message that registered it
+                  // This ensures cards sort at the same position as the message that created them
+                  const scheduleToMsgTs = {};
+                  otherMessages.forEach(msg => {
+                    const msgTs = getSafeItemTs(msg);
+                    const { schedules: parsedList } = parseSchedulesFromText(msg.text || '');
+                    parsedList.forEach(parsed => {
+                      const matched = schedules.find(s =>
+                        s.title === parsed.title &&
+                        s.date === parsed.date &&
+                        s.startHour === parsed.startHour
+                      );
+                      if (matched) {
+                        // Only store if no statusUpdatedAt (i.e. not manually changed)
+                        if (!matched.statusUpdatedAt) {
+                          scheduleToMsgTs[matched.id] = msgTs;
+                        }
+                      }
+                    });
+                  });
+
+                  const getCardTs = (item) => {
+                    if (!item) return 0;
+                    const id = String(item.id || item.$id || '');
+                    // If status was changed by user action, use that time
+                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
+                    // Otherwise sync to the AI message that registered it
+                    if (scheduleToMsgTs[id]) return scheduleToMsgTs[id];
+                    // Fallback to getSafeItemTs
+                    return getSafeItemTs(item);
+                  };
+
                   const otherMessageItems = otherMessages.map(msg => ({
                     type: 'message',
                     id: 'msg_' + msg.id,
@@ -5568,28 +5600,28 @@ export default function App() {
                   const pendingApprovalItems = groupedPendingItems.map(item => ({
                     type: 'pending_approval_single',
                     id: 'pending_' + (item.id || item.$id),
-                    createdAt: getSafeItemTs(item),
+                    createdAt: getCardTs(item),
                     data: item
                   }));
 
                   const incomingTaskItems = groupedIncomingTaskRequests.map(item => ({
                     type: 'incoming_task_single',
                     id: 'tasks_' + (item.id || item.$id),
-                    createdAt: getSafeItemTs(item),
+                    createdAt: getCardTs(item),
                     data: item
                   }));
 
                   const rejectedOutgoingItems = groupedRejectedOutgoingRequests.map(item => ({
                     type: 'rejected_outgoing_single',
                     id: 'rejected_' + (item.id || item.$id),
-                    createdAt: getSafeItemTs(item),
+                    createdAt: getCardTs(item),
                     data: item
                   }));
 
                   const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.map(item => ({
                     type: 'accepted_outgoing_single',
                     id: 'accepted_' + (item.id || item.$id),
-                    createdAt: getSafeItemTs(item),
+                    createdAt: getCardTs(item),
                     data: item
                   }));
 

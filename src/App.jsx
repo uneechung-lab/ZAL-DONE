@@ -1584,20 +1584,27 @@ export default function App() {
   };
 
     const getRejecterMember = (sched) => {
-    if (!sched) return { name: '조상무', role: '상무' };
+    if (!sched) return { name: '정윤희', role: '부장' };
     
     if (sched.approverId) {
-      return TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo')) || { name: '조상무', role: '상무' };
+      return TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo')) || { name: '정윤희', role: '부장' };
     }
 
-    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
     const reqId = sched.requesterId || sched.memberId;
 
-    if (isLeave || sched.memberId === (sched.requesterId || 'sh') || sched.memberId === 'sh' || sched.memberId === 'yoonhee') {
-      if (reqId === 'daum') {
-        return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
-      }
+    // 조상무가 신청한 일정인 경우 -> 결재/반려자는 정윤희 부장
+    if (reqId === 'sangmoo' || reqId === 'sangmu') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    }
+
+    // 정윤희가 신청한 일정인 경우 -> 결재/반려자는 조상무 상무
+    if (reqId === 'sh' || reqId === 'yoonhee') {
       return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    }
+
+    // 정다음이 신청한 일정인 경우 -> 결재/반려자는 정윤희 부장
+    if (reqId === 'daum') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
 
     const targetMemberId = sched.memberId;
@@ -1605,7 +1612,7 @@ export default function App() {
       return TEAM.find(m => m.id === targetMemberId) || { name: '정다음', role: '사원' };
     }
 
-    return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
   };
 
   const getCleanDesc = (desc) => {
@@ -1618,13 +1625,7 @@ export default function App() {
     d = d.replace(/\[재요청메시지\].*?(\||\n|$)/g, '');
     d = d.replace(/\[수락메시지\].*?(\||\n|$)/g, '');
     d = d.replace(/\[승인 완료\]\s*\|?/g, '');
-    const matchDetail = d.match(/\[상세\]\s*([^|]+)/);
-    if (matchDetail) {
-      d = matchDetail[1].trim();
-    } else {
-      d = d.replace(/^[|\s]+|[|\s]+$/g, '').replace(/\|+/g, ' ').trim();
-    }
-    return d || '없음';
+    return d.trim() || '없음';
   };
 
   const groupList = (list) => {
@@ -4887,6 +4888,67 @@ export default function App() {
                                       </div>
                                     );
                                   })}
+
+                                  {/* Status and Reason Row for Rejected / Accepted Schedule */}
+                                  {matchedSchedule && (matchedSchedule.status === 'rejected' || (matchedSchedule.status && matchedSchedule.status.startsWith('rejected'))) && (() => {
+                                    const rejectReasonMatch = (matchedSchedule.description || '').match(/\[반려사유\]\s*([^|]+)/);
+                                    const rejectReason = rejectReasonMatch ? rejectReasonMatch[1].trim() : null;
+
+                                    return (
+                                      <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#dc2626', marginTop: '4px', alignItems: 'center' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#dc2626' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                            <span>상태</span>
+                                          </div>
+                                          <div style={{ fontWeight: '700', color: '#dc2626' }}>
+                                            반려{rejectReason ? ` (${rejectReason})` : ''}
+                                          </div>
+                                        </div>
+                                        {rejectReason && (
+                                          <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#dc2626', marginTop: '2px', alignItems: 'flex-start' }}>
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#dc2626' }}>
+                                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                              <span>사유</span>
+                                            </div>
+                                            <div style={{ fontWeight: '600', color: '#b91c1c', wordBreak: 'break-all' }}>
+                                              {rejectReason}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+
+                                  {matchedSchedule && matchedSchedule.status === 'accepted' && (() => {
+                                    const acceptMsgMatch = (matchedSchedule.description || '').match(/\[수락메시지\]\s*([^|]+)/);
+                                    const acceptMsg = acceptMsgMatch ? acceptMsgMatch[1].trim() : null;
+
+                                    return (
+                                      <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#059669', marginTop: '4px', alignItems: 'center' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#059669' }}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                            <span>상태</span>
+                                          </div>
+                                          <div style={{ fontWeight: '700', color: '#059669' }}>
+                                            승인 완료
+                                          </div>
+                                        </div>
+                                        {acceptMsg && (
+                                          <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#059669', marginTop: '2px', alignItems: 'flex-start' }}>
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#059669' }}>
+                                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                              <span>메시지</span>
+                                            </div>
+                                            <div style={{ fontWeight: '600', color: '#047857', wordBreak: 'break-all' }}>
+                                              {acceptMsg}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                   
                                   <div style={{ marginTop: '8px' }}>
                                        {!isCancellationMsg ? (
@@ -5843,16 +5905,16 @@ export default function App() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', color: '#334155' }}>
                                       <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'center' }}>
                                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                           <span>상태</span>
                                         </div>
-                                        <div style={{ color: '#dc2626', fontWeight: '700' }}>반려</div>
+                                        <div style={{ color: '#dc2626', fontWeight: '700' }}>반려{rejectReason ? ` (${rejectReason})` : ''}</div>
                                       </div>
 
                                       {rejectReason && (
                                         <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', alignItems: 'flex-start' }}>
-                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#dc2626' }}>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                             <span>사유</span>
                                           </div>
                                           <div style={{ color: '#dc2626', fontWeight: '700', wordBreak: 'break-all' }}>{rejectReason}</div>
@@ -5897,7 +5959,7 @@ export default function App() {
                                     {/* Footer: Left Rejection Message, Right Action Buttons */}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '8px' }}>
                                       <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
-                                        ❌ 반려됨 ({rejecterMember.name} {rejecterMember.role || '상무'} 반려)
+                                        ❌ 반려됨 ({rejecterMember.name} {rejecterMember.role || '부장'} 반려)
                                       </span>
                                       <div style={{ display: 'inline-flex', gap: '6px', marginLeft: 'auto' }}>
                                         <button

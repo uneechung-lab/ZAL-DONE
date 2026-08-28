@@ -5558,32 +5558,32 @@ export default function App() {
                     data: msg
                   }));
 
-                  const pendingApprovalItems = groupedPendingItems.map(group => ({
+                  const pendingApprovalItems = groupedPendingItems.map(item => ({
                     type: 'pending_approval_single',
-                    id: 'pending_' + group.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(group),
-                    data: group
+                    id: 'pending_' + (item.id || item.$id),
+                    createdAt: getSafeItemTs(item),
+                    data: item
                   }));
 
-                  const incomingTaskItems = groupedIncomingTaskRequests.map(group => ({
+                  const incomingTaskItems = groupedIncomingTaskRequests.map(item => ({
                     type: 'incoming_task_single',
-                    id: 'tasks_' + group.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(group),
-                    data: group
+                    id: 'tasks_' + (item.id || item.$id),
+                    createdAt: getSafeItemTs(item),
+                    data: item
                   }));
 
-                  const rejectedOutgoingItems = groupedRejectedOutgoingRequests.map(group => ({
+                  const rejectedOutgoingItems = groupedRejectedOutgoingRequests.map(item => ({
                     type: 'rejected_outgoing_single',
-                    id: 'rejected_' + group.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(group),
-                    data: group
+                    id: 'rejected_' + (item.id || item.$id),
+                    createdAt: getSafeItemTs(item),
+                    data: item
                   }));
 
-                  const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.map(group => ({
+                  const acceptedOutgoingItems = groupedAcceptedOutgoingRequests.map(item => ({
                     type: 'accepted_outgoing_single',
-                    id: 'accepted_' + group.map(s => s.id).join('_'),
-                    createdAt: getSafeGroupTs(group),
-                    data: group
+                    id: 'accepted_' + (item.id || item.$id),
+                    createdAt: getSafeItemTs(item),
+                    data: item
                   }));
 
                   const allChronologicalItems = [
@@ -5604,7 +5604,7 @@ export default function App() {
                       return renderBubble(item.data);
                     }
                     if (item.type === 'pending_approval_single') {
-                      const pItem = item.data[0];
+                      const pItem = item.data;
                       if (!pItem) return null;
                       const reqMember = TEAM.find(m => m.id === pItem.requesterId || m.id === pItem.memberId) || { name: '정윤희', role: '부장' };
                       const dateStr = pItem.dateStr || `${pItem.year}.${pItem.month < 10 ? '0' : ''}${pItem.month}.${pItem.date < 10 ? '0' : ''}${pItem.date}`;
@@ -5761,7 +5761,7 @@ export default function App() {
                       );
                     }
                     if (item.type === 'incoming_task_single') {
-                      const tItem = item.data[0];
+                      const tItem = item.data;
                       if (!tItem) return null;
                       const reqMember = TEAM.find(m => m.id === tItem.requesterId) || { name: '정윤희', role: '부장' };
                       const dateStr = tItem.dateStr || `${tItem.year}.${tItem.month < 10 ? '0' : ''}${tItem.month}.${tItem.date < 10 ? '0' : ''}${tItem.date}`;
@@ -5918,7 +5918,7 @@ export default function App() {
                       );
                     }
                     if (item.type === 'rejected_outgoing_single') {
-                      const rItem = item.data[0];
+                      const rItem = item.data;
                       if (!rItem) return null;
                       const rejecterMember = getRejecterMember(rItem);
                       const dateStr = rItem.dateStr || `${rItem.year}.${rItem.month < 10 ? '0' : ''}${rItem.month}.${rItem.date < 10 ? '0' : ''}${rItem.date}`;
@@ -6037,7 +6037,7 @@ export default function App() {
                       );
                     }
                     if (item.type === 'accepted_outgoing_single') {
-                      const aItem = item.data[0];
+                      const aItem = item.data;
                       if (!aItem) return null;
                       const dateStr = aItem.dateStr || `${aItem.year}.${aItem.month < 10 ? '0' : ''}${aItem.month}.${aItem.date < 10 ? '0' : ''}${aItem.date}`;
                       const timeStr = `${formatHour(aItem.startHour)} ~ ${formatHour(aItem.endHour)}`;

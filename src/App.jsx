@@ -8635,28 +8635,14 @@ export default function App() {
                   <button 
                     className="modal-btn primary" 
                     disabled={isDeletingEvent || isSavingEvent}
-                    style={{ 
-                      padding: '9px 20px', 
-                      fontSize: '15px', 
-                      fontWeight: '700',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: '#6366f1',
-                      color: '#ffffff',
-                      borderRadius: '8px',
-                      border: 'none',
-                      cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
-                      opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
-                    }} 
                     onClick={saveEventEdits}
                   >
                     {isSavingEvent ? (
                       <>
                         <LoadingSpinner size={16} color="#ffffff" />
-                        수정 중...
+                        저장 중...
                       </>
-                    ) : '수정'}
+                    ) : '저장'}
                   </button>
                 </>
               )}

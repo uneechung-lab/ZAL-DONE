@@ -744,7 +744,13 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     } else if (/반차|연차|휴가|병가/i.test(raw)) {
       memberId = myId;
       isRequested = true;
-      approverId = myId === 'sangmoo' ? 'sangmoo' : 'sh';
+      if (/조상무|상무님/i.test(raw)) {
+        approverId = 'sangmoo';
+      } else if (/정부장|정윤희/i.test(raw)) {
+        approverId = 'sh';
+      } else {
+        approverId = (myId === 'sh' || myId === 'yoonhee') ? 'sangmoo' : 'sh';
+      }
     } else {
       // Normal personal task of the current user
       memberId = myId;
@@ -763,7 +769,19 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       .trim();
 
     // Map common phrase to clean standard titles
-    if (/세션.*풀리|로그인.*디버깅|세션.*디버깅/i.test(raw)) {
+    if (/오후\s*반차/i.test(raw)) {
+      title = '오후 반차';
+    } else if (/오전\s*반차/i.test(raw)) {
+      title = '오전 반차';
+    } else if (/반차/i.test(raw)) {
+      title = '오후 반차';
+    } else if (/연차/i.test(raw)) {
+      title = '연차';
+    } else if (/휴가/i.test(raw)) {
+      title = '휴가';
+    } else if (/병가/i.test(raw)) {
+      title = '병가';
+    } else if (/세션.*풀리|로그인.*디버깅|세션.*디버깅/i.test(raw)) {
       title = '로그인 세션 풀림 긴급 디버깅';
     } else if (/퍼블리싱.*리뷰|화면.*리뷰/i.test(raw)) {
       title = '화면 퍼블리싱 리뷰';

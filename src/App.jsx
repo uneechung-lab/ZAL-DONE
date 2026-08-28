@@ -1462,10 +1462,11 @@ export default function App() {
     if (!sched) return false;
     if (/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(sched.title || '')) return false;
     if (sched.requesterId && (sched.requesterId === ME.id || (ME.id === 'sh' && sched.requesterId === 'yoonhee'))) return false;
-    if (sched.memberId === ME.id && (!sched.requesterId || sched.requesterId === ME.id)) return false;
+    // An assigned worker cannot be the approver of their own task
+    if (sched.memberId === ME.id || (sched.memberIds && sched.memberIds.includes(ME.id))) return false;
 
-    // 결재 대상(휴가/연차/반차 등) 여부 확인: 일반 업무/태스크 위임은 isApprover 대상이 아님 (incomingTaskRequests로 처리)
-    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|신청/i.test(sched.title || '');
+    // Only formal leave/vacation/expense approval requests where someone else requested and ME is the manager
+    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|비용s*신청/i.test(sched.title || '');
     if (!isLeaveOrFormalApproval) return false;
 
     if (sched.approverId) {
@@ -5439,7 +5440,7 @@ export default function App() {
                     if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     if (item.data && item.data.statusUpdatedAt) return item.data.statusUpdatedAt;
 
-                    // 2) 실제 생성 일시 (createdAt)
+                    // 2) 실제 요청/생성 일시 (createdAt)
                     const cAt = item.createdAt || item.data?.createdAt;
                     if (cAt) {
                       const t = new Date(cAt).getTime();
@@ -5455,7 +5456,13 @@ export default function App() {
                       return d.getTime();
                     }
 
-                    // 4) 타임라인 startHour 기준 시간 계산 (일정 객체인 경우 당일 시간으로 정확히 위치)
+                    // 4) ID 기반 타임스탬프 (메시지 등의 13자리 밀리초 ID)
+                    const rawId = item.id || item.data?.id;
+                    if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
+                    const numId = parseInt(String(rawId || '').replace(/\D/g, ''), 10);
+                    if (!isNaN(numId) && numId > 1000000000000) return numId;
+
+                    // 5) 타임라인 startHour (createdAt 정보가 아예 없는 경우 최후 수단)
                     const sHour = item.startHour !== undefined ? item.startHour : item.data?.startHour;
                     if (sHour !== undefined && typeof sHour === 'number') {
                       const y = item.year || item.data?.year || new Date().getFullYear();
@@ -5465,12 +5472,6 @@ export default function App() {
                       const min = Math.round((sHour % 1) * 60);
                       return new Date(y, m - 1, dNum, hr, min, 0, 0).getTime();
                     }
-
-                    // 5) ID 기반 타임스탬프 (메시지 등의 13자리 밀리초 ID)
-                    const rawId = item.id || item.data?.id;
-                    if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
-                    const numId = parseInt(String(rawId || '').replace(/\D/g, ''), 10);
-                    if (!isNaN(numId) && numId > 1000000000000) return numId;
 
                     return 0;
                   };

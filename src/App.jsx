@@ -5546,36 +5546,30 @@ export default function App() {
 
                                 {(() => {
                   const getSafeItemTs = (item) => {
-                    if (!item) return Date.now();
-                    if (item.from && (item.from === 'ai' || item.from.startsWith('ai_'))) {
-                      const { schedules: schedList } = parseSchedulesFromText(item.text);
-                      let maxStatusTs = 0;
-                      schedList.forEach(s => {
-                        const matched = schedules.find(sched => 
-                          sched.title === s.title && 
-                          sched.date === s.date && 
-                          sched.startHour === s.startHour
-                        );
-                        if (matched && matched.statusUpdatedAt && matched.statusUpdatedAt > maxStatusTs) {
-                          maxStatusTs = matched.statusUpdatedAt;
-                        }
-                      });
-                      if (maxStatusTs > 0) return maxStatusTs;
-                    }
-
-                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
-                    if (item.updatedAt) {
-                      const t = new Date(item.updatedAt).getTime();
-                      if (!isNaN(t) && t > 0) return t;
-                    }
+                    if (!item) return 0;
                     if (item.createdAt) {
                       const t = new Date(item.createdAt).getTime();
                       if (!isNaN(t) && t > 0) return t;
                     }
-                    if (typeof item.id === 'number' && item.id > 1000000000) return item.id;
+                    if (item.data && item.data.createdAt) {
+                      const t = new Date(item.data.createdAt).getTime();
+                      if (!isNaN(t) && t > 0) return t;
+                    }
+                    if (typeof item.id === 'number' && item.id > 1000000000000) return item.id;
                     const numId = parseInt(String(item.id).replace(/\D/g, ''), 10);
-                    if (!isNaN(numId) && numId > 1000000000) return numId;
-                    return Date.now();
+                    if (!isNaN(numId) && numId > 1000000000000) return numId;
+
+                    if (item.startHour !== undefined || (item.data && item.data.startHour !== undefined)) {
+                      const sHour = item.startHour !== undefined ? item.startHour : item.data.startHour;
+                      const y = item.year || item.data?.year || new Date().getFullYear();
+                      const m = item.month || item.data?.month || (new Date().getMonth() + 1);
+                      const dNum = item.date || item.data?.date || new Date().getDate();
+                      const hr = Math.floor(sHour);
+                      const min = Math.round((sHour % 1) * 60);
+                      const calcDate = new Date(y, m - 1, dNum, hr, min, 0, 0);
+                      return calcDate.getTime();
+                    }
+                    return 0;
                   };
 
                   const getSafeGroupTs = (items) => {

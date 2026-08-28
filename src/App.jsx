@@ -7302,7 +7302,12 @@ export default function App() {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: '1px solid var(--border-light)', backgroundColor: '#ffffff' }}>시간</th>
+                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', backgroundColor: '#ffffff', padding: 0 }}>
+                      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span>시간</span>
+                        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '1px', backgroundColor: 'var(--border-light)', zIndex: 20 }} />
+                      </div>
+                    </th>
                     {weekDates.map((d, dIdx) => {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
@@ -7395,12 +7400,14 @@ export default function App() {
                         fontSize: '11.5px', 
                         fontWeight: '600', 
                         color: 'var(--text-secondary)',
-                        borderRight: '1px solid var(--border-light)',
                         borderBottom: '1px solid var(--border-light)',
                         backgroundColor: '#ffffff',
                         padding: '0'
                       }}>
-                        {formatHour(h)}
+                        <div style={{ position: 'relative', width: '100%', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {formatHour(h)}
+                          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '1px', backgroundColor: 'var(--border-light)', zIndex: 20 }} />
+                        </div>
                       </td>
                       {weekDates.map((d, dIdx) => {
                         const info = getDayLabelAndDow(d);

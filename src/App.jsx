@@ -5547,28 +5547,33 @@ export default function App() {
                                 {(() => {
                   const getSafeItemTs = (item) => {
                     if (!item) return 0;
-                    if (item.createdAt) {
-                      const t = new Date(item.createdAt).getTime();
+
+                    // 1) 실제 사용자가 수락/반려/재요청 액션을 취했을 때만 statusUpdatedAt 반영!
+                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
+                    if (item.data && item.data.statusUpdatedAt) return item.data.statusUpdatedAt;
+
+                    // 2) 실제 생성 시간 (createdAt)
+                    const cAt = item.createdAt || item.data?.createdAt;
+                    if (cAt) {
+                      const t = new Date(cAt).getTime();
                       if (!isNaN(t) && t > 0) return t;
                     }
-                    if (item.data && item.data.createdAt) {
-                      const t = new Date(item.data.createdAt).getTime();
-                      if (!isNaN(t) && t > 0) return t;
+
+                    // 3) time 문자열이 있는 경우 (예: "11:13")
+                    const timeStr = item.time || item.data?.time;
+                    if (timeStr && /^\d{1,2}:\d{2}/.test(timeStr)) {
+                      const [hh, mm] = timeStr.split(':').map(n => parseInt(n, 10));
+                      const d = new Date();
+                      d.setHours(hh, mm, 0, 0);
+                      return d.getTime();
                     }
-                    if (typeof item.id === 'number' && item.id > 1000000000000) return item.id;
-                    const numId = parseInt(String(item.id).replace(/\D/g, ''), 10);
+
+                    // 4) ID 기반 타임스탬프 (13자리 밀리초)
+                    const rawId = item.id || item.data?.id;
+                    if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
+                    const numId = parseInt(String(rawId || '').replace(/\D/g, ''), 10);
                     if (!isNaN(numId) && numId > 1000000000000) return numId;
 
-                    if (item.startHour !== undefined || (item.data && item.data.startHour !== undefined)) {
-                      const sHour = item.startHour !== undefined ? item.startHour : item.data.startHour;
-                      const y = item.year || item.data?.year || new Date().getFullYear();
-                      const m = item.month || item.data?.month || (new Date().getMonth() + 1);
-                      const dNum = item.date || item.data?.date || new Date().getDate();
-                      const hr = Math.floor(sHour);
-                      const min = Math.round((sHour % 1) * 60);
-                      const calcDate = new Date(y, m - 1, dNum, hr, min, 0, 0);
-                      return calcDate.getTime();
-                    }
                     return 0;
                   };
 

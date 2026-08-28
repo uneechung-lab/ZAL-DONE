@@ -2964,8 +2964,11 @@ export default function App() {
         const reqKeys = [requesterId];
         if (requesterId === 'sh') reqKeys.push('yoonhee');
         if (requesterId === 'yoonhee') reqKeys.push('sh');
+        if (requesterId === 'sangmoo') reqKeys.push('sangmu');
+        if (requesterId === 'sangmu') reqKeys.push('sangmoo');
+        if (requesterId === 'daum') reqKeys.push('daum');
 
-        let reqNoticeText = `🎉 ${approverName}님이 "${target.title}" 일정을 ${verb}하셨습니다.`;
+        let reqNoticeText = `🎉 ${ME.name} ${ME.role || '사원'}님이 "${target.title}" 일정을 ${verb}하셨습니다.`;
         if (cleanMsg) {
           reqNoticeText += `\n💬 메시지: "${cleanMsg}"`;
         }
@@ -2997,6 +3000,8 @@ export default function App() {
       }
     );
   };
+
+  const handleAcceptSchedule = handleApproveSchedule;
 
     const handleRejectSchedule = (schedId) => {
     const target = schedules.find(s => 

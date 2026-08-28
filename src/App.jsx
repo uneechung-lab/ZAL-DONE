@@ -7288,15 +7288,15 @@ export default function App() {
             const weeklyMembers = filteredMembers.filter(m => daySelectedMemberIds.includes(m.id));
             const numMembers = weeklyMembers.length;
             const memberColWidth = 105;
-            const totalTableWidth = Math.max(80 + weekDates.length * Math.max(numMembers, 1) * memberColWidth, 1000);
+            const minTableWidth = 80 + weekDates.length * Math.max(numMembers, 1) * memberColWidth;
 
             return (
-              <table className="timeline-table" style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px`, tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+              <table className="timeline-table" style={{ width: '100%', minWidth: `${minTableWidth}px`, tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                 <colgroup>
                   <col style={{ width: '80px', minWidth: '80px' }} />
                   {weekDates.map(d => 
                     weeklyMembers.map(member => (
-                      <col key={`${d}_${member.id}`} style={{ width: `${memberColWidth}px`, minWidth: `${memberColWidth}px` }} />
+                      <col key={`${d}_${member.id}`} style={{ minWidth: `${memberColWidth}px` }} />
                     ))
                   )}
                 </colgroup>
@@ -7337,7 +7337,6 @@ export default function App() {
                             fontWeight: '600',
                             backgroundColor: 'var(--bg-primary)',
                             minWidth: `${memberColWidth}px`,
-                            width: `${memberColWidth}px`,
                             whiteSpace: 'nowrap'
                           }}
                         >

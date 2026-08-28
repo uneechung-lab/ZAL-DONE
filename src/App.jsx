@@ -5435,18 +5435,18 @@ export default function App() {
                   const getSafeItemTs = (item) => {
                     if (!item) return 0;
 
-                    // 1) 실제 사용자가 수락/반려/재요청 액션을 취했을 때만 statusUpdatedAt 반영!
+                    // 1) 실제 사용자가 수락/반려/재요청 버튼을 누른 경우에만 statusUpdatedAt 반영!
                     if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     if (item.data && item.data.statusUpdatedAt) return item.data.statusUpdatedAt;
 
-                    // 2) 실제 생성 시간 (createdAt)
+                    // 2) 실제 생성 일시 (createdAt)
                     const cAt = item.createdAt || item.data?.createdAt;
                     if (cAt) {
                       const t = new Date(cAt).getTime();
                       if (!isNaN(t) && t > 0) return t;
                     }
 
-                    // 3) time 문자열이 있는 경우 (예: "11:13")
+                    // 3) time 문자열 (예: "11:13" 또는 "09:30")
                     const timeStr = item.time || item.data?.time;
                     if (timeStr && /^\d{1,2}:\d{2}/.test(timeStr)) {
                       const [hh, mm] = timeStr.split(':').map(n => parseInt(n, 10));
@@ -5455,7 +5455,18 @@ export default function App() {
                       return d.getTime();
                     }
 
-                    // 4) ID 기반 타임스탬프 (13자리 밀리초)
+                    // 4) 타임라인 startHour 기준 시간 계산 (일정 객체인 경우 당일 시간으로 정확히 위치)
+                    const sHour = item.startHour !== undefined ? item.startHour : item.data?.startHour;
+                    if (sHour !== undefined && typeof sHour === 'number') {
+                      const y = item.year || item.data?.year || new Date().getFullYear();
+                      const m = item.month || item.data?.month || (new Date().getMonth() + 1);
+                      const dNum = item.date || item.data?.date || new Date().getDate();
+                      const hr = Math.floor(sHour);
+                      const min = Math.round((sHour % 1) * 60);
+                      return new Date(y, m - 1, dNum, hr, min, 0, 0).getTime();
+                    }
+
+                    // 5) ID 기반 타임스탬프 (메시지 등의 13자리 밀리초 ID)
                     const rawId = item.id || item.data?.id;
                     if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
                     const numId = parseInt(String(rawId || '').replace(/\D/g, ''), 10);

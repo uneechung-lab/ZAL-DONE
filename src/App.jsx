@@ -7240,14 +7240,15 @@ export default function App() {
                 return dow !== 0 && dow !== 6;
               });
             }
-            const numMembers = filteredMembers.length;
+            const weeklyMembers = filteredMembers.filter(m => daySelectedMemberIds.includes(m.id));
+            const numMembers = weeklyMembers.length;
 
             return (
               <table className="timeline-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                 <colgroup>
                   <col style={{ width: '80px' }} />
                   {weekDates.map(d => 
-                    filteredMembers.map(member => (
+                    weeklyMembers.map(member => (
                       <col key={`${d}_${member.id}`} />
                     ))
                   )}
@@ -7262,7 +7263,7 @@ export default function App() {
                       return (
                         <th 
                           key={d} 
-                          colSpan={numMembers}
+                          colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
                           style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)' }}
                         >
@@ -7276,7 +7277,7 @@ export default function App() {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
                       const isSun = info.dow === '일';
-                      return filteredMembers.map((member, memberIdx) => (
+                      return weeklyMembers.map((member, memberIdx) => (
                         <th 
                           key={`${d}_${member.id}`}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
@@ -7352,7 +7353,7 @@ export default function App() {
                         const isSat = info.dow === '토';
                         const isSun = info.dow === '일';
                         
-                        return filteredMembers.map(member => {
+                        return weeklyMembers.map(member => {
                           const daySchedules = schedules.filter(s => {
                             const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
                             return matchesMember && isScheduleInMonth(s, currentYear, info.month) && s.date === info.dayNum;
@@ -7482,7 +7483,12 @@ export default function App() {
                   // 1. Collect all schedules for each day in this week row
                   const weekDaySchedules = row.map(day => {
                     if (!day.isCurrentMonth) return [];
-                    return allNormalizedSchedules.filter(s => isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum);
+                    return allNormalizedSchedules.filter(s => {
+                      const isSelectedMember = s.memberIds 
+                        ? s.memberIds.some(id => daySelectedMemberIds.includes(id)) 
+                        : daySelectedMemberIds.includes(s.memberId);
+                      return isSelectedMember && isScheduleInMonth(s, currentYear, currentMonth) && s.date === day.dayNum;
+                    });
                   });
 
                   // 2. Group items by title or groupId to form continuous range bars across columns 0..6

@@ -7082,13 +7082,15 @@ export default function App() {
                             width: '15px',
                             height: '15px',
                             borderRadius: '50%',
-                            backgroundColor: isAllSelected ? '#000000' : '#e2e8f0',
+                            backgroundColor: isAllSelected ? '#000000' : '#f1f5f9',
+                            border: isAllSelected ? '1.5px solid #000000' : '1.5px solid #94a3b8',
+                            boxSizing: 'border-box',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'background-color 0.15s ease'
+                            transition: 'all 0.15s ease'
                           }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4.8" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           </div>
@@ -7146,13 +7148,15 @@ export default function App() {
                             width: '15px',
                             height: '15px',
                             borderRadius: '50%',
-                            backgroundColor: isMemberSelected ? '#000000' : '#e2e8f0',
+                            backgroundColor: isMemberSelected ? '#000000' : '#f1f5f9',
+                            border: isMemberSelected ? '1.5px solid #000000' : '1.5px solid #94a3b8',
+                            boxSizing: 'border-box',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'background-color 0.15s ease'
+                            transition: 'all 0.15s ease'
                           }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4.8" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           </div>

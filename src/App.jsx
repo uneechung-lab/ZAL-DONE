@@ -5686,6 +5686,9 @@ export default function App() {
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                            <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500', marginBottom: '10px', lineHeight: '1.5' }}>
+                              🔔 <strong>{reqMember.name} {reqMember.role}님</strong>이 <strong>"{pItem.title}"</strong> {/반차|연차|휴가|병가/i.test(pItem.title || '') ? '결재를 요청하셨습니다.' : '업무 결재를 요청하셨습니다.'}
+                            </div>
                             <div 
                               id={'card_' + pItem.id}
                               data-card-title={pItem.title}
@@ -5843,6 +5846,9 @@ export default function App() {
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                            <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500', marginBottom: '10px', lineHeight: '1.5' }}>
+                              📋 <strong>{reqMember.name} {reqMember.role}님</strong>이 <strong>"{tItem.title}"</strong> 업무를 요청하셨습니다.
+                            </div>
                             <div 
                               id={'card_' + tItem.id}
                               data-card-title={tItem.title}
@@ -6002,6 +6008,9 @@ export default function App() {
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                            <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500', marginBottom: '10px', lineHeight: '1.5' }}>
+                              ❌ <strong>{rejecterMember.name} {rejecterMember.role}님</strong>이 {isLeave ? `"${rItem.title}" 결재를` : `"${rItem.title}" 업무 요청을`} <strong>반려</strong>하셨습니다.{reasonText && ` (사유: ${reasonText})`}
+                            </div>
                             <div 
                               style={{
                                 backgroundColor: '#ffffff',
@@ -6119,6 +6128,9 @@ export default function App() {
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
                           <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '100%', boxSizing: 'border-box' }}>
+                            <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500', marginBottom: '10px', lineHeight: '1.5' }}>
+                              ✅ <strong>{approverMember.name} {approverMember.role}님</strong>이 {isLeave ? `"${aItem.title}" 결재를` : `"${aItem.title}" 업무 요청을`} <strong>수락</strong>하셨습니다.
+                            </div>
                             <div 
                               style={{
                                 backgroundColor: '#ffffff',

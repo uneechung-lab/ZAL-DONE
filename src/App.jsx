@@ -8021,7 +8021,7 @@ export default function App() {
             <button 
               className="ai-toggle-floating-btn"
               onClick={() => openReportModal()}
-              style={{ position: 'relative', right: 0, bottom: 0, width: '105px', height: '105px' }}
+              style={{ position: 'relative', right: 0, bottom: 0, width: '115px', height: '115px' }}
               title={
                 timeViewTab === 'daily' ? '일일 업무 보고서 생성' :
                 timeViewTab === 'weekly' ? '주간 업무 보고서 생성' :
@@ -8034,12 +8034,12 @@ export default function App() {
             {/* Ground Shadow Effect Under Character Feet */}
             <div 
               style={{
-                width: '48px',
-                height: '7px',
+                width: '52px',
+                height: '8px',
                 borderRadius: '50%',
                 backgroundColor: 'rgba(0, 0, 0, 0.22)',
-                marginTop: '-6px',
-                filter: 'blur(2px)',
+                marginTop: '-7px',
+                filter: 'blur(2.2px)',
                 pointerEvents: 'none'
               }}
             />

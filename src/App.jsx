@@ -600,29 +600,48 @@ function normalizeHour(h, ampm) {
 
 function splitCompoundScheduleText(text) {
   let cleaned = text.replace(/\r\n/g, '\n').trim();
-  let rawLines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Multi-line: recursively process each line
+  const rawLines = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
   if (rawLines.length > 1) {
-    return rawLines;
+    const result = [];
+    rawLines.forEach(line => { result.push(...splitCompoundScheduleText(line)); });
+    return result;
   }
 
-  // Split on commas or major semantic boundaries
-  let segments = [];
-  const commaParts = cleaned.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  // Insert "|||" markers at task boundaries, then split on them
+  let marked = cleaned;
 
-  commaParts.forEach(part => {
-    // Split sub-clauses like "인증 서버 지연 이슈 떠서", "정사원한테 로그 분석 맡기고", "11시에...", "오후엔...", "조상무님한테..."
-    const subParts = part.split(/(?=(?:\b|\s)(?:정다음\s*(?:사원)?한테|정사원한테|정부장한테|조상무님한테|끝나면|이후|다음에|\d{1,2}\s*시(?:\s*반)?에|\d{1,2}:\d{2}|오후엔|오후에|오전에|오전엔))/i)
-      .map(s => s.trim())
-      .filter(Boolean);
+  // 1) Mark before delegation markers (정다음 한테, 조상무님한테 etc.)
+  marked = marked.replace(
+    /\s*(정다음\s*한테|정다음\s*사원\s*한테|정사원\s*한테|정사인\s*한테|정부장\s*한테|조상무님?\s*한테|조상무\s*님\s*한테)\s*/gi,
+    function(m) { return ' ||| ' + m.trim() + ' '; }
+  );
 
-    if (subParts.length > 1) {
-      segments.push(...subParts);
-    } else {
-      segments.push(part);
-    }
+  // 2) Mark before time markers that follow a clause-ending word (even with spaces)
+  // Match patterns like: "복귀해서 3시에", "들어갈 거고 4시 반에", "보고받고 2시까지"
+  // Connector can be: 고, 서, 거고, 받고, 전에, 나서, 이후, 다음에, 하고, 하며, 나갔다가
+  const timeMarkerRe = /((?:나갔다가|복귀해서|복귀하고|들어갈\s*거고|들어가기\s*전에|보고받고|보고\s*받고|이후|다음에|하고\s*나서|끝나고|끝나면|나서|받고)\s+)((?:오전|오후)?\s*\d{1,2}\s*시(?:\s*(?:반|30분))?(?:에|까지|부터)?)/gi;
+  marked = marked.replace(timeMarkerRe, function(m, connector, time) {
+    return connector.trimEnd() + ' ||| ' + time;
   });
 
-  return segments.filter(Boolean);
+  // 3) Also split before any Nth 시 occurrence that appears mid-sentence after Korean words
+  // This catches "4시 반에 부서장 결산 회의 들어가기 전에 2시까지" -> split before "2시까지"
+  // Pattern: Korean content + connector phrases + time
+  marked = marked.replace(/((?:전에|이후|다음에)\s+)(\d{1,2}\s*시)/gi, function(m, conn, time) {
+    return conn.trimEnd() + ' ||| ' + time;
+  });
+
+  // 4) Split by comma
+  const commaParts = marked.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  const segments = [];
+  commaParts.forEach(part => {
+    const subParts = part.split('|||').map(s => s.trim()).filter(Boolean);
+    segments.push(...subParts);
+  });
+
+  return segments.filter(s => s && s.length > 1);
 }
 
 function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new Date().getFullYear(), month = new Date().getMonth() + 1, currentUser = null) {

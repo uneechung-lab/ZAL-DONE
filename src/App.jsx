@@ -2951,7 +2951,7 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [수락메시지] ${cleanMsg}`;
             }
-            return { ...s, status: 'accepted', description: updatedDesc };
+            return { ...s, status: 'accepted', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
           });
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -3072,7 +3072,7 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [반려사유] ${cleanReason}`;
             }
-            return { ...s, status: 'rejected', description: updatedDesc };
+            return { ...s, status: 'rejected', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
           });
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -3231,7 +3231,7 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
             }
-            return { ...s, status: 'requested', description: updatedDesc };
+            return { ...s, status: 'requested', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
           });
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -5527,6 +5527,11 @@ export default function App() {
                                 {(() => {
                   const getSafeItemTs = (item) => {
                     if (!item) return Date.now();
+                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
+                    if (item.updatedAt) {
+                      const t = new Date(item.updatedAt).getTime();
+                      if (!isNaN(t) && t > 0) return t;
+                    }
                     if (item.createdAt) {
                       const t = new Date(item.createdAt).getTime();
                       if (!isNaN(t) && t > 0) return t;
@@ -5540,7 +5545,7 @@ export default function App() {
                   const getSafeGroupTs = (items) => {
                     if (!items || items.length === 0) return Date.now();
                     const validTs = items.map(getSafeItemTs).filter(t => !isNaN(t) && t > 0);
-                    return validTs.length > 0 ? Math.min(...validTs) : Date.now();
+                    return validTs.length > 0 ? Math.max(...validTs) : Date.now();
                   };
 
                   const greetingMsg = todayMessages.find(msg => msg.id === 0);
@@ -8252,7 +8257,7 @@ export default function App() {
                                 }
                                 await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
                               }
-                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted' } : s));
+                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
                               setIsDetailModalOpen(false);
                             }}
                           >
@@ -8306,7 +8311,7 @@ export default function App() {
                                 }
                                 await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
                               }
-                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: rejectedStatus, description: newDesc } : s));
+                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: rejectedStatus, description: newDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
                               setIsDetailModalOpen(false);
                             }}
                           >

@@ -576,10 +576,18 @@ input:-webkit-autofill:active {
   border-bottom: 2px solid var(--border-light);
 }
 
+.col-checkbox {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  text-align: center;
+  padding: 0 4px;
+  border-left: none !important;
+}
+
 .col-member {
   width: 90px;
   min-width: 90px;
-  border-left: none !important;
 }
 
 .timeline-table th:first-child,

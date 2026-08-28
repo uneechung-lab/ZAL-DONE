@@ -1473,6 +1473,9 @@ export default function App() {
     return isConfigured ? [] : TEAM;
   });
 
+  // Day view member row visibility selection state (default: all selected)
+  const [daySelectedMemberIds, setDaySelectedMemberIds] = useState(() => TEAM.map(m => m.id));
+
   // Extract display name, role, department, and project from stored name
   const parseStoredName = (rawFullName) => {
     if (!rawFullName) return { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
@@ -7049,6 +7052,21 @@ export default function App() {
             <table className="timeline-table">
               <thead>
                 <tr>
+                  <th className="col-checkbox" style={{ width: '44px', minWidth: '44px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={filteredMembers.length > 0 && filteredMembers.every(m => daySelectedMemberIds.includes(m.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDaySelectedMemberIds(TEAM.map(m => m.id));
+                        } else {
+                          setDaySelectedMemberIds([]);
+                        }
+                      }}
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      title={filteredMembers.every(m => daySelectedMemberIds.includes(m.id)) ? '전체 해제' : '전체 선택'}
+                    />
+                  </th>
                   <th className="col-member">구성원</th>
                   {hourSlots.map(h => (
                     <th key={h} className="col-hour">
@@ -7059,6 +7077,9 @@ export default function App() {
               </thead>
               <tbody>
                 {filteredMembers.map((member, index) => {
+                  const isMemberSelected = daySelectedMemberIds.includes(member.id);
+                  if (!isMemberSelected) return null;
+
                   const memberSchedules = schedules.filter(s => {
                     const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
                     const matchesDate = isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate;
@@ -7069,6 +7090,23 @@ export default function App() {
 
                   return (
                     <tr key={member.id} style={{ height: `${rowHeight}px` }}>
+                      {/* Column 0: Selection Checkbox */}
+                      <td className="col-checkbox" style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                        <input
+                          type="checkbox"
+                          checked={isMemberSelected}
+                          onChange={() => {
+                            setDaySelectedMemberIds(prev => 
+                              prev.includes(member.id)
+                                ? prev.filter(id => id !== member.id)
+                                : [...prev, member.id]
+                            );
+                          }}
+                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                          title={`${member.name} 숨기기`}
+                        />
+                      </td>
+
                       {/* Column 1: Member profile info */}
                       <td className="col-member">
                         <div className="member-cell-content">

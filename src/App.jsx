@@ -3239,43 +3239,84 @@ export default function App() {
           return next;
         });
 
-        const newMsgId = Date.now();
+        const nowTs = Date.now();
+        const nowIso = new Date().toISOString();
+        const nowTime = formatTime(new Date());
+
+        // 1) Re-request message for sender (current user)
         let messageText = `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`;
         if (cleanMsg) {
           messageText += `\n💬 메시지: "${cleanMsg}"`;
         }
 
-        const noticeMsg = { 
-          id: newMsgId, 
+        const myNoticeMsg = { 
+          id: nowTs, 
           from: `ai_${userSuffix}_${ME.id}`, 
           text: messageText, 
-          time: formatTime(new Date()), 
-          createdAt: new Date().toISOString() 
+          time: nowTime, 
+          createdAt: nowIso,
+          targetScheduleId: target.id,
+          targetTitle: target.title
         };
 
-        // Save to localStorage for instant UI persistence
+        // 2) Notification message for recipient (e.g. Jung Daeum or Yoonhee)
+        const targetUserId = targetMember.id;
+        const targetKeys = [targetUserId];
+        if (targetUserId === 'sh') targetKeys.push('yoonhee');
+        if (targetUserId === 'yoonhee') targetKeys.push('sh');
+        if (targetUserId === 'sangmoo') targetKeys.push('sangmu');
+        if (targetUserId === 'sangmu') targetKeys.push('sangmoo');
+        if (targetUserId === 'daum') targetKeys.push('daum');
+
+        let targetNoticeText = `🔄 ${ME.name} ${ME.role || '상무'}님이 "${target.title}" 일정을 다시 요청하셨습니다.`;
+        if (cleanMsg) {
+          targetNoticeText += `\n💬 메시지: "${cleanMsg}"`;
+        }
+
+        const targetNoticeMsg = {
+          id: nowTs + 2,
+          from: `ai_${targetUserId}`,
+          text: targetNoticeText,
+          time: nowTime,
+          createdAt: nowIso,
+          targetScheduleId: target.id,
+          targetTitle: target.title
+        };
+
+        // Save to localStorage for both sender and recipient
         try {
-          const keysToSave = [ME.id];
-          if (ME.id === 'sh') keysToSave.push('yoonhee');
-          if (ME.id === 'yoonhee') keysToSave.push('sh');
-          keysToSave.forEach(k => {
+          const myKeys = [ME.id];
+          if (ME.id === 'sh') myKeys.push('yoonhee');
+          if (ME.id === 'yoonhee') myKeys.push('sh');
+          if (ME.id === 'sangmoo') myKeys.push('sangmu');
+          if (ME.id === 'sangmu') myKeys.push('sangmoo');
+
+          myKeys.forEach(k => {
             const saved = localStorage.getItem(`zal_messages_${k}`);
             const list = saved ? JSON.parse(saved) : [];
-            list.push(noticeMsg);
+            list.push(myNoticeMsg);
+            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+          });
+
+          targetKeys.forEach(k => {
+            const saved = localStorage.getItem(`zal_messages_${k}`);
+            const list = saved ? JSON.parse(saved) : [];
+            list.push(targetNoticeMsg);
             localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
           });
         } catch (e) {}
 
         if (isConfigured) {
           try {
-            await appwriteService.createMessage(noticeMsg);
+            await appwriteService.createMessage(myNoticeMsg);
+            await appwriteService.createMessage(targetNoticeMsg);
           } catch (e) {
-            console.error("Failed to save message to DB:", e);
+            console.error("Failed to save re-request messages to DB:", e);
           }
         }
         setMessages(prev => {
-          const isAlready = prev.some(m => m.id === noticeMsg.id || (m.text === noticeMsg.text && m.time === noticeMsg.time));
-          return isAlready ? prev : [...prev, noticeMsg];
+          const isAlready = prev.some(m => m.id === myNoticeMsg.id || (m.text === myNoticeMsg.text && m.time === myNoticeMsg.time));
+          return isAlready ? prev : [...prev, myNoticeMsg];
         });
 
         showLayerAlert(`"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`, '다시요청 완료', 'success');
@@ -8290,7 +8331,7 @@ export default function App() {
               const cleanedDesc = selectedDetailEvent.description || '';
               const match = cleanedDesc.match(/\[반려 사유\]\s*([^\n]*)/);
               const reason = match ? match[1] : '';
-              const isCurrentUserRequester = selectedDetailEvent.requesterId === 'sh';
+              const isCurrentUserRequester = selectedDetailEvent.requesterId === ME.id || (ME.id === 'sh' && selectedDetailEvent.requesterId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.requesterId === 'sangmu');
               
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
@@ -8332,29 +8373,12 @@ export default function App() {
                             <button 
                               className="modal-btn" 
                               style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                              onClick={async () => {
+                              onClick={() => {
                                 if (!reRequestMsgInput.trim()) {
                                   showLayerAlert('재요청 메시지를 입력해 주세요.', '메시지 입력 필요', 'error');
                                   return;
                                 }
-                                const cleanDesc = (selectedDetailEvent.description || '').trim();
-                                const newDesc = `${cleanDesc}${cleanDesc ? '\n' : ''}[재요청 메시지] ${reRequestMsgInput.trim()}`;
-
-                                const newStatus = 'requested';
-                                if (isConfigured) {
-                                  let dbSched = { 
-                                    ...selectedDetailEvent, 
-                                    status: newStatus,
-                                    description: newDesc
-                                  };
-                                  if (isCurrentUserYoonhee) {
-                                    dbSched.memberId = selectedDetailEvent.memberId === 'sh' ? 'yoonhee' : (selectedDetailEvent.memberId === 'yoonhee' ? 'sh' : selectedDetailEvent.memberId);
-                                    dbSched.memberIds = selectedDetailEvent.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-                                    dbSched.requesterId = selectedDetailEvent.requesterId === 'sh' ? 'yoonhee' : (selectedDetailEvent.requesterId === 'yoonhee' ? 'sh' : selectedDetailEvent.requesterId);
-                                  }
-                                  await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
-                                }
-                                setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: newStatus, description: newDesc } : s));
+                                handleResubmitSchedule(selectedDetailEvent.id, reRequestMsgInput.trim());
                                 setIsDetailModalOpen(false);
                               }}
                             >

@@ -3609,10 +3609,11 @@ export default function App() {
             .split('\n')
             .map(l => l.replace(/^[-•*\s]+/, '').trim())
             .filter(Boolean)
-            .join(', ') || '없음';
+            .join(', ');
 
           const labelType = group.isIssue ? '이슈' : '일정';
-          replyDetails += `\n${index + 1}. ${labelType}: "${group.title}"\n상세 ${cleanDesc}\n담당 ${displayAssigneeText}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
+          const detailLine = cleanDesc && cleanDesc !== '없음' ? `\n상세 ${cleanDesc}` : '';
+          replyDetails += `\n${index + 1}. ${labelType}: "${group.title}"${detailLine}\n담당 ${displayAssigneeText}\n날짜 ${dateStr}\n시간 ${formatHour(group.startHour)} ~ ${formatHour(group.endHour)}\n`;
         });
 
         const savedSchedules = [];
@@ -4883,6 +4884,10 @@ export default function App() {
                                           <polyline points="12 6 12 12 16 14"/>
                                         </svg>
                                       );
+                                    }
+
+                                    if (f.type === 'detail' && (!f.text || f.text.trim() === '없음' || f.text.trim() === '')) {
+                                      return null;
                                     }
 
                                     if (f.type === 'other') {

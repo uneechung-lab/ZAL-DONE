@@ -5520,17 +5520,17 @@ export default function App() {
                     data: groupedAcceptedOutgoingRequests
                   }] : [];
 
-                  const activityStream = [
+                  const allChronologicalItems = [
                     ...otherMessageItems,
+                    ...pendingApprovalItems,
+                    ...incomingTaskItems,
                     ...rejectedOutgoingItems,
                     ...acceptedOutgoingItems
                   ].sort((a, b) => a.createdAt - b.createdAt);
 
                   const unifiedStream = [
                     ...(greetingMsg ? [{ type: 'message', id: 'msg_0', createdAt: 0, data: greetingMsg }] : []),
-                    ...pendingApprovalItems,
-                    ...incomingTaskItems,
-                    ...activityStream
+                    ...allChronologicalItems
                   ];
 
                   return unifiedStream.map(item => {

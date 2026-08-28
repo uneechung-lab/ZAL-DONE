@@ -943,26 +943,36 @@ function parseScheduleDescription(description = '') {
   let remaining = descStr
     .replace(/\[YM:\d{4}\.\d{2}\]\s*\|?\s*/g, '')
     .replace(/\[그룹 ID\]\s*g_\w+\s*\|?\s*/g, '')
-    .replace(/\[구분:\s*[^\]]+\]\s*\|?\s*/g, '')
+    .replace(/\[구분:\s*[^\ presentation\]]+\]\s*\|?\s*/g, '')
+    .replace(/\[구분:\s*[^\presentation\]]+\]\s*\|?\s*/g, '')
+    .replace(/\[구분:\s*[^\presentation\]]+?\]\s*\|?\s*/g, '')
+    .replace(/\[구분:.*?\]\s*\|?\s*/g, '')
     .replace(/\[진척률\]\s*\d+%\s*\|?\s*/g, '')
     .replace(/\[반려\s*사유\].*?(\||$)/g, '')
     .replace(/\[반려사유\].*?(\||$)/g, '')
     .replace(/\[재요청\s*메시지\].*?(\||$)/g, '')
     .replace(/\[수락메시지\].*?(\||$)/g, '')
+    .replace(/\[승인\s*완료\]\s*\|?\s*/g, '')
     .trim();
+
+  remaining = remaining.replace(/^[\s|]+/, '').replace(/[\s|]+$/, '').trim();
 
   const detailMatch = remaining.match(/\[상세\]\s*(.*?)(?=\s*\|\s*\[메모\]|\s*\[메모\]|$)/s);
   const memoMatch = remaining.match(/\[메모\]\s*(.*)$/s);
 
   if (detailMatch) {
-    detail = detailMatch[1].trim();
+    detail = detailMatch[1].replace(/^[\s|]+/, '').replace(/[\s|]+$/, '').trim();
   }
   if (memoMatch) {
-    memo = memoMatch[1].trim();
+    memo = memoMatch[1].replace(/^[\s|]+/, '').replace(/[\s|]+$/, '').trim();
   }
 
   if (!detailMatch && !memoMatch && remaining) {
-    detail = remaining;
+    detail = remaining.replace(/^\[상세\]\s*/, '').replace(/^[\s|]+/, '').replace(/[\s|]+$/, '').trim();
+  }
+
+  if (detail === '|' || detail === '없음' || /^\[.*?\]$/.test(detail)) {
+    detail = '';
   }
 
   return { groupId, detail, memo, progress, category };
@@ -1626,16 +1636,21 @@ export default function App() {
   };
 
   const getCleanDesc = (desc) => {
-    if (!desc) return '없음';
+    if (!desc) return '';
     let d = desc;
-    d = d.replace(/\[YM:.*?\]/g, '');
+    d = d.replace(/\[YM:.*?\]\s*\|?/g, '');
     d = d.replace(/\[그룹 ID\]\s*g_[\w_]+\s*\|?/g, '');
+    d = d.replace(/\[구분:.*?\]\s*\|?/g, '');
     d = d.replace(/\[진척률\]\s*\d+%\s*\|?/g, '');
+    d = d.replace(/\[반려\s*사유\].*?(\||\n|$)/g, '');
     d = d.replace(/\[반려사유\].*?(\||\n|$)/g, '');
-    d = d.replace(/\[재요청메시지\].*?(\||\n|$)/g, '');
+    d = d.replace(/\[재요청\s*메시지\].*?(\||\n|$)/g, '');
     d = d.replace(/\[수락메시지\].*?(\||\n|$)/g, '');
-    d = d.replace(/\[승인 완료\]\s*\|?/g, '');
-    return d.trim() || '없음';
+    d = d.replace(/\[승인\s*완료\]\s*\|?/g, '');
+    d = d.replace(/\[상세\]\s*/g, '');
+    d = d.replace(/\[메모\].*?(\||\n|$)/g, '');
+    d = d.replace(/^[\s|•*-]+/, '').replace(/[\s|•*-]+$/, '').trim();
+    return (d === '없음' || d === '|' || !d) ? '' : d;
   };
 
   const groupList = (list) => {

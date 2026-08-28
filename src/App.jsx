@@ -4905,7 +4905,7 @@ export default function App() {
                                             <span>상태</span>
                                           </div>
                                           <div style={{ fontWeight: '700', color: '#dc2626' }}>
-                                            반려{rejectReason ? ` (${rejectReason})` : ''}
+                                            반려
                                           </div>
                                         </div>
                                         {rejectReason && (
@@ -5913,7 +5913,7 @@ export default function App() {
                                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                           <span>상태</span>
                                         </div>
-                                        <div style={{ color: '#dc2626', fontWeight: '700' }}>반려{rejectReason ? ` (${rejectReason})` : ''}</div>
+                                        <div style={{ color: '#dc2626', fontWeight: '700' }}>반려</div>
                                       </div>
 
                                       {rejectReason && (

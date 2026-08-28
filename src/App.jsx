@@ -5068,7 +5068,22 @@ export default function App() {
 
                                               if (!isApprover && !isApprovalItem) {
                                                 return (
-                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px' }}>
+                                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px', gap: '6px' }}>
+                                                    <button
+                                                      style={{
+                                                        padding: '6px 12px',
+                                                        fontSize: '12px',
+                                                        backgroundColor: '#f8fafc',
+                                                        color: '#334155',
+                                                        border: '1px solid #cbd5e1',
+                                                        borderRadius: '8px',
+                                                        fontWeight: '700',
+                                                        cursor: 'pointer'
+                                                      }}
+                                                      onClick={() => openDetailModal(matchedSchedule)}
+                                                    >
+                                                      수정
+                                                    </button>
                                                     <button
                                                       style={{
                                                         padding: '6px 12px',

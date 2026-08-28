@@ -605,14 +605,16 @@ function splitCompoundScheduleText(text) {
     return rawLines;
   }
 
+  // Split on commas or major semantic boundaries
   let segments = [];
   const commaParts = cleaned.split(/[,，]/).map(s => s.trim()).filter(Boolean);
-  
+
   commaParts.forEach(part => {
-    const subParts = part.split(/(?=(?:\b|\s)(?:\d{1,2}\s*시|\d{1,2}:\d{2}|정다음\s*사원한테|정사원한테|정부장한테|오후\s*반차|오전\s*반차|연차))/i)
+    // Split sub-clauses like "끝나면 5시까지 API 연동", "2시까지 보고받고", "정다음 사원한테"
+    const subParts = part.split(/(?=(?:\b|\s)(?:끝나면|이후|다음에|\d{1,2}\s*시(?:\s*반)?에|\d{1,2}:\d{2}|정다음\s*사원한테|정사원한테|정부장한테|조상무님한테))/i)
       .map(s => s.trim())
       .filter(Boolean);
-    
+
     if (subParts.length > 1) {
       segments.push(...subParts);
     } else {
@@ -627,6 +629,8 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
   const chunks = splitCompoundScheduleText(text);
   const results = [];
   const myId = currentUser?.id || 'sangmoo';
+
+  let prevEndHour = 14.0; // Track previous event end time for phrases like "끝나면 5시까지"
 
   chunks.forEach((chunk, index) => {
     let raw = chunk.trim();
@@ -645,8 +649,41 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     let endHour = 11.0;
     let timeFound = false;
 
-    const rangeMatch = raw.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)\s*[-~]\s*(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)/);
-    if (rangeMatch) {
+    // 1) "오전 내내", "오전 중" -> 9:00 ~ 12:00
+    if (/오전\s*내내|오전\s*중/i.test(raw)) {
+      startHour = 9.0;
+      endHour = 12.0;
+      timeFound = true;
+    }
+    // 2) "오후 내내" -> 13:00 ~ 18:00
+    else if (/오후\s*내내/i.test(raw)) {
+      startHour = 13.0;
+      endHour = 18.0;
+      timeFound = true;
+    }
+    // 3) "끝나면 ~ 5시까지" or "끝나고 ~ 5시까지"
+    else if (/끝나(?:면|고)/i.test(raw) && /(\d{1,2})\s*시(?:\s*(30분|반))?까지/i.test(raw)) {
+      const match5 = raw.match(/(\d{1,2})\s*시(?:\s*(30분|반))?까지/i);
+      let h = parseInt(match5[1]);
+      let m = match5[2] === '반' || match5[2] === '30분' ? 30 : 0;
+      let targetEnd = normalizeHour(h, '오후') + (m === 30 ? 0.5 : 0);
+      startHour = prevEndHour;
+      endHour = targetEnd;
+      timeFound = true;
+    }
+    // 4) Duration: "오후 2시에 ... 1시간 있고" -> 14:00 ~ 15:00
+    else if (/(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(30분|반))?에?.*(\d+)\s*시간/i.test(raw)) {
+      const matchDur = raw.match(/(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(30분|반))?에?.*(\d+)\s*시간/i);
+      let h = parseInt(matchDur[2]);
+      let m = matchDur[3] === '반' || matchDur[3] === '30분' ? 30 : 0;
+      let dur = parseFloat(matchDur[4]);
+      startHour = normalizeHour(h, matchDur[1] || (h <= 6 ? '오후' : '오전')) + (m === 30 ? 0.5 : 0);
+      endHour = startHour + dur;
+      timeFound = true;
+    }
+    // 5) Range: "11시 ~ 12시"
+    else if (/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)\s*[-~]\s*(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)/.test(raw)) {
+      const rangeMatch = raw.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)\s*[-~]\s*(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)/);
       let h1 = parseInt(rangeMatch[2]);
       let m1 = rangeMatch[3] ? parseInt(rangeMatch[3]) : (rangeMatch[4] === '반' || rangeMatch[4] === '30분' ? 30 : 0);
       let h2 = parseInt(rangeMatch[6]);
@@ -655,47 +692,46 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       endHour = normalizeHour(h2, rangeMatch[5] || rangeMatch[1]) + (m2 === 30 ? 0.5 : 0);
       timeFound = true;
     }
-
-    if (!timeFound) {
+    // 6) Single time: "11시", "오후 2시에", "2시까지"
+    else if (/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)(?:\s*(?:에|까지|경|쯤|부터))?/.test(raw)) {
       const singleMatch = raw.match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2})|\s*시(?:\s*(30분|반))?)(?:\s*(?:에|까지|경|쯤|부터))?/);
-      if (singleMatch) {
-        let h = parseInt(singleMatch[2]);
-        let m = singleMatch[3] ? parseInt(singleMatch[3]) : (singleMatch[4] === '반' || singleMatch[4] === '30분' ? 30 : 0);
-        let sH = normalizeHour(h, singleMatch[1]) + (m === 30 ? 0.5 : 0);
-        
-        if (raw.includes('까지') && /보고|제출|마감|완료/i.test(raw)) {
-          startHour = Math.max(sH - 1, 9.0);
-          endHour = sH;
-        } else {
-          startHour = sH;
-          endHour = sH + 1.0;
-        }
-        timeFound = true;
+      let h = parseInt(singleMatch[2]);
+      let m = singleMatch[3] ? parseInt(singleMatch[3]) : (singleMatch[4] === '반' || singleMatch[4] === '30분' ? 30 : 0);
+      let sH = normalizeHour(h, singleMatch[1] || (h <= 6 && !raw.includes('오전') ? '오후' : null)) + (m === 30 ? 0.5 : 0);
+      
+      if (raw.includes('까지') && /보고|제출|마감|완료/i.test(raw)) {
+        startHour = Math.max(sH - 1, 9.0);
+        endHour = sH;
+      } else {
+        startHour = sH;
+        endHour = sH + 1.0;
       }
+      timeFound = true;
+    }
+    // 7) Special phrases
+    else if (/오후\s*반차/i.test(raw)) {
+      startHour = 14.0;
+      endHour = 18.0;
+      timeFound = true;
+    } else if (/오전\s*반차/i.test(raw)) {
+      startHour = 9.0;
+      endHour = 14.0;
+      timeFound = true;
+    } else if (/야근|저녁|식대/i.test(raw)) {
+      startHour = 18.0;
+      endHour = 19.0;
+      timeFound = true;
     }
 
-    if (!timeFound) {
-      if (/오후\s*반차/i.test(raw)) {
-        startHour = 14.0;
-        endHour = 18.0;
-        timeFound = true;
-      } else if (/오전\s*반차/i.test(raw)) {
-        startHour = 9.0;
-        endHour = 14.0;
-        timeFound = true;
-      } else if (/야근|저녁|식대/i.test(raw)) {
-        startHour = 18.0;
-        endHour = 19.0;
-        timeFound = true;
-      }
-    }
+    prevEndHour = endHour;
 
+    // Assignee and Delegation Determination
     let memberId = myId;
     let isRequested = false;
     let approverId = null;
 
-    const isDelegatedToDaum = /정다음|정사원|정사인|다음/i.test(raw) && /한테|에게|맡기고|시키고|잡으라고|요청/i.test(raw);
-    const isDelegatedToYoonhee = /정윤희|정부장/i.test(raw) && /한테|에게|맡기고|시키고|부탁|요청/i.test(raw) && !/정부장\s*브리핑/i.test(raw);
+    const isDelegatedToDaum = myId !== 'daum' && /정다음|정사원|정사인|다음/i.test(raw) && /한테|에게|맡기고|시키고|잡으라고|요청/i.test(raw);
+    const isDelegatedToYoonhee = (myId !== 'sh' && myId !== 'yoonhee') && /정윤희|정부장/i.test(raw) && /한테|에게|맡기고|시키고|부탁|요청/i.test(raw) && !/정부장\s*브리핑|정부장이랑/i.test(raw);
 
     if (isDelegatedToDaum) {
       memberId = 'daum';
@@ -710,34 +746,50 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       isRequested = true;
       approverId = myId === 'sangmoo' ? 'sangmoo' : 'sh';
     } else {
+      // Normal personal task of the current user
       memberId = myId;
       isRequested = false;
+      approverId = null;
     }
 
+    // Extract Clean Title
     let title = raw
       .replace(/(?:\d{1,2}\s*월\s*)?\d{1,2}\s*일/g, '')
       .replace(/(?:오전|오후)?\s*\d{1,2}(?::\d{2}|\s*시(?:\s*(?:30분|반))?)(?:\s*(?:에|까지|경|쯤|부터))?/g, '')
       .replace(/정다음\s*(?:사원)?(?:한테|에게)?/g, '')
       .replace(/정윤희\s*(?:부장)?(?:한테|에게)?/g, '')
-      .replace(/오늘|내일|나갔다가|복귀|들어갈\s*거고|들어가기\s*전에|잡으라고\s*해|잡아놓으라고\s*해|보고받고|맡기고/g, '')
+      .replace(/오늘|내일|아침부터|오전\s*내내|오후엔|오후에|끝나면|예정|있고|나갔다가|복귀|들어갈\s*거고|들어가기\s*전에|잡으라고\s*해|잡아놓으라고\s*해|보고받고|맡기고|파야할\s*듯|파야겠음/g, '')
       .replace(/[~,，]/g, '')
       .trim();
 
-    if (/대신증권.*미팅/i.test(raw)) {
+    // Map common phrase to clean standard titles
+    if (/세션.*풀리|로그인.*디버깅|세션.*디버깅/i.test(raw)) {
+      title = '로그인 세션 풀림 긴급 디버깅';
+    } else if (/퍼블리싱.*리뷰|화면.*리뷰/i.test(raw)) {
+      title = '화면 퍼블리싱 리뷰';
+    } else if (/API\s*연동/i.test(raw)) {
+      title = 'API 연동 마무리';
+    } else if (/대신증권.*미팅/i.test(raw)) {
       title = '대신증권 본사 미팅';
     } else if (/사내\s*보안\s*감사.*보고/i.test(raw) || /보안\s*감사/i.test(raw)) {
       title = '사내 보안 감사 지적사항 조치 결과 보고';
-    } else if (/정부장\s*브리핑/i.test(raw)) {
+    } else if (/정부장.*브리핑/i.test(raw)) {
       title = '정부장 브리핑';
-    } else if (/부서장\s*결산\s*회의/i.test(raw) || /결산\s*회의/i.test(raw)) {
+    } else if (/부서장.*결산.*회의|결산.*회의/i.test(raw)) {
       title = '부서장 결산 회의';
-    } else if (/야근자\s*파악.*식대/i.test(raw) || /식대\s*신청/i.test(raw)) {
+    } else if (/야근자.*파악.*식대|식대.*신청/i.test(raw)) {
       title = '야근자 파악 및 저녁 식대 신청 일정';
+    } else if (/긴급.*대책.*회의/i.test(raw)) {
+      title = '긴급 대책 회의';
+    } else if (/경영진.*보고서/i.test(raw)) {
+      title = '경영진 보고서 작성';
     }
 
     if (!title) {
       title = `업무 일정 ${index + 1}`;
     }
+
+    const isItemIssue = /긴급|이슈|장애|오류|버그|지연|디버깅/i.test(raw) && !/보고서|문서|자료/i.test(raw);
 
     results.push({
       title,
@@ -750,7 +802,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       isRequested,
       approverId,
       isAll: false,
-      isIssue: /긴급|이슈|장애|오류|버그|지연/i.test(title),
+      isIssue: isItemIssue,
       description: ''
     });
   });
@@ -3383,10 +3435,9 @@ export default function App() {
           const titleAndText = (parsed.title || '') + ' ' + (parsed.description || '');
           const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
-          // Detect target delegatee mentions (정다음, 정사원, 정윤희 등)
-          const mentionsDaum = /정사원|정사인|정다음|다음/i.test(titleAndText);
-          const isDelegatedToDaum = parsed.memberId === 'daum' || (mentionsDaum && !isPersonalLeave);
-          const isDelegatedToYoonhee = (parsed.memberId === 'sh' || parsed.memberId === 'yoonhee') && ME.id !== 'sh' && ME.id !== 'yoonhee' && !isPersonalLeave && /요청|맡기|지시|하라고/i.test(text);
+          // Detect target delegatee mentions
+          const isDelegatedToDaum = ME.id !== 'daum' && (parsed.memberId === 'daum' || (/정사원|정사인|정다음|다음/i.test(titleAndText) && /한테|에게|맡기|지시|잡으라고/i.test(text)));
+          const isDelegatedToYoonhee = (ME.id !== 'sh' && ME.id !== 'yoonhee') && (parsed.memberId === 'sh' || parsed.memberId === 'yoonhee' || (/정윤희|정부장/i.test(titleAndText) && /한테|에게|맡기|지시|부탁/i.test(text) && !/정부장\s*브리핑|정부장이랑/i.test(text)));
 
           let assignedMemberId = ME.id;
           let assignedMemberIds = [ME.id];
@@ -3400,7 +3451,7 @@ export default function App() {
             assignedMemberIds = [ME.id];
             isSelf = true;
             schedStatus = 'requested';
-            schedApproverId = (ME.id === 'sh' || ME.id === 'yoonhee' || ME.id === 'daum') ? 'sangmoo' : 'sh';
+            schedApproverId = ME.id === 'sangmoo' ? 'sangmoo' : (ME.id === 'daum' ? 'sh' : 'sangmoo');
           } else if (isDelegatedToDaum) {
             // 2) Task delegated to Jung Daeum (정다음 사원)
             assignedMemberId = 'daum';
@@ -3430,7 +3481,7 @@ export default function App() {
             schedStatus = parsed.isRequested ? 'requested' : 'accepted';
             schedApproverId = parsed.isRequested ? parsed.memberId : null;
           } else {
-            // 6) Normal personal schedule of the logged-in user
+            // 6) Normal personal schedule of the logged-in user (확정 업무)
             assignedMemberId = ME.id;
             assignedMemberIds = [ME.id];
             isSelf = true;

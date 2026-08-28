@@ -5147,13 +5147,14 @@ export default function App() {
                                                     </span>
                                                     <button
                                                       style={{
-                                                        padding: '6px 12px',
-                                                        fontSize: '12px',
+                                                        padding: '7px 14px',
+                                                        fontSize: '12.5px',
                                                         backgroundColor: '#fef2f2',
                                                         color: '#dc2626',
                                                         border: '1px solid #fca5a5',
                                                         borderRadius: '8px',
                                                         fontWeight: '700',
+                                                        lineHeight: '1.2',
                                                         cursor: 'pointer'
                                                       }}
                                                       onClick={async () => {
@@ -5748,20 +5749,24 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
+                              <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
                                 {pItem.status === 'requested' ? (
                                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
                                       onClick={() => handleRejectSchedule(pItem.id)}
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
                                         color: '#dc2626',
                                         border: '1px solid #fca5a5',
                                         borderRadius: '8px',
                                         cursor: 'pointer',
+                                        lineHeight: '1.2',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
@@ -5770,14 +5775,18 @@ export default function App() {
                                     <button
                                       onClick={() => handleApproveSchedule(pItem.id)}
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
                                         color: '#059669',
                                         border: '1px solid #a7f3d0',
                                         borderRadius: '8px',
                                         cursor: 'pointer',
+                                        lineHeight: '1.2',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
@@ -5791,15 +5800,16 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
                                         color: '#dc2626',
                                         border: '1px solid #fca5a5',
                                         borderRadius: '8px',
                                         marginLeft: 'auto',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        lineHeight: '1.2'
                                       }}
                                       onClick={() => handleRejectSchedule(pItem.id)}
                                     >
@@ -5813,8 +5823,8 @@ export default function App() {
                                     </span>
                                     <button
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
                                         color: '#059669',
@@ -5822,6 +5832,7 @@ export default function App() {
                                         borderRadius: '8px',
                                         marginLeft: 'auto',
                                         cursor: 'pointer',
+                                        lineHeight: '1.2',
                                         transition: 'all 0.15s ease'
                                       }}
                                       onClick={() => handleApproveSchedule(pItem.id)}
@@ -5910,20 +5921,24 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
+                              <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
                                 {tItem.status === 'requested' ? (
                                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
                                       onClick={() => handleRejectSchedule(tItem.id)}
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#fef2f2',
                                         color: '#dc2626',
                                         border: '1px solid #fca5a5',
                                         borderRadius: '8px',
                                         cursor: 'pointer',
+                                        lineHeight: '1.2',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                         transition: 'all 0.15s ease'
                                       }}
                                     >
@@ -5932,14 +5947,18 @@ export default function App() {
                                     <button
                                       onClick={() => handleAcceptSchedule(tItem.id)}
                                       style={{
-                                        padding: '6px 12px',
-                                        fontSize: '12px',
+                                        padding: '7px 14px',
+                                        fontSize: '12.5px',
                                         fontWeight: '700',
                                         backgroundColor: '#ecfdf5',
                                         color: '#059669',
                                         border: '1px solid #a7f3d0',
                                         borderRadius: '8px',
                                         cursor: 'pointer',
+                                        lineHeight: '1.2',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                         transition: 'all 0.15s ease'
                                       }}
                                     >

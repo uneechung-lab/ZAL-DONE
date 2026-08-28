@@ -3243,44 +3243,45 @@ export default function App() {
         const nowIso = new Date().toISOString();
         const nowTime = formatTime(new Date());
 
-        // 1) Re-request message for sender (current user)
-        let messageText = `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`;
-        if (cleanMsg) {
-          messageText += `\n💬 메시지: "${cleanMsg}"`;
-        }
+        const userChatText = cleanMsg || `"${target.title}" 일정 다시 요청합니다.`;
 
-        const myNoticeMsg = { 
-          id: nowTs, 
-          from: `ai_${userSuffix}_${ME.id}`, 
-          text: messageText, 
-          time: nowTime, 
-          createdAt: nowIso,
-          targetScheduleId: target.id,
-          targetTitle: target.title
+        // 1) User chat bubble sent by current user (ME)
+        const myUserChatMsg = {
+          id: nowTs,
+          from: `user_${userSuffix}_${ME.id}`,
+          text: userChatText,
+          time: nowTime,
+          createdAt: nowIso
         };
 
-        // 2) Notification message for recipient (e.g. Jung Daeum or Yoonhee)
-        const targetUserId = targetMember.id;
-        const targetKeys = [targetUserId];
-        if (targetUserId === 'sh') targetKeys.push('yoonhee');
-        if (targetUserId === 'yoonhee') targetKeys.push('sh');
-        if (targetUserId === 'sangmoo') targetKeys.push('sangmu');
-        if (targetUserId === 'sangmu') targetKeys.push('sangmoo');
-        if (targetUserId === 'daum') targetKeys.push('daum');
-
-        let targetNoticeText = `🔄 ${ME.name} ${ME.role || '상무'}님이 "${target.title}" 일정을 다시 요청하셨습니다.`;
-        if (cleanMsg) {
-          targetNoticeText += `\n💬 메시지: "${cleanMsg}"`;
-        }
-
-        const targetNoticeMsg = {
-          id: nowTs + 2,
-          from: `ai_${targetUserId}`,
-          text: targetNoticeText,
+        // 2) AI confirmation bubble in current user's chat
+        const myAiNoticeMsg = {
+          id: nowTs + 1,
+          from: `ai_${userSuffix}_${ME.id}`,
+          text: `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`,
           time: nowTime,
-          createdAt: nowIso,
-          targetScheduleId: target.id,
-          targetTitle: target.title
+          createdAt: new Date(nowTs + 100).toISOString()
+        };
+
+        // 3) Recipient's chat: Message bubble from sender (ME)
+        const targetUserId = targetMember.id;
+        const recipientUserChatMsg = {
+          id: nowTs + 2,
+          from: `user_${targetUserId}`,
+          isFromOtherUser: true,
+          otherUserName: `${ME.name} ${ME.role || '부장'}`,
+          text: `💬 ${ME.name} ${ME.role || '부장'}: "${userChatText}"`,
+          time: nowTime,
+          createdAt: nowIso
+        };
+
+        // 4) Recipient's chat: AI notice bubble
+        const recipientAiNoticeMsg = {
+          id: nowTs + 3,
+          from: `ai_${targetUserId}`,
+          text: `🔄 ${ME.name} ${ME.role || '부장'}님이 "${target.title}" 일정을 다시 요청하셨습니다.`,
+          time: nowTime,
+          createdAt: new Date(nowTs + 100).toISOString()
         };
 
         // Save to localStorage for both sender and recipient
@@ -3291,33 +3292,39 @@ export default function App() {
           if (ME.id === 'sangmoo') myKeys.push('sangmu');
           if (ME.id === 'sangmu') myKeys.push('sangmoo');
 
+          const targetKeys = [targetUserId];
+          if (targetUserId === 'sh') targetKeys.push('yoonhee');
+          if (targetUserId === 'yoonhee') targetKeys.push('sh');
+          if (targetUserId === 'sangmoo') targetKeys.push('sangmu');
+          if (targetUserId === 'sangmu') targetKeys.push('sangmoo');
+          if (targetUserId === 'daum') targetKeys.push('daum');
+
           myKeys.forEach(k => {
             const saved = localStorage.getItem(`zal_messages_${k}`);
             const list = saved ? JSON.parse(saved) : [];
-            list.push(myNoticeMsg);
+            list.push(myUserChatMsg, myAiNoticeMsg);
             localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
           });
 
           targetKeys.forEach(k => {
             const saved = localStorage.getItem(`zal_messages_${k}`);
             const list = saved ? JSON.parse(saved) : [];
-            list.push(targetNoticeMsg);
+            list.push(recipientUserChatMsg, recipientAiNoticeMsg);
             localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
           });
         } catch (e) {}
 
         if (isConfigured) {
           try {
-            await appwriteService.createMessage(myNoticeMsg);
-            await appwriteService.createMessage(targetNoticeMsg);
+            await appwriteService.createMessage(myUserChatMsg);
+            await appwriteService.createMessage(myAiNoticeMsg);
+            await appwriteService.createMessage(recipientUserChatMsg);
+            await appwriteService.createMessage(recipientAiNoticeMsg);
           } catch (e) {
             console.error("Failed to save re-request messages to DB:", e);
           }
         }
-        setMessages(prev => {
-          const isAlready = prev.some(m => m.id === myNoticeMsg.id || (m.text === myNoticeMsg.text && m.time === myNoticeMsg.time));
-          return isAlready ? prev : [...prev, myNoticeMsg];
-        });
+        setMessages(prev => [...prev, myUserChatMsg, myAiNoticeMsg]);
 
         showLayerAlert(`"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`, '다시요청 완료', 'success');
       }

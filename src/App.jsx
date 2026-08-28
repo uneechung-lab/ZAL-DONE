@@ -7078,9 +7078,20 @@ export default function App() {
                           }}
                           title={isAllSelected ? '전체 해제' : '전체 선택'}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isAllSelected ? '#000000' : '#cbd5e1'} strokeWidth={isAllSelected ? '2.5' : '2'} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <div style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            backgroundColor: isAllSelected ? '#000000' : '#e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background-color 0.15s ease'
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
                         </button>
                       );
                     })()}
@@ -7129,11 +7140,22 @@ export default function App() {
                             width: '24px',
                             height: '24px'
                           }}
-                          title={`${member.name} 숨기기`}
+                          title={isMemberSelected ? `${member.name} 숨기기` : `${member.name} 보이기`}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isMemberSelected ? '#000000' : '#cbd5e1'} strokeWidth={isMemberSelected ? '2.5' : '2'} strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <div style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            backgroundColor: isMemberSelected ? '#000000' : '#e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background-color 0.15s ease'
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
                         </button>
                       </td>
 

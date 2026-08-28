@@ -3411,31 +3411,62 @@ export default function App() {
           const isItemIssue = !isReportTask && (parsed.isIssue || /긴급|디버깅|버그|오류|지연|블로커|안\s*와|미회신|아직도|이슈\s*터짐/i.test(parsed.title || ''));
           const randomColor = isItemIssue ? 'red' : colors[(Math.floor(Math.random() * colors.length) + index) % colors.length];
           
-          let assignedMemberIds;
-          let assignedMemberId;
-          let isSelf;
-
+          const titleAndText = (parsed.title || '') + ' ' + (parsed.description || '');
           const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
-          // Check if individual item title/description mentions another team member (e.g. "정부장이랑", "정윤희")
-          const itemText = (parsed.title || '') + ' ' + (parsed.description || '');
-          const mentionsYoonhee = /정부장|정윤희/i.test(itemText);
+          // Detect target delegatee mentions (정다음, 정사원, 정윤희 등)
+          const mentionsDaum = /정사원|정사인|정다음|다음/i.test(titleAndText);
+          const isDelegatedToDaum = parsed.memberId === 'daum' || (mentionsDaum && !isPersonalLeave);
+          const isDelegatedToYoonhee = (parsed.memberId === 'sh' || parsed.memberId === 'yoonhee') && ME.id !== 'sh' && ME.id !== 'yoonhee' && !isPersonalLeave && /요청|맡기|지시|하라고/i.test(text);
+
+          let assignedMemberId = ME.id;
+          let assignedMemberIds = [ME.id];
+          let isSelf = true;
+          let schedStatus = 'accepted';
+          let schedApproverId = null;
 
           if (isPersonalLeave) {
-            // Personal leave (연차, 반차, 휴가) always belongs to the logged-in user
+            // 1) Personal Leave / Vacation (연차, 반차, 휴가)
             assignedMemberId = ME.id;
             assignedMemberIds = [ME.id];
             isSelf = true;
+            schedStatus = 'requested';
+            schedApproverId = (ME.id === 'sh' || ME.id === 'yoonhee' || ME.id === 'daum') ? 'sangmoo' : 'sh';
+          } else if (isDelegatedToDaum) {
+            // 2) Task delegated to Jung Daeum (정다음 사원)
+            assignedMemberId = 'daum';
+            assignedMemberIds = ['daum'];
+            isSelf = false;
+            schedStatus = 'requested';
+            schedApproverId = 'daum';
+          } else if (isDelegatedToYoonhee) {
+            // 3) Task delegated to Jung Yoonhee (정윤희 부장)
+            assignedMemberId = 'sh';
+            assignedMemberIds = ['sh'];
+            isSelf = false;
+            schedStatus = 'requested';
+            schedApproverId = 'sh';
           } else if (parsed.isAll) {
+            // 4) All team members
             assignedMemberIds = activeTeam.map(m => m.id);
             assignedMemberId = ME.id;
             isSelf = true;
+            schedStatus = 'accepted';
+            schedApproverId = null;
+          } else if (parsed.memberId && parsed.memberId !== ME.id) {
+            // 5) Explicitly delegated to another colleague
+            assignedMemberId = parsed.memberId;
+            assignedMemberIds = [parsed.memberId];
+            isSelf = false;
+            schedStatus = parsed.isRequested ? 'requested' : 'accepted';
+            schedApproverId = parsed.isRequested ? parsed.memberId : null;
           } else {
-            // Default assignee is the target member specified by AI or the current logged-in user (ME)
-            const targetMember = activeTeam.find(m => m.id === parsed.memberId);
-            assignedMemberId = targetMember ? targetMember.id : ME.id;
-            assignedMemberIds = [assignedMemberId];
-            isSelf = assignedMemberId === ME.id || (ME.id === 'sh' && assignedMemberId === 'yoonhee');
+            // 6) Normal personal schedule of the logged-in user
+            assignedMemberId = ME.id;
+            assignedMemberIds = [ME.id];
+            isSelf = true;
+            schedStatus = 'accepted';
+            schedApproverId = null;
           }
 
           const finalDescription = parsed.description || '';
@@ -3445,7 +3476,6 @@ export default function App() {
           let startHour = parsed.startHour;
           let endHour = parsed.endHour;
 
-          const titleAndText = (parsed.title || '') + ' ' + (parsed.description || '');
           if (/오후\s*반차/i.test(titleAndText)) {
             startHour = 14.0;
             endHour = 18.0;
@@ -3458,46 +3488,6 @@ export default function App() {
           } else if (/연차|휴가|병가/i.test(parsed.title || '')) {
             startHour = 9.0;
             endHour = 18.0;
-          }
-
-          const isLeaveOrApproval = isPersonalLeave || /신청|승인요청|반차|연차|휴가|병가|결재/i.test(titleAndText);
-          // Detect mentions of Jung Daeum (정사원/정사인/정다음) in individual item title/description
-          const itemTextOnly = (parsed.title || '') + ' ' + (parsed.description || '');
-          const mentionsDaum = /정사원|정사인|정다음|다음/i.test(itemTextOnly);
-
-          if (isLeaveOrApproval) {
-            // Approval/Leave/Expense requests always belong to the applicant (current logged-in user ME)
-            assignedMemberId = ME.id;
-            assignedMemberIds = [ME.id];
-            isSelf = true;
-          } else if (ME.id === 'sh' && mentionsDaum) {
-            assignedMemberId = 'daum';
-            assignedMemberIds = ['daum'];
-          }
-
-          const isDelegatedToColleague = assignedMemberId !== ME.id && (assignedMemberId === 'daum' || assignedMemberId === 'sh' || assignedMemberId === 'sangmoo');
-
-          let schedStatus = 'accepted';
-          let schedApproverId = null;
-
-          if (isLeaveOrApproval) {
-            schedStatus = 'requested';
-            const mentionsSangmoo = /상무|조상무/i.test(text + ' ' + titleAndText);
-            const mentionsYoonheeExplicit = /정부장|정윤희|부장님/i.test(text + ' ' + titleAndText);
-            
-            if (mentionsYoonheeExplicit || parsed.approverId === 'sh' || parsed.approverId === 'yoonhee') {
-              schedApproverId = 'sh';
-            } else if (mentionsSangmoo || parsed.approverId === 'sangmoo') {
-              schedApproverId = 'sangmoo';
-            } else {
-              schedApproverId = (ME.id === 'sh' || ME.name === '정윤희') ? 'sangmoo' : 'sh';
-            }
-          } else if (parsed.isRequested || isDelegatedToColleague) {
-            schedStatus = 'requested';
-            schedApproverId = assignedMemberId;
-          } else {
-            schedStatus = 'accepted';
-            schedApproverId = null;
           }
 
           const newSchedule = {
@@ -3518,8 +3508,7 @@ export default function App() {
             description: parsed.groupId 
               ? `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] [그룹 ID] ${parsed.groupId} | ${finalDescription}` 
               : `[YM:${schedYear}.${schedMonth < 10 ? '0' : ''}${schedMonth}] ${finalDescription}`,
-          };
-          newSchedules.push(newSchedule);
+          };          newSchedules.push(newSchedule);
         });
 
         // Group schedules for the AI text response

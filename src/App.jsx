@@ -5480,7 +5480,10 @@ export default function App() {
                     return validTs.length > 0 ? Math.min(...validTs) : Date.now();
                   };
 
-                  const messageItems = todayMessages.map(msg => ({
+                  const greetingMsg = todayMessages.find(msg => msg.id === 0);
+                  const otherMessages = todayMessages.filter(msg => msg.id !== 0);
+
+                  const otherMessageItems = otherMessages.map(msg => ({
                     type: 'message',
                     id: 'msg_' + msg.id,
                     createdAt: getSafeItemTs(msg),
@@ -5517,13 +5520,18 @@ export default function App() {
                     data: groupedAcceptedOutgoingRequests
                   }] : [];
 
-                  const unifiedStream = [
-                    ...messageItems,
-                    ...pendingApprovalItems,
-                    ...incomingTaskItems,
+                  const activityStream = [
+                    ...otherMessageItems,
                     ...rejectedOutgoingItems,
                     ...acceptedOutgoingItems
                   ].sort((a, b) => a.createdAt - b.createdAt);
+
+                  const unifiedStream = [
+                    ...(greetingMsg ? [{ type: 'message', id: 'msg_0', createdAt: 0, data: greetingMsg }] : []),
+                    ...pendingApprovalItems,
+                    ...incomingTaskItems,
+                    ...activityStream
+                  ];
 
                   return unifiedStream.map(item => {
                     if (item.type === 'message') {

@@ -4780,7 +4780,7 @@ export default function App() {
             const renderedScheduleIdsInMessages = new Set();
             todayMessages.forEach(msg => {
               if (msg.from && (msg.from === 'ai' || msg.from.startsWith('ai_'))) {
-                const { schedules: schedList } = parseMessageToSchedulesList(msg.text);
+                const { schedules: schedList } = parseSchedulesFromText(msg.text);
                 schedList.forEach(s => {
                   const matched = schedules.find(sched => 
                     sched.title === s.title && 
@@ -5548,7 +5548,7 @@ export default function App() {
                   const getSafeItemTs = (item) => {
                     if (!item) return Date.now();
                     if (item.from && (item.from === 'ai' || item.from.startsWith('ai_'))) {
-                      const { schedules: schedList } = parseMessageToSchedulesList(item.text);
+                      const { schedules: schedList } = parseSchedulesFromText(item.text);
                       let maxStatusTs = 0;
                       schedList.forEach(s => {
                         const matched = schedules.find(sched => 

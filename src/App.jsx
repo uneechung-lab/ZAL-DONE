@@ -610,8 +610,8 @@ function splitCompoundScheduleText(text) {
   const commaParts = cleaned.split(/[,，]/).map(s => s.trim()).filter(Boolean);
 
   commaParts.forEach(part => {
-    // Split sub-clauses like "끝나면 5시까지 API 연동", "2시까지 보고받고", "정다음 사원한테"
-    const subParts = part.split(/(?=(?:\b|\s)(?:끝나면|이후|다음에|\d{1,2}\s*시(?:\s*반)?에|\d{1,2}:\d{2}|정다음\s*사원한테|정사원한테|정부장한테|조상무님한테))/i)
+    // Split sub-clauses like "인증 서버 지연 이슈 떠서", "정사원한테 로그 분석 맡기고", "11시에...", "오후엔...", "조상무님한테..."
+    const subParts = part.split(/(?=(?:\b|\s)(?:정다음\s*(?:사원)?한테|정사원한테|정부장한테|조상무님한테|끝나면|이후|다음에|\d{1,2}\s*시(?:\s*반)?에|\d{1,2}:\d{2}|오후엔|오후에|오전에|오전엔))/i)
       .map(s => s.trim())
       .filter(Boolean);
 
@@ -781,6 +781,10 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       title = '휴가';
     } else if (/병가/i.test(raw)) {
       title = '병가';
+    } else if (/인증\s*서버.*지연|서버.*지연.*이슈/i.test(raw)) {
+      title = '인증 서버 지연 이슈';
+    } else if (/로그\s*분석/i.test(raw)) {
+      title = '로그 분석';
     } else if (/세션.*풀리|로그인.*디버깅|세션.*디버깅/i.test(raw)) {
       title = '로그인 세션 풀림 긴급 디버깅';
     } else if (/퍼블리싱.*리뷰|화면.*리뷰/i.test(raw)) {

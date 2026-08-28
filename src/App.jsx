@@ -4709,20 +4709,30 @@ export default function App() {
             );
             const groupedRejectedOutgoingRequests = groupList(rejectedOutgoingRequests);
 
-            const acceptedOutgoingRequests = schedules.filter(s => 
-              (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /\[?반차|연차|휴가|병가\]?/i.test(s.title || ''))) && 
-              s.status === 'accepted' &&
-              isApprovalTarget(s) &&
-              ((s.description || '').includes('[수락메시지]') || (s.description || '').includes('[승인 완료]') || (s.description || '').includes('[재요청메시지]'))
-            );
+            const acceptedOutgoingRequests = schedules.filter(s => {
+              const isMyReq = (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /\[?반차|연차|휴가|병가\]?/i.test(s.title || '')));
+              if (!isMyReq) return false;
+              if (s.status !== 'accepted') return false;
+              if (!isApprovalTarget(s)) return false;
+              return (s.description || '').includes('[수락메시지]') || (s.description || '').includes('[승인 완료]');
+            });
             const groupedAcceptedOutgoingRequests = groupList(acceptedOutgoingRequests);
             const pendingItems = schedules.filter(s => isApproverForItem(s));
             const requestedPendingCount = pendingItems.filter(s => s.status === 'requested').length;
-            const incomingTaskRequests = schedules.filter(s => 
-              (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id))) && 
-              s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee') &&
-              !/반차|연차|휴가|병가/i.test(s.title || '')
-            );
+            const incomingTaskRequests = schedules.filter(s => {
+              const isAssignedToMe = (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id)));
+              const isNotMyRequest = s.requesterId && s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee');
+              const isNotLeave = !/반차|연차|휴가|병가/i.test(s.title || '');
+              
+              if (!isAssignedToMe || !isNotMyRequest || !isNotLeave) return false;
+              
+              // 실제 요청 상태이거나 수락/반려/재요청 마커가 있는 경우만 필터링
+              return s.status === 'requested' || (s.description && (
+                s.description.includes('[수락메시지]') || 
+                s.description.includes('[반려사유]') || 
+                s.description.includes('[재요청메시지]')
+              ));
+            });
             const requestedTaskCount = incomingTaskRequests.filter(s => s.status === 'requested').length;
 
             const groupedPendingItems = groupList(pendingItems);

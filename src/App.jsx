@@ -7302,7 +7302,7 @@ export default function App() {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: '1px solid var(--border-light)', borderLeft: 'none', backgroundColor: '#ffffff', boxShadow: 'none' }}>시간</th>
+                    <th rowSpan="2" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, zIndex: 12, textAlign: 'center', verticalAlign: 'middle', borderBottom: '2px solid var(--border-light)', borderRight: '1px solid var(--border-light)', backgroundColor: '#ffffff' }}>시간</th>
                     {weekDates.map((d, dIdx) => {
                       const info = getDayLabelAndDow(d);
                       const isSat = info.dow === '토';
@@ -7313,7 +7313,7 @@ export default function App() {
                           id={`week_th_${d}`}
                           colSpan={Math.max(numMembers, 1)}
                           className={`${isSat ? 'sat' : ''} ${isSun ? 'sun' : ''}`}
-                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', borderLeft: dIdx === 0 ? 'none' : undefined, whiteSpace: 'nowrap' }}
+                          style={{ fontSize: '13px', textAlign: 'center', padding: '6px 4px', borderBottom: '1px solid var(--border-light)', whiteSpace: 'nowrap' }}
                         >
                           {info.label} ({info.dow})
                         </th>
@@ -7396,10 +7396,8 @@ export default function App() {
                         fontWeight: '600', 
                         color: 'var(--text-secondary)',
                         borderRight: '1px solid var(--border-light)',
-                        borderLeft: 'none',
                         borderBottom: '1px solid var(--border-light)',
                         backgroundColor: '#ffffff',
-                        boxShadow: 'none',
                         padding: '0'
                       }}>
                         {formatHour(h)}

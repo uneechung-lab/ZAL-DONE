@@ -157,7 +157,28 @@ export const appwriteService = {
   async updateSchedule(id, updates) {
     if (!isConfigured) return null;
     try {
-      const response = await databases.updateDocument(databaseId, schedulesCollectionId, id, updates);
+      const docId = id || updates.$id || updates.id;
+      if (!docId) return false;
+
+      let desc = updates.description;
+      if (desc === undefined && updates.desc !== undefined) desc = updates.desc;
+
+      const validFields = ['title', 'date', 'month', 'year', 'memberId', 'memberIds', 'startHour', 'endHour', 'color', 'description', 'status', 'requesterId'];
+      const cleanData = {};
+      validFields.forEach(field => {
+        if (updates[field] !== undefined) {
+          if (field === 'memberIds' && Array.isArray(updates[field])) {
+            cleanData[field] = JSON.stringify(updates[field]);
+          } else {
+            cleanData[field] = updates[field];
+          }
+        }
+      });
+      if (desc !== undefined) {
+        cleanData.description = desc;
+      }
+
+      const response = await databases.updateDocument(databaseId, schedulesCollectionId, docId, cleanData);
       return response;
     } catch (e) {
       console.error('Appwrite failed to update schedule', e);

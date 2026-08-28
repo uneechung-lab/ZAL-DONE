@@ -2659,7 +2659,15 @@ export default function App() {
                   if (!createdTime && msg.$createdAt) createdTime = new Date(msg.$createdAt).getTime();
                   if (!createdTime || isNaN(createdTime) || createdTime <= effectiveResetTs) return false;
                 }
-                const isMyMsg = msg.from === `user_${userSuffix}_${ME.id}` || msg.from === `ai_${userSuffix}_${ME.id}`;
+                const isMyMsg = msg.from === `user_${userSuffix}_${ME.id}` || 
+                                msg.from === `ai_${userSuffix}_${ME.id}` || 
+                                msg.from === `user_${ME.id}` || 
+                                msg.from === `ai_${ME.id}` ||
+                                (msg.from && (
+                                  msg.from.endsWith(`_${ME.id}`) ||
+                                  (ME.id === 'sh' && (msg.from.endsWith('_yoonhee') || msg.from === 'ai_yoonhee' || msg.from === 'user_yoonhee')) ||
+                                  (ME.id === 'yoonhee' && (msg.from.endsWith('_sh') || msg.from === 'ai_sh' || msg.from === 'user_sh'))
+                                ));
                 return isMyMsg &&
                   !(msg.from && msg.from.includes('ai') && msg.text && (
                     msg.text.includes('안녕하세요') ||
@@ -2815,8 +2823,15 @@ export default function App() {
     }
   }, [messages, ME.id]);
 
+    const userSuffix = user ? user.$id : 'default';
+
     const handleApproveSchedule = (schedId) => {
-    const target = schedules.find(s => s.id === schedId);
+    const target = schedules.find(s => 
+      s.id === schedId || 
+      s.$id === schedId || 
+      (schedId && String(s.id) === String(schedId)) || 
+      (schedId && String(s.$id) === String(schedId))
+    );
     if (!target) return;
 
     const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
@@ -2840,8 +2855,20 @@ export default function App() {
           });
         }
 
-        const targetIds = targetItems.map(s => s.id);
+        const targetIdStrings = targetItems.map(s => String(s.id || s.$id || ''));
         const cleanMsg = (userMsg || '').trim();
+
+        const isMatchingItem = (s) => {
+          const sId = String(s.id || s.$id || '');
+          if (sId && targetIdStrings.includes(sId)) return true;
+          return targetItems.some(t => 
+            t.title === s.title && 
+            t.date === s.date && 
+            (!t.month || !s.month || t.month === s.month) && 
+            (!t.year || !s.year || t.year === s.year) &&
+            t.startHour === s.startHour
+          );
+        };
 
         if (isConfigured) {
           try {
@@ -2857,22 +2884,28 @@ export default function App() {
                 dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
                 dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
               }
-              await appwriteService.updateSchedule(item.id, dbSched);
+              await appwriteService.updateSchedule(item.id || item.$id, dbSched);
             }
           } catch (e) {
             console.error("Failed to update schedule status:", e);
           }
         }
 
-        setSchedules(prev => prev.map(s => {
-          if (!targetIds.includes(s.id)) return s;
-          let updatedDesc = s.description || '';
-          if (cleanMsg) {
-            updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
-            updatedDesc += ` | [수락메시지] ${cleanMsg}`;
-          }
-          return { ...s, status: 'accepted', description: updatedDesc };
-        }));
+        setSchedules(prev => {
+          const next = prev.map(s => {
+            if (!isMatchingItem(s)) return s;
+            let updatedDesc = s.description || '';
+            if (cleanMsg) {
+              updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
+              updatedDesc += ` | [수락메시지] ${cleanMsg}`;
+            }
+            return { ...s, status: 'accepted', description: updatedDesc };
+          });
+          try {
+            localStorage.setItem('zal_schedules', JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
 
         // Notify requester
         const requesterId = target.requesterId || target.memberId || 'sh';
@@ -2887,7 +2920,7 @@ export default function App() {
 
         const noticeMsg = {
           id: Date.now() + 2,
-          from: `ai_${requesterId}`,
+          from: `ai_${userSuffix}_${requesterId}`,
           text: reqNoticeText,
           time: formatTime(new Date()),
           createdAt: new Date().toISOString()
@@ -2902,13 +2935,24 @@ export default function App() {
           });
         } catch (e) {}
 
+        if (isConfigured) {
+          try {
+            await appwriteService.createMessage(noticeMsg);
+          } catch (e) {}
+        }
+
         showLayerAlert(`"${target.title}" 일정이 ${verb}되었습니다.`, `${verb} 완료`, 'success');
       }
     );
   };
 
     const handleRejectSchedule = (schedId) => {
-    const target = schedules.find(s => s.id === schedId);
+    const target = schedules.find(s => 
+      s.id === schedId || 
+      s.$id === schedId || 
+      (schedId && String(s.id) === String(schedId)) || 
+      (schedId && String(s.$id) === String(schedId))
+    );
     if (!target) return;
 
     const isLeave = /반차|연차|휴가|병가/i.test(target.title || '');
@@ -2932,8 +2976,20 @@ export default function App() {
           });
         }
 
-        const targetIds = targetItems.map(s => s.id);
+        const targetIdStrings = targetItems.map(s => String(s.id || s.$id || ''));
         const cleanReason = (reasonText || '').trim();
+
+        const isMatchingItem = (s) => {
+          const sId = String(s.id || s.$id || '');
+          if (sId && targetIdStrings.includes(sId)) return true;
+          return targetItems.some(t => 
+            t.title === s.title && 
+            t.date === s.date && 
+            (!t.month || !s.month || t.month === s.month) && 
+            (!t.year || !s.year || t.year === s.year) &&
+            t.startHour === s.startHour
+          );
+        };
 
         if (isConfigured) {
           try {
@@ -2949,22 +3005,28 @@ export default function App() {
                 dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
                 dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
               }
-              await appwriteService.updateSchedule(item.id, dbSched);
+              await appwriteService.updateSchedule(item.id || item.$id, dbSched);
             }
           } catch (e) {
             console.error("Failed to update schedule status:", e);
           }
         }
 
-        setSchedules(prev => prev.map(s => {
-          if (!targetIds.includes(s.id)) return s;
-          let updatedDesc = s.description || '';
-          if (cleanReason) {
-            updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
-            updatedDesc += ` | [반려사유] ${cleanReason}`;
-          }
-          return { ...s, status: 'rejected', description: updatedDesc };
-        }));
+        setSchedules(prev => {
+          const next = prev.map(s => {
+            if (!isMatchingItem(s)) return s;
+            let updatedDesc = s.description || '';
+            if (cleanReason) {
+              updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
+              updatedDesc += ` | [반려사유] ${cleanReason}`;
+            }
+            return { ...s, status: 'rejected', description: updatedDesc };
+          });
+          try {
+            localStorage.setItem('zal_schedules', JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
 
         // 1) Add notification message to rejecter's chat
         let myNoticeText = `❌ "${target.title}" 일정을 ${verb}하셨습니다.`;
@@ -2973,7 +3035,7 @@ export default function App() {
         }
         const myNoticeMsg = {
           id: Date.now() + 1,
-          from: `ai_${ME.id}`,
+          from: `ai_${userSuffix}_${ME.id}`,
           text: myNoticeText,
           time: formatTime(new Date()),
           createdAt: new Date().toISOString(),
@@ -2994,7 +3056,7 @@ export default function App() {
         }
         const noticeForRequester = {
           id: Date.now() + 2,
-          from: `ai_${requesterId}`,
+          from: `ai_${userSuffix}_${requesterId}`,
           text: reqNoticeText,
           time: formatTime(new Date()),
           createdAt: new Date().toISOString(),
@@ -3028,7 +3090,12 @@ export default function App() {
   };
 
   const handleResubmitSchedule = (schedId) => {
-    const target = schedules.find(s => s.id === schedId);
+    const target = schedules.find(s => 
+      s.id === schedId || 
+      s.$id === schedId || 
+      (schedId && String(s.id) === String(schedId)) || 
+      (schedId && String(s.$id) === String(schedId))
+    );
     if (!target) return;
 
     const targetMember = getRejecterMember(target);
@@ -3051,8 +3118,20 @@ export default function App() {
           });
         }
 
-        const targetIds = targetItems.map(s => s.id);
+        const targetIdStrings = targetItems.map(s => String(s.id || s.$id || ''));
         const cleanMsg = (userMsg || '').trim();
+
+        const isMatchingItem = (s) => {
+          const sId = String(s.id || s.$id || '');
+          if (sId && targetIdStrings.includes(sId)) return true;
+          return targetItems.some(t => 
+            t.title === s.title && 
+            t.date === s.date && 
+            (!t.month || !s.month || t.month === s.month) && 
+            (!t.year || !s.year || t.year === s.year) &&
+            t.startHour === s.startHour
+          );
+        };
 
         if (isConfigured) {
           try {
@@ -3068,22 +3147,28 @@ export default function App() {
                 dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
                 dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
               }
-              await appwriteService.updateSchedule(item.id, dbSched);
+              await appwriteService.updateSchedule(item.id || item.$id, dbSched);
             }
           } catch (e) {
             console.error("Failed to resubmit schedule:", e);
           }
         }
 
-        setSchedules(prev => prev.map(s => {
-          if (!targetIds.includes(s.id)) return s;
-          let updatedDesc = s.description || '';
-          if (cleanMsg) {
-            updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
-            updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
-          }
-          return { ...s, status: 'requested', description: updatedDesc };
-        }));
+        setSchedules(prev => {
+          const next = prev.map(s => {
+            if (!isMatchingItem(s)) return s;
+            let updatedDesc = s.description || '';
+            if (cleanMsg) {
+              updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
+              updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
+            }
+            return { ...s, status: 'requested', description: updatedDesc };
+          });
+          try {
+            localStorage.setItem('zal_schedules', JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
 
         const newMsgId = Date.now();
         let messageText = `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`;
@@ -3093,7 +3178,7 @@ export default function App() {
 
         const noticeMsg = { 
           id: newMsgId, 
-          from: `ai_${ME.id}`, 
+          from: `ai_${userSuffix}_${ME.id}`, 
           text: messageText, 
           time: formatTime(new Date()), 
           createdAt: new Date().toISOString() 

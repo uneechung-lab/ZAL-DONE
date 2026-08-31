@@ -1,6 +1,10 @@
 import React from 'react';
 
-export default function LeftNavRail({ currentView, onNavigate }) {
+export default function LeftNavRail({
+  currentView = 'dashboard',
+  onNavigate,
+  onResetData
+}) {
   const isDashboard = currentView === 'dashboard';
   const isSync = currentView === 'sync';
 
@@ -143,7 +147,18 @@ export default function LeftNavRail({ currentView, onNavigate }) {
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', width: '100%' }}>
         <button
           type="button"
-          title="시스템 설정"
+          onClick={() => {
+            if (onResetData) {
+              onResetData();
+            } else {
+              try {
+                localStorage.clear();
+                sessionStorage.clear();
+              } catch (e) {}
+              window.location.reload();
+            }
+          }}
+          title="시스템 설정 및 데이터 초기화"
           style={{
             width: '100%',
             height: '40px',

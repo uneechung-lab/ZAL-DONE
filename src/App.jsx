@@ -4790,7 +4790,17 @@ export default function App() {
     <div className="app-layout" style={{ display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#ffffff' }}>
       
       {/* ──── LEFT SLIM NAVIGATION RAIL (56px) ──── */}
-      <LeftNavRail currentView={currentView} onNavigate={navigateToView} />
+      <LeftNavRail 
+        currentView={currentView} 
+        onNavigate={navigateToView} 
+        onResetData={() => {
+          try {
+            localStorage.clear();
+            sessionStorage.clear();
+          } catch (err) {}
+          window.location.reload();
+        }}
+      />
 
       {/* ──── MAIN VIEW AREA: DASHBOARD VIEW ──── */}
       {currentView === 'dashboard' && (
@@ -4819,36 +4829,18 @@ export default function App() {
             }
           }}
           onResetData={() => {
-            showLayerConfirm(
-              '모든 대화, 피드 및 일정 데이터를 초기화하시겠습니까?',
-              '데이터 초기화 확인',
-              async () => {
-                const nowTs = Date.now().toString();
-                localStorage.setItem('zal_reset_timestamp', nowTs);
-                localStorage.setItem('zal_schedules', JSON.stringify([]));
-                localStorage.removeItem('zal_feeds');
-                Object.keys(localStorage).forEach(key => {
-                  if (key.startsWith('zal_messages') || key.startsWith('zal_feeds') || key.startsWith('zal_schedules')) {
-                    localStorage.removeItem(key);
-                  }
-                });
-                setSchedules([]);
-                setShowPreviousMessages(false);
-                setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
-                setDashboardResetKey(k => k + 1);
-
-                if (isConfigured) {
-                  try {
-                    await appwriteService.setGlobalResetMarker();
-                    await appwriteService.clearSchedules();
-                    await appwriteService.clearMessages();
-                  } catch (err) {
-                    console.error("Remote clear error:", err);
-                  }
-                }
-                showLayerAlert('모든 데이터가 성공적으로 초기화되었습니다.', '초기화 완료', 'success');
-              }
-            );
+            try {
+              localStorage.clear();
+              sessionStorage.clear();
+            } catch (err) {}
+            if (isConfigured) {
+              try {
+                appwriteService.setGlobalResetMarker();
+                appwriteService.clearSchedules();
+                appwriteService.clearMessages();
+              } catch (e) {}
+            }
+            window.location.reload();
           }}
         />
       )}

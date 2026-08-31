@@ -1011,7 +1011,7 @@ export default function Dashboard({
         </div>
       </div>
 
-            {/* ──── FULL SCREEN WIDTH FILTER TABS DIVIDER ──── */}
+            {/* ──── FULL SCREEN WIDTH FILTER TABS DIVIDER (LEFT-ALIGNED, LARGER FONT) ──── */}
       <div style={{
         width: '100%',
         borderBottom: '1px solid #e2e8f0',
@@ -1026,8 +1026,8 @@ export default function Dashboard({
           padding: '0 32px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: '28px',
+          justifyContent: 'flex-start',
+          gap: '32px',
           boxSizing: 'border-box'
         }}>
           {[
@@ -1047,8 +1047,8 @@ export default function Dashboard({
                 onClick={() => setActiveFilter(tab.key)}
                 style={{
                   position: 'relative',
-                  padding: '8px 4px 12px 4px',
-                  fontSize: '14.5px',
+                  padding: '8px 4px 14px 4px',
+                  fontSize: '16px',
                   fontWeight: isActive ? '700' : '600',
                   color: isActive ? '#000000' : '#64748b',
                   border: 'none',

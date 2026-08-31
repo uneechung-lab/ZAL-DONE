@@ -830,16 +830,57 @@ export default function Dashboard({
             }}>
               2026년 8월 31일 월요일
             </span>
-            <h2 style={{
-              fontSize: '19px',
-              fontWeight: '800',
-              color: '#0f172a',
-              letterSpacing: '-0.4px',
-              margin: 0,
-              lineHeight: '1.25'
-            }}>
-              {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <h2 style={{
+                fontSize: '19px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-0.4px',
+                margin: 0,
+                lineHeight: '1.25'
+              }}>
+                {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
+              </h2>
+
+              {/* Quick Hashtag Buttons (Moved next to Greeting) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: '#긴급이슈', tag: '긴급 이슈 대응' },
+                  { label: '#회식공지', tag: '금일 부서 회식 안내' },
+                  { label: '#오전반차', tag: '오전 반차 신청' },
+                  { label: '#오후반차', tag: '오후 반차 신청' }
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      addTagToComposer(item.tag);
+                      composerTextareaRef.current?.focus();
+                    }}
+                    style={{
+                      padding: '2px 6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      transition: 'color 0.15s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#0f172a';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#94a3b8';
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -964,45 +1005,6 @@ export default function Dashboard({
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
             </button>
-          </div>
-
-          {/* Bottom: Quick Hashtag Buttons (Center-aligned, Softer Dimmer Font) */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
-            {[
-              { label: '#긴급이슈', tag: '긴급 이슈 대응' },
-              { label: '#회식공지', tag: '금일 부서 회식 안내' },
-              { label: '#오전반차', tag: '오전 반차 신청' },
-              { label: '#오후반차', tag: '오후 반차 신청' }
-            ].map(item => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => {
-                  addTagToComposer(item.tag);
-                  composerTextareaRef.current?.focus();
-                }}
-                style={{
-                  padding: '2px 8px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  fontSize: '12.5px',
-                  fontWeight: '500',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  transition: 'color 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#334155';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#94a3b8';
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
           </div>
 
         </div>

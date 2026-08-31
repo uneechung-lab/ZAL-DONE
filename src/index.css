@@ -449,10 +449,11 @@ input:-webkit-autofill:active {
   z-index: 30;
 }
 
-/* ──── Dashboard Masonry Grid Layout ──── */
-.dashboard-masonry-grid {
-  column-count: 3;
-  column-gap: 24px;
+/* ──── Dashboard 2-Column Feed Masonry + Right Sidebar Layout ──── */
+.dashboard-layout-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 28px;
   max-width: 1360px;
   width: 100%;
   margin: 0 auto;
@@ -460,16 +461,23 @@ input:-webkit-autofill:active {
   box-sizing: border-box;
 }
 
-@media (max-width: 1200px) {
-  .dashboard-masonry-grid {
-    column-count: 2;
-    column-gap: 20px;
+@media (max-width: 1080px) {
+  .dashboard-layout-container {
+    grid-template-columns: 1fr;
   }
 }
 
+.dashboard-feed-masonry {
+  column-count: 2;
+  column-gap: 20px;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
-  .dashboard-masonry-grid {
+  .dashboard-feed-masonry {
     column-count: 1;
+  }
+  .dashboard-layout-container {
     padding: 16px 20px 48px 20px;
   }
 }
@@ -477,7 +485,7 @@ input:-webkit-autofill:active {
 .masonry-card {
   break-inside: avoid;
   page-break-inside: avoid;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   display: inline-block;
   width: 100%;
   box-sizing: border-box;

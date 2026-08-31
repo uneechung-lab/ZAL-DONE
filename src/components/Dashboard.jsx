@@ -861,12 +861,178 @@ export default function Dashboard({
         </div>
       </header>
 
+      {/* ──── TOP MORNING SUMMARY BANNER WIDGET ──── */}
+      <div style={{
+        maxWidth: '1360px',
+        width: '100%',
+        margin: '20px auto 0 auto',
+        padding: '0 32px',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{
+          backgroundColor: '#f8fafc',
+          borderRadius: '16px',
+          border: '1.5px solid #e2e8f0',
+          padding: '22px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '24px',
+          flexWrap: 'wrap'
+        }}>
+          {/* Left Greeting & Summary text */}
+          <div style={{ minWidth: '280px', flex: '1 1 auto' }}>
+            <h2 style={{
+              fontSize: '21px',
+              fontWeight: '800',
+              color: '#0f172a',
+              letterSpacing: '-0.4px',
+              margin: '0 0 6px 0'
+            }}>
+              {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
+            </h2>
+            <p style={{
+              fontSize: '13px',
+              color: '#64748b',
+              margin: 0,
+              lineHeight: '1.55',
+              fontWeight: '500'
+            }}>
+              잘됨이(ZAL)는 팀원들의 실시간 업무와 이슈를 가장 빠르게 연결합니다.<br />
+              오늘도 원활한 협업과 성공적인 프로젝트 완수를 응원합니다.
+            </p>
+          </div>
+
+          {/* Right 4 Metric stats with vertical dividers */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0px',
+            flexWrap: 'nowrap'
+          }}>
+            {/* Stat 1: 결재대기 */}
+            <div
+              onClick={() => setActiveFilter('vacation')}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '0 24px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+              title="결재/휴가 피드 필터링"
+            >
+              {/* Edit/Note Icon */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '6px' }}>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', color: '#f97316' }}>{pendingApprovalsCount}</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#64748b' }}>/{Math.max(pendingApprovalsCount + (feeds.filter(f => f.vacationInfo?.status === 'approved').length), 2)}</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginTop: '6px' }}>결재대기</span>
+            </div>
+
+            {/* Vertical Divider 1 */}
+            <div style={{ width: '1px', height: '44px', backgroundColor: '#e2e8f0' }}></div>
+
+            {/* Stat 2: 결재완료 */}
+            <div
+              onClick={() => setActiveFilter('vacation')}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '0 24px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+              title="결재완료 현황 보기"
+            >
+              {/* Calendar Check Icon */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '6px' }}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <polyline points="9 16 11 18 15 14"/>
+              </svg>
+              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', color: '#f97316' }}>{feeds.filter(f => f.vacationInfo?.status === 'approved').length}</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#64748b' }}>/{Math.max(pendingApprovalsCount + (feeds.filter(f => f.vacationInfo?.status === 'approved').length), 2)}</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginTop: '6px' }}>결재완료</span>
+            </div>
+
+            {/* Vertical Divider 2 */}
+            <div style={{ width: '1px', height: '44px', backgroundColor: '#e2e8f0' }}></div>
+
+            {/* Stat 3: 진행 이슈 */}
+            <div
+              onClick={() => setActiveFilter('issue')}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '0 24px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+              title="진행 중인 이슈 필터링"
+            >
+              {/* Bell Alert Icon */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '6px' }}>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', color: '#f97316' }}>{activeIssues.length}</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#64748b' }}>/3</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginTop: '6px' }}>진행 이슈</span>
+            </div>
+
+            {/* Vertical Divider 3 */}
+            <div style={{ width: '1px', height: '44px', backgroundColor: '#e2e8f0' }}></div>
+
+            {/* Stat 4: 팀 싱크율 */}
+            <div
+              onClick={() => setActiveFilter('all')}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '0 24px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+              title="팀 일정 싱크율 보기"
+            >
+              {/* Bar Chart Icon */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '6px' }}>
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
+                <span style={{ fontSize: '22px', fontWeight: '800', color: '#f97316' }}>{Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3)}</span>
+                <span style={{ fontSize: '18px', fontWeight: '700', color: '#64748b' }}>/{teamMembers.length || 3}</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', marginTop: '6px' }}>팀 싱크율</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       {/* ──── MAIN TWO-COLUMN CONTAINER ──── */}
       <div className="dashboard-container" style={{
         maxWidth: '1360px',
         width: '100%',
         margin: '0 auto',
-        padding: '24px 32px 48px 32px',
+        padding: '16px 32px 48px 32px',
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) 350px',
         gap: '32px',

@@ -976,8 +976,8 @@ export default function Dashboard({
               disabled={!composerText.trim() || isSubmitting}
               title="등록 (Enter)"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
                 padding: '0',
                 backgroundColor: 'transparent',
                 color: composerText.trim() ? '#6366f1' : '#cbd5e1',
@@ -1001,7 +1001,7 @@ export default function Dashboard({
                 e.currentTarget.style.color = composerText.trim() ? '#6366f1' : '#cbd5e1';
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>

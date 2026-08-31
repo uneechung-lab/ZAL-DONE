@@ -3402,7 +3402,7 @@ export default function App() {
     showLayerAlert(`"${target.title}" 일정 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };
 
-  const processMessageAndCreateSchedule = (textInput, actingUser = ME) => {
+  const processMessageAndCreateSchedule = (textInput, actingUser = ME, skipDashboardFeed = false) => {
     const text = (textInput || '').trim();
     if (!text) return;
 
@@ -3767,8 +3767,8 @@ export default function App() {
 
         setSchedules(prev => [...prev, ...savedSchedules]);
 
-        // Also push a dashboard feed card so Dashboard shows this registration too
-        if (savedSchedules.length > 0) {
+        // Also push a dashboard feed card so Dashboard shows this registration too (only when NOT from dashboard)
+        if (!skipDashboardFeed && savedSchedules.length > 0) {
           const now = new Date();
           const timeDisplay = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
           const text = (textInput || '').trim();
@@ -3916,7 +3916,7 @@ export default function App() {
   };
 
   const handleDashboardAddSchedule = (text, user) => {
-    processMessageAndCreateSchedule(text, user || ME);
+    processMessageAndCreateSchedule(text, user || ME, true);
   };
 
   const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {

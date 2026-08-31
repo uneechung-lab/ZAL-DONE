@@ -1287,8 +1287,8 @@ export default function Dashboard({
                   {/* Interactive Vacation Approval Action Box (If pending and user is approver) */}
                   {hasVacation && isVacationPending && isApprover && (
                     <div style={{
-                      backgroundColor: '#fffbeb',
-                      border: '1.5px solid #fef08a',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
                       borderRadius: '12px',
                       padding: '12px 16px',
                       display: 'flex',
@@ -1297,10 +1297,10 @@ export default function Dashboard({
                       gap: '12px'
                     }}>
                       <div>
-                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#92400e' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>
                           🏖️ {feed.vacationInfo.type} 신청 ({feed.vacationInfo.date})
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#b45309', marginTop: '2px' }}>
+                        <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
                           결재권자(조상무)의 승인이 필요합니다.
                         </div>
                       </div>

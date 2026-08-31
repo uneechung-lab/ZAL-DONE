@@ -1041,19 +1041,7 @@ export default function Dashboard({
         {/* ════════ LEFT COLUMN: FEED STREAM ════════ */}
         <section className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* 1. Header greeting */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.4px', margin: 0 }}>
-                오늘의 모닝 피드
-              </h1>
-              <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
-                출근 직후 팀원들의 하루 일과와 실시간 이슈를 확인하고 소통하세요.
-              </p>
-            </div>
-          </div>
-
-          {/* 2. Quick Sync Composer (Threads / Instagram Style) */}
+          {/* 1. Quick Sync Composer (Threads / Instagram Style) */}
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '16px',

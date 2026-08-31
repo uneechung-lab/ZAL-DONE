@@ -957,23 +957,11 @@ export default function Dashboard({
     setComposerText(prev => (prev ? `${prev} ${tag} ` : `${tag} `));
   };
 
-  // Mini Gantt Helper: Get timeline blocks for each member for today (08:00 ~ 19:00 = 11 hours)
-  // Mini Gantt Helper: Get timeline blocks for each member for today (Soft pastel theme)
+  // Mini Gantt Helper: Get timeline blocks dynamically from schedules
   const baseMemberScheduleMap = {
-    sh: [
-      { title: '주간 기획 회의', start: 10, end: 11.5, bg: '#eef2ff', border: '#c7d2fe', text: '#3730a3', accent: '#6366f1' },
-      { title: '화면 퍼블리싱 리뷰', start: 14, end: 15, bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', accent: '#0ea5e9' },
-      { title: '대신증권 브리핑 준비', start: 16, end: 17.5, bg: '#ecfdf5', border: '#a7f3d0', text: '#065f46', accent: '#10b981' }
-    ],
-    sangmoo: [
-      { title: '주간 기획 회의', start: 10, end: 11.5, bg: '#eef2ff', border: '#c7d2fe', text: '#3730a3', accent: '#6366f1' },
-      { title: '임원 주간 경영 회의', start: 15, end: 17, bg: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6', accent: '#7c3aed' }
-    ],
-    daum: [
-      { title: '오전 반차', start: 9, end: 13, bg: '#fffbeb', border: '#fde68a', text: '#92400e', accent: '#f59e0b' },
-      { title: '퍼블리싱 리뷰', start: 14, end: 15, bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', accent: '#0ea5e9' },
-      { title: '로그인 핫픽스 배포', start: 16, end: 18, bg: '#fef2f2', border: '#fecaca', text: '#991b1b', accent: '#ef4444' }
-    ]
+    sh: [],
+    sangmoo: [],
+    daum: []
   };
 
   const getEventsForMemberAndDate = (memberId, dateObj) => {

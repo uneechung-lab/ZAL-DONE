@@ -3949,6 +3949,7 @@ export default function App() {
       
       match = {
         id: itemOrFeed.id || `sched_dash_sync_${Date.now()}`,
+        feedId: itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null),
         title: cleanTitle || '일정',
         date: selectedDate || new Date().getDate(),
         month: currentMonth || (new Date().getMonth() + 1),
@@ -3965,11 +3966,16 @@ export default function App() {
         description: itemOrFeed.content || itemOrFeed.description || itemOrFeed.title || '',
         createdAt: itemOrFeed.createdAt || new Date().toISOString()
       };
+    } else {
+      match = {
+        ...match,
+        feedId: itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null)
+      };
     }
 
     openDetailModal(match);
     // Remember the feedId so we can delete the dashboard card if user deletes from modal
-    setDashboardFeedId(itemOrFeed.feedId || itemOrFeed.id || null);
+    setDashboardFeedId(itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null));
   };
 
   const openAddModal = (member = null, hour = 9, date = null, month = null, year = null) => {
@@ -9199,7 +9205,8 @@ export default function App() {
                       if (!targetEvent) return;
                       const targetEventTitle = (targetEvent?.title || '').trim();
                       const targetEventId = targetEvent?.id;
-                      const fid = dashboardFeedId;
+                      const targetEventDesc = (targetEvent?.description || '').trim();
+                      const targetFeedId = targetEvent?.feedId || dashboardFeedId || (targetEventId && targetEventId.startsWith('feed_') ? targetEventId.split('_').slice(0, 2).join('_') : null);
                       const matchGroupId = targetEvent?.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                       const groupId = matchGroupId ? matchGroupId[1] : null;
 
@@ -9228,10 +9235,14 @@ export default function App() {
                             // Delete matching feed from feeds state and localStorage
                             setFeeds(prev => {
                               const next = prev.filter(f => {
-                                if (fid && f.id === fid) return false;
-                                if (targetEventId && f.id === targetEventId) return false;
-                                if (targetEventTitle && (f.content?.includes(targetEventTitle) || f.title?.includes(targetEventTitle))) return false;
-                                if (f.aiBadges?.some(b => (targetEventId && b.id?.includes(targetEventId)) || (targetEventTitle && b.label?.includes(targetEventTitle)))) return false;
+                                if (targetFeedId && (f.id === targetFeedId || f.id.startsWith(targetFeedId) || targetFeedId.startsWith(f.id))) return false;
+                                if (targetEventId && (f.id === targetEventId || targetEventId.startsWith(f.id) || f.id.startsWith(targetEventId))) return false;
+                                if (targetEventDesc && (f.content?.includes(targetEventDesc) || targetEventDesc.includes(f.content))) return false;
+                                if (targetEventTitle && (f.content?.includes(targetEventTitle) || targetEventTitle.includes(f.content))) return false;
+                                if (f.aiBadges?.some(b => 
+                                  (targetEventId && b.id?.includes(targetEventId)) || 
+                                  (targetEventTitle && (b.label?.includes(targetEventTitle) || targetEventTitle.includes(b.label)))
+                                )) return false;
                                 return true;
                               });
                               try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}

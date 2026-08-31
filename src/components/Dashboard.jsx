@@ -360,19 +360,21 @@ export default function Dashboard({
   };
 
   // Mini Gantt Helper: Get timeline blocks for each member for today (08:00 ~ 19:00 = 11 hours)
+  // Mini Gantt Helper: Get timeline blocks for each member for today (Soft pastel theme)
   const memberScheduleMap = {
     sh: [
-      { title: '주간 기획 회의', start: 10, end: 11.5, color: '#6366f1' },
-      { title: '화면 퍼블리싱 리뷰', start: 14, end: 15, color: '#0ea5e9' },
-      { title: '대신증권 브리핑 준비', start: 16, end: 17.5, color: '#10b981' }
+      { title: '주간 기획 회의', start: 10, end: 11.5, bg: '#eef2ff', border: '#c7d2fe', text: '#3730a3', accent: '#6366f1' },
+      { title: '화면 퍼블리싱 리뷰', start: 14, end: 15, bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', accent: '#0ea5e9' },
+      { title: '대신증권 브리핑 준비', start: 16, end: 17.5, bg: '#ecfdf5', border: '#a7f3d0', text: '#065f46', accent: '#10b981' }
     ],
     sangmoo: [
-      { title: '주간 기획 회의', start: 10, end: 11.5, color: '#6366f1' },
-      { title: '임원 주간 경영 회의', start: 15, end: 17, color: '#4f46e5' }
+      { title: '주간 기획 회의', start: 10, end: 11.5, bg: '#eef2ff', border: '#c7d2fe', text: '#3730a3', accent: '#6366f1' },
+      { title: '임원 주간 경영 회의', start: 15, end: 17, bg: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6', accent: '#7c3aed' }
     ],
     daum: [
-      { title: '로그인 에러 디버깅', start: 9, end: 14, color: '#ef4444' },
-      { title: '퍼블리싱 리뷰', start: 14, end: 15, color: '#0ea5e9' }
+      { title: '오전 반차', start: 9, end: 13, bg: '#fffbeb', border: '#fde68a', text: '#92400e', accent: '#f59e0b' },
+      { title: '퍼블리싱 리뷰', start: 14, end: 15, bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', accent: '#0ea5e9' },
+      { title: '로그인 핫픽스 배포', start: 16, end: 18, bg: '#fef2f2', border: '#fecaca', text: '#991b1b', accent: '#ef4444' }
     ]
   };
 
@@ -1661,27 +1663,29 @@ export default function Dashboard({
                                       left: '3px',
                                       right: '3px',
                                       height: `${heightPx}px`,
-                                      backgroundColor: startingEvt.color,
-                                      color: '#ffffff',
+                                      backgroundColor: startingEvt.bg || '#f1f5f9',
+                                      border: `1px solid ${startingEvt.border || '#cbd5e1'}`,
+                                      borderLeft: `3.5px solid ${startingEvt.accent || startingEvt.text || '#6366f1'}`,
+                                      color: startingEvt.text || '#0f172a',
                                       borderRadius: '6px',
                                       padding: '4px 6px',
                                       boxSizing: 'border-box',
                                       zIndex: 10,
                                       cursor: 'pointer',
-                                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+                                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                                       overflow: 'hidden',
                                       display: 'flex',
                                       flexDirection: 'column',
                                       justifyContent: 'flex-start',
-                                      gap: '1px',
-                                      transition: 'transform 0.15s ease, filter 0.15s ease'
+                                      gap: '2px',
+                                      transition: 'all 0.15s ease'
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.filter = 'brightness(1.08)';
-                                      e.currentTarget.style.transform = 'scale(1.02)';
+                                      e.currentTarget.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.08)';
+                                      e.currentTarget.style.transform = 'translateY(-1px)';
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.filter = 'none';
+                                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.04)';
                                       e.currentTarget.style.transform = 'none';
                                     }}
                                     title={`${startingEvt.title} (${startingEvt.start}:00 ~ ${startingEvt.end}:00)`}
@@ -1689,19 +1693,21 @@ export default function Dashboard({
                                     <div style={{
                                       fontSize: '11px',
                                       fontWeight: '800',
-                                      lineHeight: '1.2',
+                                      lineHeight: '1.25',
                                       whiteSpace: 'nowrap',
                                       overflow: 'hidden',
-                                      textOverflow: 'ellipsis'
+                                      textOverflow: 'ellipsis',
+                                      color: startingEvt.text || '#0f172a'
                                     }}>
                                       {startingEvt.title}
                                     </div>
                                     {duration >= 1 && (
                                       <div style={{
                                         fontSize: '9.5px',
-                                        fontWeight: '600',
-                                        opacity: 0.9,
-                                        lineHeight: '1'
+                                        fontWeight: '700',
+                                        opacity: 0.85,
+                                        lineHeight: '1',
+                                        color: startingEvt.text || '#64748b'
                                       }}>
                                         {String(Math.floor(startingEvt.start)).padStart(2, '0')}:00~{String(Math.ceil(startingEvt.end)).padStart(2, '0')}:00
                                       </div>

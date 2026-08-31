@@ -6669,29 +6669,18 @@ export default function App() {
             {/* Left Navigations */}
             <div className="date-navigator" style={{ display: 'flex', alignItems: 'center' }}>
               {!isDrawerOpen && (
-                <>
-                  <div
-                    onClick={() => navigateToView('dashboard')}
-                    title="피드 대시보드로 이동"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', cursor: 'pointer', marginRight: '6px' }}
-                  >
-                    <img src="/bi2.png" alt="BI Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
-                    <span style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>ZAL</span>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}> : 잘됨</span>
-                  </div>
-                  <button 
-                    className="close-drawer-btn" 
-                    onClick={() => setIsDrawerOpen(true)}
-                    title="사이드바 열기"
-                    style={{ marginRight: '10px', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="4" y1="12" x2="16" y2="12" />
-                      <polyline points="10 6 16 12 10 18" />
-                      <line x1="20" y1="5" x2="20" y2="19" />
-                    </svg>
-                  </button>
-                </>
+                <button 
+                  className="close-drawer-btn" 
+                  onClick={() => setIsDrawerOpen(true)}
+                  title="사이드바 열기"
+                  style={{ marginRight: '10px', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="12" x2="16" y2="12" />
+                    <polyline points="10 6 16 12 10 18" />
+                    <line x1="20" y1="5" x2="20" y2="19" />
+                  </svg>
+                </button>
               )}
               <button 
                 className="nav-arrow-text" 

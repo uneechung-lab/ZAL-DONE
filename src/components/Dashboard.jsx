@@ -376,12 +376,13 @@ export default function Dashboard({
     return '';
   };
 
-  // Granular categorized items when specific category tab is selected (이슈, 요청, 미팅, 공지, 팀싱크)
+  // Granular categorized items when specific category tab or 'all' is selected
   const getCategoryItems = (categoryKey) => {
     const items = [];
 
     feeds.forEach(feed => {
-      if (categoryKey === 'issue') {
+      // 1. Issues
+      if (categoryKey === 'all' || categoryKey === 'issue') {
         const issueBadges = (feed.aiBadges || []).filter(b => b.category === '이슈' || b.type === 'issue');
         if (issueBadges.length > 0) {
           issueBadges.forEach((b, bIdx) => {
@@ -428,7 +429,10 @@ export default function Dashboard({
             feed: feed
           });
         }
-      } else if (categoryKey === 'vacation') {
+      }
+
+      // 2. Requests & Vacations
+      if (categoryKey === 'all' || categoryKey === 'vacation') {
         if (feed.vacationInfo) {
           items.push({
             id: `${feed.id}_vacation`,
@@ -476,7 +480,10 @@ export default function Dashboard({
             });
           }
         });
-      } else if (categoryKey === 'meeting') {
+      }
+
+      // 3. Meetings
+      if (categoryKey === 'all' || categoryKey === 'meeting') {
         const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.type === 'meeting');
         if (meetingBadges.length > 0) {
           meetingBadges.forEach((b, bIdx) => {
@@ -523,7 +530,10 @@ export default function Dashboard({
             feed: feed
           });
         }
-      } else if (categoryKey === 'notice') {
+      }
+
+      // 4. Notices
+      if (categoryKey === 'all' || categoryKey === 'notice') {
         const noticeBadges = (feed.aiBadges || []).filter(b => b.category === '공지' || b.category === '전사공지' || b.type === 'notice');
         if (noticeBadges.length > 0) {
           noticeBadges.forEach((b, bIdx) => {
@@ -570,31 +580,60 @@ export default function Dashboard({
             feed: feed
           });
         }
-      } else if (categoryKey === 'sync') {
-        items.push({
-          id: `${feed.id}_sync_item`,
-          feedId: feed.id,
-          authorId: feed.authorId,
-          authorName: feed.authorName,
-          authorRole: feed.authorRole,
-          authorAvatarPic: feed.authorAvatarPic,
-          authorColor: feed.authorColor,
-          timeDisplay: feed.timeDisplay,
-          createdAt: feed.createdAt,
-          category: '팀싱크',
-          title: feed.content,
-          description: '',
-          badgeText: '☀️ 모닝 싱크',
-          badgeColor: '#64748b',
-          badgeBg: '#f8fafc',
-          badgeBorder: '#e2e8f0',
-          feed: feed
-        });
+      }
+
+      // 5. Work / General updates
+      if (categoryKey === 'all' || categoryKey === 'sync') {
+        const workBadges = (feed.aiBadges || []).filter(b => b.category === '일반' || b.category === '업무');
+        if (workBadges.length > 0) {
+          workBadges.forEach((b, bIdx) => {
+            items.push({
+              id: `${feed.id}_work_${bIdx}`,
+              feedId: feed.id,
+              authorId: feed.authorId,
+              authorName: feed.authorName,
+              authorRole: feed.authorRole,
+              authorAvatarPic: feed.authorAvatarPic,
+              authorColor: feed.authorColor,
+              timeDisplay: feed.timeDisplay,
+              createdAt: feed.createdAt,
+              category: '팀싱크',
+              title: b.label,
+              description: '',
+              badgeText: '☀️ 팀싱크',
+              badgeColor: '#64748b',
+              badgeBg: '#f8fafc',
+              badgeBorder: '#e2e8f0',
+              feed: feed
+            });
+          });
+        } else if (!feed.aiBadges || feed.aiBadges.length === 0) {
+          items.push({
+            id: `${feed.id}_sync_item`,
+            feedId: feed.id,
+            authorId: feed.authorId,
+            authorName: feed.authorName,
+            authorRole: feed.authorRole,
+            authorAvatarPic: feed.authorAvatarPic,
+            authorColor: feed.authorColor,
+            timeDisplay: feed.timeDisplay,
+            createdAt: feed.createdAt,
+            category: '팀싱크',
+            title: feed.content,
+            description: '',
+            badgeText: '☀️ 모닝 싱크',
+            badgeColor: '#64748b',
+            badgeBg: '#f8fafc',
+            badgeBorder: '#e2e8f0',
+            feed: feed
+          });
+        }
       }
     });
 
     return items;
   };
+
 
 
   // Filtered feeds

@@ -1054,10 +1054,10 @@ export default function Dashboard({
           {/* Bottom: Quick Hashtag Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {[
-              { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
-              { label: '#🤝 배포미팅', tag: '배포 미팅 14:00' },
-              { label: '#🏖️ 오전반차', tag: '오전 반차 신청' },
-              { label: '#🏖️ 오후반차', tag: '오후 반차 신청' }
+              { label: '#긴급이슈', tag: '긴급 이슈 대응' },
+              { label: '#배포미팅', tag: '배포 미팅 14:00' },
+              { label: '#오전반차', tag: '오전 반차 신청' },
+              { label: '#오후반차', tag: '오후 반차 신청' }
             ].map(item => (
               <button
                 key={item.label}

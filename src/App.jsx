@@ -2503,6 +2503,81 @@ export default function App() {
     }
   };
 
+  const performDeleteScheduleAndFeed = (targetEvent, fid) => {
+    if (!targetEvent) return;
+    const targetEventId = targetEvent.id;
+    const targetEventTitle = (targetEvent.title || '').trim();
+    const targetEventDesc = (targetEvent.description || '').trim();
+    const cleanTitleNoSpace = targetEventTitle.replace(/[\s🏖️🚨🤝📋📄⚡]/g, '').toLowerCase();
+    const cleanDescNoSpace = targetEventDesc.replace(/[\s🏖️🚨🤝📋📄⚡]/g, '').toLowerCase();
+
+    const targetFeedId = targetEvent.feedId || fid || (targetEventId && targetEventId.startsWith('feed_') ? targetEventId.split('_').slice(0, 2).join('_') : null);
+    const matchGroupId = targetEvent.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const groupId = matchGroupId ? matchGroupId[1] : null;
+
+    // 1. Synchronously update schedules state
+    if (groupId) {
+      setSchedules(prev => prev.filter(s => !(s.description && s.description.includes(`[그룹 ID] ${groupId}`))));
+    } else {
+      setSchedules(prev => prev.filter(s => s.id !== targetEventId));
+    }
+
+    // 2. Synchronously update feeds state and localStorage
+    setFeeds(prev => {
+      const next = prev.filter(f => {
+        // Direct ID match
+        if (targetFeedId && (f.id === targetFeedId || f.id.startsWith(targetFeedId) || targetFeedId.startsWith(f.id))) return false;
+        if (targetEventId && (f.id === targetEventId || targetEventId.startsWith(f.id) || f.id.startsWith(targetEventId))) return false;
+        
+        // Text comparison (case-insensitive & space-insensitive)
+        const fContentNoSpace = (f.content || '').replace(/[\s🏖️🚨🤝📋📄⚡]/g, '').toLowerCase();
+        if (cleanDescNoSpace && fContentNoSpace && (fContentNoSpace.includes(cleanDescNoSpace) || cleanDescNoSpace.includes(fContentNoSpace))) return false;
+        if (cleanTitleNoSpace && fContentNoSpace && (fContentNoSpace.includes(cleanTitleNoSpace) || cleanTitleNoSpace.includes(fContentNoSpace))) return false;
+
+        // Badge label comparison
+        if (f.aiBadges && f.aiBadges.length > 0) {
+          const badgeMatched = f.aiBadges.some(b => {
+            const bLabelNoSpace = (b.label || '').replace(/[\s🏖️🚨🤝📋📄⚡]/g, '').toLowerCase();
+            if (targetEventId && b.id && b.id.includes(targetEventId)) return true;
+            if (cleanTitleNoSpace && bLabelNoSpace && (bLabelNoSpace.includes(cleanTitleNoSpace) || cleanTitleNoSpace.includes(bLabelNoSpace))) return true;
+            return false;
+          });
+          if (badgeMatched) return false;
+        }
+
+        // Vacation/Request info comparison
+        if (f.vacationInfo) {
+          const vTypeNoSpace = (f.vacationInfo.type || '').replace(/[\s🏖️🚨🤝📋📄⚡]/g, '').toLowerCase();
+          if (cleanTitleNoSpace && vTypeNoSpace && (vTypeNoSpace.includes(cleanTitleNoSpace) || cleanTitleNoSpace.includes(vTypeNoSpace))) return false;
+        }
+
+        return true;
+      });
+
+      try {
+        localStorage.setItem('zal_feeds_v2', JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
+
+    // 3. Close modals immediately
+    setDashboardFeedId(null);
+    setIsDetailModalOpen(false);
+
+    // 4. Fire background Appwrite delete if configured (won't block UI)
+    if (isConfigured) {
+      if (groupId) {
+        const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+        targets.forEach(t => {
+          appwriteService.deleteSchedule(t.id).catch(() => {});
+        });
+      } else if (targetEventId) {
+        appwriteService.deleteSchedule(targetEventId).catch(() => {});
+      }
+    }
+  };
+
+
   const getEndHourOptions = () => {
     const options = [];
     for (let h = parseFloat(editStartHour) + 0.5; h <= 19.5; h += 0.5) {
@@ -9200,60 +9275,15 @@ export default function App() {
                       opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
                     }}
                     onClick={() => {
-                      if (isDeletingEvent) return;
                       const targetEvent = selectedDetailEvent;
                       if (!targetEvent) return;
-                      const targetEventTitle = (targetEvent?.title || '').trim();
-                      const targetEventId = targetEvent?.id;
-                      const targetEventDesc = (targetEvent?.description || '').trim();
-                      const targetFeedId = targetEvent?.feedId || dashboardFeedId || (targetEventId && targetEventId.startsWith('feed_') ? targetEventId.split('_').slice(0, 2).join('_') : null);
-                      const matchGroupId = targetEvent?.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                      const groupId = matchGroupId ? matchGroupId[1] : null;
+                      const fid = dashboardFeedId;
 
                       showLayerConfirm(
                         `"${targetEvent.title}" 일정을 정말 삭제하시겠습니까?`,
                         '일정 삭제 확인',
-                        async () => {
-                          setIsDeletingEvent(true);
-                          try {
-                            if (groupId) {
-                              const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                              if (isConfigured) {
-                                for (const t of targets) {
-                                  try { await appwriteService.deleteSchedule(t.id); } catch (_) {}
-                                }
-                              }
-                              const targetIds = targets.map(t => t.id);
-                              setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-                            } else {
-                              if (isConfigured && targetEventId) {
-                                try { await appwriteService.deleteSchedule(targetEventId); } catch (_) {}
-                              }
-                              setSchedules(prev => prev.filter(s => s.id !== targetEventId));
-                            }
-
-                            // Delete matching feed from feeds state and localStorage
-                            setFeeds(prev => {
-                              const next = prev.filter(f => {
-                                if (targetFeedId && (f.id === targetFeedId || f.id.startsWith(targetFeedId) || targetFeedId.startsWith(f.id))) return false;
-                                if (targetEventId && (f.id === targetEventId || targetEventId.startsWith(f.id) || f.id.startsWith(targetEventId))) return false;
-                                if (targetEventDesc && (f.content?.includes(targetEventDesc) || targetEventDesc.includes(f.content))) return false;
-                                if (targetEventTitle && (f.content?.includes(targetEventTitle) || targetEventTitle.includes(f.content))) return false;
-                                if (f.aiBadges?.some(b => 
-                                  (targetEventId && b.id?.includes(targetEventId)) || 
-                                  (targetEventTitle && (b.label?.includes(targetEventTitle) || targetEventTitle.includes(b.label)))
-                                )) return false;
-                                return true;
-                              });
-                              try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                              return next;
-                            });
-
-                            setDashboardFeedId(null);
-                            setIsDetailModalOpen(false);
-                          } finally {
-                            setIsDeletingEvent(false);
-                          }
+                        () => {
+                          performDeleteScheduleAndFeed(targetEvent, fid);
                         }
                       );
                     }}

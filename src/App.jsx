@@ -401,14 +401,17 @@ function getMemberAvatarPic(member) {
   return member.avatarPic || '/pic1_thumb.png';
 }
 
+function cleanMemberRole(role) {
+  if (!role) return '팀원';
+  let r = String(role).replace(/^(?:나\/|나|정윤희|조상무|정다음|\s|\(|\))+/gi, '').replace(/\)+$/, '').trim();
+  r = r.replace(/.*?(부장|상무|사원|대리|과장|차장|이사|대표|팀원).*/, '$1');
+  return r || '팀원';
+}
+
 function getMemberRoleText(member, meUser) {
   if (!member) return '나';
 
-  let role = member.role || '팀원';
-  role = role.replace(/^(?:나\/|나|정윤희|조상무|정다음|\s|\(|\))+/gi, '').replace(/\)+$/, '').trim();
-  role = role.replace(/.*?(부장|상무|사원|대리|과장|차장|이사|대표|팀원).*/, '$1');
-  if (!role) role = member.role || '팀원';
-
+  const role = cleanMemberRole(member.role);
   const isMe = meUser && (member.id === meUser.id || member.name === meUser.name);
   if (isMe) {
     return role ? `나 ${role}` : '나';
@@ -2569,7 +2572,7 @@ export default function App() {
             const memberDaeum = {
               id: 'daum',
               name: '정다음',
-              role: '정다음(사원)',
+              role: '사원',
               avatar: '다음',
               avatarPic: '/pic2_thumb.png',
               color: '#10b981',

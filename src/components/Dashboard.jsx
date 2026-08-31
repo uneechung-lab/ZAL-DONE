@@ -126,6 +126,7 @@ export default function Dashboard({
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const projectMenuRef = useRef(null);
+  const composerTextareaRef = useRef(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -880,27 +881,87 @@ export default function Dashboard({
           gap: '24px',
           flexWrap: 'wrap'
         }}>
-          {/* Left Greeting & Summary text */}
-          <div style={{ minWidth: '280px', flex: '1 1 auto' }}>
-            <h2 style={{
-              fontSize: '21px',
-              fontWeight: '800',
-              color: '#0f172a',
-              letterSpacing: '-0.4px',
-              margin: '0 0 6px 0'
-            }}>
-              {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
-            </h2>
-            <p style={{
-              fontSize: '13px',
-              color: '#64748b',
-              margin: 0,
-              lineHeight: '1.55',
-              fontWeight: '500'
-            }}>
-              잘됨이(ZAL)는 팀원들의 실시간 업무와 이슈를 가장 빠르게 연결합니다.<br />
-              오늘도 원활한 협업과 성공적인 프로젝트 완수를 응원합니다.
-            </p>
+          {/* Left Greeting, Avatar, Subtext & Quick Action Tags */}
+          <div style={{ minWidth: '320px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            
+            {/* Top: Avatar + Name Greeting */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                backgroundColor: currentUser?.color || '#000000',
+                flexShrink: 0,
+                border: '1.5px solid #e2e8f0',
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)'
+              }}>
+                <img
+                  src={currentUser?.avatarPic || '/pic1_thumb.png'}
+                  alt={currentUser?.name || 'User'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <h2 style={{
+                fontSize: '20px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-0.4px',
+                margin: 0
+              }}>
+                {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
+              </h2>
+            </div>
+
+            {/* Subtext Prompt */}
+            <div style={{ fontSize: '13.5px', color: '#475569', fontWeight: '600', letterSpacing: '-0.2px' }}>
+              오늘의 모닝싱크를 작성하세요!
+            </div>
+
+            {/* Quick Hashtag Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
+                { label: '#🤝 배포미팅', tag: '배포 미팅 14:00' },
+                { label: '#🏖️ 오전반차', tag: '오전 반차 신청' },
+                { label: '#🏖️ 오후반차', tag: '오후 반차 신청' }
+              ].map(item => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    addTagToComposer(item.tag);
+                    composerTextareaRef.current?.focus();
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '14px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    color: '#334155',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                    e.currentTarget.style.borderColor = '#94a3b8';
+                    e.currentTarget.style.color = '#0f172a';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.color = '#334155';
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
           </div>
 
           {/* Right 5 Metric stats with vertical dividers */}
@@ -1120,6 +1181,7 @@ export default function Dashboard({
                 </div>
 
                 <textarea
+                  ref={composerTextareaRef}
                   value={composerText}
                   onChange={(e) => setComposerText(e.target.value)}
                   onKeyDown={(e) => {

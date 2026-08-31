@@ -143,6 +143,8 @@ export default function Dashboard({
   };
   const [copiedReport, setCopiedReport] = useState(false);
   const [highlightedCardId, setHighlightedCardId] = useState(null);
+  const [editingFeedId, setEditingFeedId] = useState(null);
+  const [editingText, setEditingText] = useState('');
   const [toastMessage, setToastMessage] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
@@ -429,6 +431,150 @@ export default function Dashboard({
       }
       return f;
     }));
+  };
+
+  // Start Editing Feed
+  const handleStartEdit = (feed) => {
+    setEditingFeedId(feed.id);
+    setEditingText(feed.content || '');
+  };
+
+  // Cancel Editing Feed
+  const handleCancelEdit = () => {
+    setEditingFeedId(null);
+    setEditingText('');
+  };
+
+  // Save Edited Feed
+  const handleSaveEdit = (feedId) => {
+    const text = editingText.trim();
+    if (!text) return;
+
+    // AI schedule parsing & badge extraction
+    const hasIssue = /긴급|이슈|장애|오류|버그|지연|에러|디버깅/i.test(text);
+    const hasVacation = /반차|연차|휴가|병가|조퇴/i.test(text);
+    const hasRequest = /요청|부탁|신청|컨펌|검토|확인\s*바랍니다|수락|면담/i.test(text);
+    const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업/i.test(text);
+
+    let targetUserId = 'sh';
+    let targetUserName = '정윤희';
+    let targetUserRole = '부장';
+
+    if (/조상무|상무님|상무/i.test(text)) {
+      targetUserId = 'sangmoo';
+      targetUserName = '조상무';
+      targetUserRole = '상무';
+    } else if (/정다음|다음사원|다음/i.test(text)) {
+      targetUserId = 'daeum';
+      targetUserName = '정다음';
+      targetUserRole = '사원';
+    } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
+      targetUserId = 'sh';
+      targetUserName = '정윤희';
+      targetUserRole = '부장';
+    } else if (hasVacation) {
+      targetUserId = 'sangmoo';
+      targetUserName = '조상무';
+      targetUserRole = '상무';
+    }
+
+    let primaryType = 'all';
+    if (hasVacation || hasRequest) primaryType = 'vacation';
+    else if (hasIssue) primaryType = 'issue';
+    else if (hasMeeting) primaryType = 'meeting';
+
+    const badges = [];
+    if (hasIssue) {
+      const match = text.match(/(?:긴급|이슈|장애|오류|에러|디버깅)[^\n,.]*/i);
+      badges.push({
+        id: `b_${Date.now()}_1`,
+        type: 'issue',
+        label: `🚨 ${match ? match[0].trim() : '긴급 이슈 대응'}`,
+        category: '이슈'
+      });
+    }
+
+    if (hasVacation) {
+      const isMorning = /오전\s*반차/i.test(text);
+      const isAfternoon = /오후\s*반차/i.test(text);
+      const vacType = isMorning ? '오전 반차' : isAfternoon ? '오후 반차' : '연차 휴가';
+      badges.push({
+        id: `b_${Date.now()}_3`,
+        type: 'vacation',
+        label: `🏖️ ${vacType} 신청`,
+        category: '요청'
+      });
+    } else if (hasRequest) {
+      const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
+      badges.push({
+        id: `b_${Date.now()}_req`,
+        type: 'vacation',
+        label: `📋 ${reqType} (${targetUserName} ${targetUserRole})`,
+        category: '요청'
+      });
+    } else if (hasMeeting) {
+      const match = text.match(/(?:회의|미팅|리뷰|브리핑)[^\n,.]*/i);
+      badges.push({
+        id: `b_${Date.now()}_2`,
+        type: 'meeting',
+        label: `🤝 ${match ? match[0].trim() : '팀 회의 일정'}`,
+        category: '회의'
+      });
+    }
+
+    if (badges.length === 0) {
+      badges.push({
+        id: `b_${Date.now()}_4`,
+        type: 'work',
+        label: '📄 오늘 업무 공유',
+        category: '일반'
+      });
+    }
+
+    setFeeds(prev => prev.map(f => {
+      if (f.id === feedId) {
+        let updatedVacInfo = f.vacationInfo;
+        if (hasVacation || hasRequest) {
+          const reqType = hasVacation 
+            ? (/오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가') 
+            : (hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청'));
+          updatedVacInfo = {
+            type: reqType,
+            date: '2026.08.31',
+            status: f.vacationInfo?.status || 'pending',
+            approverName: targetUserName,
+            approverRole: targetUserRole,
+            targetUserId: targetUserId,
+            requesterId: f.authorId,
+            requesterName: f.authorName,
+            approvedAt: f.vacationInfo?.approvedAt || null
+          };
+        } else {
+          updatedVacInfo = null;
+        }
+
+        return {
+          ...f,
+          content: text,
+          type: primaryType,
+          aiBadges: badges,
+          vacationInfo: updatedVacInfo
+        };
+      }
+      return f;
+    }));
+
+    setEditingFeedId(null);
+    setEditingText('');
+    showToast('✏️ 항목이 성공적으로 수정되었습니다.');
+  };
+
+  // Delete Feed
+  const handleDeleteFeed = (feedId) => {
+    if (window.confirm('등록된 항목을 삭제하시겠습니까?')) {
+      setFeeds(prev => prev.filter(f => f.id !== feedId));
+      showToast('🗑️ 항목이 삭제되었습니다.');
+    }
   };
 
   // Add Comment to Feed
@@ -1834,8 +1980,8 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {/* Right: Badge & Share / Link Copy Button */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {/* Right: Badge & Share / Link Copy Button + Edit/Delete if My Post */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       {item.badgeText && (
                         <span style={{
                           padding: '4px 10px',
@@ -1851,6 +1997,84 @@ export default function Dashboard({
                         </span>
                       )}
 
+                      {/* Edit Button (Only for My Posts) */}
+                      {(parentFeed.authorId === (currentUser?.id || 'sh') || (currentUser?.name && parentFeed.authorName?.includes(currentUser.name))) && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(parentFeed)}
+                            title="내 글 수정"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '4px 8px',
+                              backgroundColor: '#f8fafc',
+                              color: '#64748b',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#eff6ff';
+                              e.currentTarget.style.color = '#2563eb';
+                              e.currentTarget.style.borderColor = '#bfdbfe';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f8fafc';
+                              e.currentTarget.style.color = '#64748b';
+                              e.currentTarget.style.borderColor = '#e2e8f0';
+                            }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            <span>수정</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteFeed(parentFeed.id)}
+                            title="내 글 삭제"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '4px 8px',
+                              backgroundColor: '#f8fafc',
+                              color: '#ef4444',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#fef2f2';
+                              e.currentTarget.style.color = '#dc2626';
+                              e.currentTarget.style.borderColor = '#fca5a5';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f8fafc';
+                              e.currentTarget.style.color = '#ef4444';
+                              e.currentTarget.style.borderColor = '#e2e8f0';
+                            }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>삭제</span>
+                          </button>
+                        </>
+                      )}
+
+                      {/* Share Link Button */}
                       <button
                         type="button"
                         onClick={() => handleShareCard(item)}
@@ -1892,28 +2116,89 @@ export default function Dashboard({
                     </div>
                   </div>
 
-                  {/* Main Content Title */}
-                  <div style={{
-                    fontSize: '14.5px',
-                    color: '#0f172a',
-                    lineHeight: '1.6',
-                    fontWeight: '700',
-                    letterSpacing: '-0.2px'
-                  }}>
-                    {item.title}
-                  </div>
-
-                  {item.description && item.description !== item.title && (
-                    <div style={{
-                      fontSize: '13.5px',
-                      color: '#475569',
-                      lineHeight: '1.55',
-                      marginTop: '-4px',
-                      whiteSpace: 'pre-wrap',
-                      fontWeight: '500'
-                    }}>
-                      {item.description}
+                  {/* Main Content Title or Inline Editor */}
+                  {editingFeedId === parentFeed.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        rows={3}
+                        placeholder="일정/업무 내용을 수정하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          border: '1.5px solid #2563eb',
+                          fontSize: '13.5px',
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                          resize: 'vertical',
+                          boxSizing: 'border-box',
+                          lineHeight: '1.5',
+                          color: '#0f172a'
+                        }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #cbd5e1',
+                            backgroundColor: '#ffffff',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: '#64748b',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          취소
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(parentFeed.id)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: '#0f172a',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            color: '#ffffff',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          저장
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <div style={{
+                        fontSize: '14.5px',
+                        color: '#0f172a',
+                        lineHeight: '1.6',
+                        fontWeight: '700',
+                        letterSpacing: '-0.2px'
+                      }}>
+                        {item.title}
+                      </div>
+
+                      {item.description && item.description !== item.title && (
+                        <div style={{
+                          fontSize: '13.5px',
+                          color: '#475569',
+                          lineHeight: '1.55',
+                          marginTop: '-4px',
+                          whiteSpace: 'pre-wrap',
+                          fontWeight: '500'
+                        }}>
+                          {item.description}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}

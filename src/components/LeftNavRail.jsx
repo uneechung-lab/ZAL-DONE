@@ -56,9 +56,9 @@ export default function LeftNavRail({ currentView, onNavigate }) {
     <aside
       className="left-nav-rail"
       style={{
-        width: isDashboard ? '160px' : '56px',
-        minWidth: isDashboard ? '160px' : '56px',
-        maxWidth: isDashboard ? '160px' : '56px',
+        width: isDashboard ? '142px' : '56px',
+        minWidth: isDashboard ? '142px' : '56px',
+        maxWidth: isDashboard ? '142px' : '56px',
         height: '100vh',
         backgroundColor: '#ffffff',
         borderRight: '1px solid #e2e8f0',
@@ -122,14 +122,14 @@ export default function LeftNavRail({ currentView, onNavigate }) {
               {item.icon}
             </div>
 
-            {/* Menu Label (Appears seamlessly next to icon on Dashboard screen) */}
+            {/* Menu Label (Slightly smaller 12.5px font, balanced right padding) */}
             {isDashboard && (
               <span style={{
-                fontSize: '13.5px',
+                fontSize: '12.5px',
                 fontWeight: item.active ? '700' : '600',
                 color: item.active ? '#0f172a' : '#64748b',
                 whiteSpace: 'nowrap',
-                paddingRight: '10px'
+                paddingRight: '14px'
               }}>
                 {item.label}
               </span>
@@ -184,11 +184,11 @@ export default function LeftNavRail({ currentView, onNavigate }) {
           </div>
           {isDashboard && (
             <span style={{
-              fontSize: '13.5px',
+              fontSize: '12.5px',
               fontWeight: '600',
               color: '#64748b',
               whiteSpace: 'nowrap',
-              paddingRight: '10px'
+              paddingRight: '14px'
             }}>
               설정
             </span>

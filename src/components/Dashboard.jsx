@@ -959,12 +959,12 @@ export default function Dashboard({
                   handleComposerSubmit(e);
                 }
               }}
-              placeholder="오늘 진행할 주요 업무, 미팅, 긴급 이슈나 휴가 일정을 공유해 주세요 (Enter 등록)"
+              placeholder="오늘 진행할 주요 업무, 미팅, 긴급 이슈나 휴가 일정을 공유해 주세요"
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
-                fontSize: '14.5px',
+                fontSize: '15.5px',
                 fontWeight: '500',
                 color: '#0f172a',
                 backgroundColor: 'transparent'
@@ -974,26 +974,37 @@ export default function Dashboard({
               type="button"
               onClick={handleComposerSubmit}
               disabled={!composerText.trim() || isSubmitting}
+              title="등록 (Enter)"
               style={{
-                padding: '8px 20px',
-                backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
-                color: composerText.trim() ? '#ffffff' : '#94a3b8',
+                width: '38px',
+                height: '38px',
+                padding: '0',
+                backgroundColor: 'transparent',
+                color: composerText.trim() ? '#6366f1' : '#cbd5e1',
                 border: 'none',
-                borderRadius: '20px',
-                fontSize: '13.5px',
-                fontWeight: '700',
+                borderRadius: '50%',
                 cursor: composerText.trim() ? 'pointer' : 'not-allowed',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s ease'
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+                flexShrink: 0
+              }}
+              onMouseEnter={(e) => {
+                if (composerText.trim()) {
+                  e.currentTarget.style.color = '#4f46e5';
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = composerText.trim() ? '#6366f1' : '#cbd5e1';
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
-              <span>등록</span>
             </button>
           </div>
 

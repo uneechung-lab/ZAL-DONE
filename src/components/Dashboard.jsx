@@ -1521,8 +1521,7 @@ export default function Dashboard({
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '5px 11px',
+                  padding: '5px 12px',
                   borderRadius: '20px',
                   fontSize: '12px',
                   fontWeight: selectedMemberId === 'all' ? '800' : '600',
@@ -1530,8 +1529,7 @@ export default function Dashboard({
                   color: selectedMemberId === 'all' ? '#ffffff' : '#64748b',
                   border: `1px solid ${selectedMemberId === 'all' ? '#0f172a' : '#e2e8f0'}`,
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: selectedMemberId === 'all' ? '0 2px 6px rgba(15, 23, 42, 0.15)' : 'none'
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <span>전체</span>
@@ -1551,17 +1549,16 @@ export default function Dashboard({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 10px 4px 6px',
+                      gap: '4px',
+                      padding: '5px 12px',
                       borderRadius: '20px',
                       fontSize: '12px',
                       fontWeight: isSelected ? '800' : '600',
                       backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
                       color: isSelected ? '#2563eb' : '#475569',
-                      border: `1px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
+                      border: `1px solid ${isSelected ? '#93c5fd' : '#e2e8f0'}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.15)' : 'none'
+                      transition: 'all 0.15s ease'
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
@@ -1576,23 +1573,6 @@ export default function Dashboard({
                       }
                     }}
                   >
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      backgroundColor: tm.color || '#6366f1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <img
-                        src={tm.avatarPic || '/pic1_thumb.png'}
-                        alt={tm.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
                     <span>{memberName}</span>
                     {roleText && (
                       <span style={{

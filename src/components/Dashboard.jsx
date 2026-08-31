@@ -244,11 +244,35 @@ export default function Dashboard({
     // AI schedule parsing & badge extraction
     const hasIssue = /긴급|이슈|장애|오류|버그|지연|에러|디버깅/i.test(text);
     const hasVacation = /반차|연차|휴가|병가|조퇴/i.test(text);
-    const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업|면담/i.test(text);
+    const hasRequest = /요청|부탁|신청|컨펌|검토|확인\s*바랍니다|수락|면담/i.test(text);
+    const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업/i.test(text);
+
+    // Detect target assignee / approver from text
+    let targetUserId = 'sh';
+    let targetUserName = '정윤희';
+    let targetUserRole = '부장';
+
+    if (/조상무|상무님|상무/i.test(text)) {
+      targetUserId = 'sangmoo';
+      targetUserName = '조상무';
+      targetUserRole = '상무';
+    } else if (/정다음|다음사원|다음/i.test(text)) {
+      targetUserId = 'daeum';
+      targetUserName = '정다음';
+      targetUserRole = '사원';
+    } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
+      targetUserId = 'sh';
+      targetUserName = '정윤희';
+      targetUserRole = '부장';
+    } else if (hasVacation) {
+      targetUserId = 'sangmoo';
+      targetUserName = '조상무';
+      targetUserRole = '상무';
+    }
 
     let primaryType = 'all';
-    if (hasIssue) primaryType = 'issue';
-    else if (hasVacation) primaryType = 'vacation';
+    if (hasVacation || hasRequest) primaryType = 'vacation';
+    else if (hasIssue) primaryType = 'issue';
     else if (hasMeeting) primaryType = 'meeting';
 
     const badges = [];
@@ -261,15 +285,7 @@ export default function Dashboard({
         category: '이슈'
       });
     }
-    if (hasMeeting) {
-      const match = text.match(/(?:회의|미팅|리뷰|브리핑)[^\n,.]*/i);
-      badges.push({
-        id: `b_${Date.now()}_2`,
-        type: 'meeting',
-        label: `🤝 ${match ? match[0].trim() : '팀 미팅 일정'}`,
-        category: '미팅'
-      });
-    }
+
     if (hasVacation) {
       const isMorning = /오전\s*반차/i.test(text);
       const isAfternoon = /오후\s*반차/i.test(text);
@@ -278,14 +294,31 @@ export default function Dashboard({
         id: `b_${Date.now()}_3`,
         type: 'vacation',
         label: `🏖️ ${vacType} 신청`,
-        category: '휴가'
+        category: '요청'
+      });
+    } else if (hasRequest) {
+      const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
+      badges.push({
+        id: `b_${Date.now()}_req`,
+        type: 'vacation',
+        label: `📋 ${reqType} (${targetUserName} ${targetUserRole})`,
+        category: '요청'
+      });
+    } else if (hasMeeting) {
+      const match = text.match(/(?:회의|미팅|리뷰|브리핑)[^\n,.]*/i);
+      badges.push({
+        id: `b_${Date.now()}_2`,
+        type: 'meeting',
+        label: `🤝 ${match ? match[0].trim() : '팀 회의 일정'}`,
+        category: '회의'
       });
     }
+
     if (badges.length === 0) {
       badges.push({
         id: `b_${Date.now()}_4`,
         type: 'work',
-        label: '⚡ 오늘 업무 공유',
+        label: '📄 오늘 업무 공유',
         category: '일반'
       });
     }
@@ -296,8 +329,26 @@ export default function Dashboard({
         type: /오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가',
         date: '2026.08.31',
         status: isApprover ? 'approved' : 'pending',
-        approverName: '조상무 상무',
+        approverName: targetUserName,
+        approverRole: targetUserRole,
+        targetUserId: targetUserId,
+        requesterId: currentUser?.id || 'sh',
+        requesterName: currentUser?.name || '정윤희',
         approvedAt: isApprover ? timeDisplay : null
+      };
+    } else if (hasRequest) {
+      const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
+      const isTargetMe = currentUser?.id === targetUserId || currentUser?.name === targetUserName;
+      vacInfo = {
+        type: reqType,
+        date: '2026.08.31',
+        status: isTargetMe ? 'approved' : 'pending',
+        approverName: targetUserName,
+        approverRole: targetUserRole,
+        targetUserId: targetUserId,
+        requesterId: currentUser?.id || 'sh',
+        requesterName: currentUser?.name || '정윤희',
+        approvedAt: isTargetMe ? timeDisplay : null
       };
     }
 
@@ -361,16 +412,17 @@ export default function Dashboard({
     }));
   };
 
-  // Vacation Approval Action
+  // Vacation & Colleague Request Approval Action
   const handleApproveVacation = (feedId, approve = true) => {
     setFeeds(prev => prev.map(f => {
       if (f.id === feedId && f.vacationInfo) {
+        const approverDisplay = `${currentUser?.name || '담당자'} ${currentUser?.role || ''}`.trim();
         return {
           ...f,
           vacationInfo: {
             ...f.vacationInfo,
             status: approve ? 'approved' : 'rejected',
-            approverName: `${currentUser?.name || '조상무'} ${currentUser?.role || '상무'}`.trim(),
+            approverName: approverDisplay,
             approvedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
           }
         };
@@ -500,7 +552,49 @@ export default function Dashboard({
 
       // 2. Requests & Vacations
       if (categoryKey === 'all' || categoryKey === 'vacation') {
-        if (feed.vacationInfo) {
+        let vInfo = feed.vacationInfo;
+        // Auto-detect meeting/work requests in feed content if missing
+        if (!vInfo && (feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁'))) {
+          let targetUserId = 'sh';
+          let targetUserName = '정윤희';
+          let targetUserRole = '부장';
+          if (/조상무|상무/i.test(feed.content)) {
+            targetUserId = 'sangmoo';
+            targetUserName = '조상무';
+            targetUserRole = '상무';
+          } else if (/정다음|다음/i.test(feed.content)) {
+            targetUserId = 'daeum';
+            targetUserName = '정다음';
+            targetUserRole = '사원';
+          }
+          const reqType = /미팅|회의|면담/i.test(feed.content) ? '미팅 요청' : (/반차|휴가/i.test(feed.content) ? '휴가 신청' : '업무 요청');
+          vInfo = {
+            type: reqType,
+            date: '2026.08.31',
+            status: 'pending',
+            approverName: targetUserName,
+            approverRole: targetUserRole,
+            targetUserId: targetUserId,
+            requesterId: feed.authorId,
+            requesterName: feed.authorName,
+            approvedAt: null
+          };
+        }
+
+        if (vInfo) {
+          const isVac = vInfo.type?.includes('반차') || vInfo.type?.includes('휴가');
+          const approverName = vInfo.approverName || '조상무';
+          const approverRole = vInfo.approverRole || '';
+          const targetStr = `${approverName} ${approverRole}`.trim();
+          
+          let title = isVac 
+            ? `🏖️ ${vInfo.type} 신청 (${vInfo.date})` 
+            : `📋 ${vInfo.type} (${targetStr} 수락 요청)`;
+          
+          let badgeText = vInfo.status === 'approved' 
+            ? '✅ 승인완료' 
+            : (isVac ? '🏖️ 결재요청' : '📋 결재요청');
+
           items.push({
             id: `${feed.id}_vacation`,
             feedId: feed.id,
@@ -512,54 +606,54 @@ export default function Dashboard({
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
             category: '요청',
-            title: `🏖️ ${feed.vacationInfo.type} 신청 (${feed.vacationInfo.date})`,
-            description: '',
-            badgeText: feed.vacationInfo.status === 'approved' ? '✅ 승인완료' : '🏖️ 결재요청',
-            badgeColor: feed.vacationInfo.status === 'approved' ? '#059669' : '#b45309',
-            badgeBg: feed.vacationInfo.status === 'approved' ? '#ecfdf5' : '#fffbeb',
-            badgeBorder: feed.vacationInfo.status === 'approved' ? '#a7f3d0' : '#fde68a',
-            vacationInfo: feed.vacationInfo,
+            title: title,
+            description: feed.content,
+            badgeText: badgeText,
+            badgeColor: vInfo.status === 'approved' ? '#059669' : '#b45309',
+            badgeBg: vInfo.status === 'approved' ? '#ecfdf5' : '#fffbeb',
+            badgeBorder: vInfo.status === 'approved' ? '#a7f3d0' : '#fde68a',
+            vacationInfo: vInfo,
             feed: feed
           });
         }
-        const reqBadges = (feed.aiBadges || []).filter(b => b.category === '휴가' || b.category === '요청' || b.type === 'vacation');
-        reqBadges.forEach((b, bIdx) => {
-          if (!feed.vacationInfo || !b.label?.includes(feed.vacationInfo.type)) {
-            const snippet = getRelevantSnippet(feed.content, '요청');
-            items.push({
-              id: `${feed.id}_req_${bIdx}`,
-              feedId: feed.id,
-              authorId: feed.authorId,
-              authorName: feed.authorName,
-              authorRole: feed.authorRole,
-              authorAvatarPic: feed.authorAvatarPic,
-              authorColor: feed.authorColor,
-              timeDisplay: feed.timeDisplay,
-              createdAt: feed.createdAt,
-              category: '요청',
-              title: b.label,
-              description: snippet && snippet !== b.label ? snippet : '',
-              badgeText: '📋 업무요청',
-              badgeColor: '#6366f1',
-              badgeBg: '#eef2ff',
-              badgeBorder: '#c7d2fe',
-              feed: feed
-            });
-          }
-        });
       }
 
-      // 3. Meetings / Conferences
+      // 3. Meetings / Conferences (Exclude pending meeting requests which belong to '요청')
       if (categoryKey === 'all' || categoryKey === 'meeting') {
-        const meetingBadges = (feed.aiBadges || []).filter(b => 
-          b.category === '미팅' || b.category === '회의' || b.type === 'meeting' ||
-          b.label?.includes('회의') || b.label?.includes('미팅') || b.label?.includes('리뷰')
-        );
-        if (meetingBadges.length > 0) {
-          meetingBadges.forEach((b, bIdx) => {
-            const snippet = getRelevantSnippet(feed.content, '미팅');
+        const isRequestFeed = feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁');
+        if (!isRequestFeed) {
+          const meetingBadges = (feed.aiBadges || []).filter(b => 
+            (b.category === '미팅' || b.category === '회의' || b.type === 'meeting' ||
+            b.label?.includes('회의') || b.label?.includes('미팅') || b.label?.includes('리뷰')) &&
+            !b.label?.includes('요청')
+          );
+          if (meetingBadges.length > 0) {
+            meetingBadges.forEach((b, bIdx) => {
+              const snippet = getRelevantSnippet(feed.content, '미팅');
+              items.push({
+                id: `${feed.id}_meeting_${bIdx}`,
+                feedId: feed.id,
+                authorId: feed.authorId,
+                authorName: feed.authorName,
+                authorRole: feed.authorRole,
+                authorAvatarPic: feed.authorAvatarPic,
+                authorColor: feed.authorColor,
+                timeDisplay: feed.timeDisplay,
+                createdAt: feed.createdAt,
+                category: '회의',
+                title: b.label.replace(/^💼/, '🤝').replace(/^🏢/, '🤝'),
+                description: snippet && snippet !== b.label ? snippet : '',
+                badgeText: '🤝 회의',
+                badgeColor: '#4338ca',
+                badgeBg: '#eef2ff',
+                badgeBorder: '#c7d2fe',
+                feed: feed
+              });
+            });
+          } else if (feed.type === 'meeting' && (feed.content.includes('회의') || feed.content.includes('미팅') || feed.content.includes('리뷰'))) {
+            const snippet = getRelevantSnippet(feed.content, '미팅') || feed.content;
             items.push({
-              id: `${feed.id}_meeting_${bIdx}`,
+              id: `${feed.id}_meeting_main`,
               feedId: feed.id,
               authorId: feed.authorId,
               authorName: feed.authorName,
@@ -569,36 +663,15 @@ export default function Dashboard({
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
               category: '회의',
-              title: b.label.replace(/^💼/, '🤝').replace(/^🏢/, '🤝'),
-              description: snippet && snippet !== b.label ? snippet : '',
+              title: snippet,
+              description: '',
               badgeText: '🤝 회의',
               badgeColor: '#4338ca',
               badgeBg: '#eef2ff',
               badgeBorder: '#c7d2fe',
               feed: feed
             });
-          });
-        } else if (feed.type === 'meeting' && (feed.content.includes('회의') || feed.content.includes('미팅') || feed.content.includes('리뷰'))) {
-          const snippet = getRelevantSnippet(feed.content, '미팅') || feed.content;
-          items.push({
-            id: `${feed.id}_meeting_main`,
-            feedId: feed.id,
-            authorId: feed.authorId,
-            authorName: feed.authorName,
-            authorRole: feed.authorRole,
-            authorAvatarPic: feed.authorAvatarPic,
-            authorColor: feed.authorColor,
-            timeDisplay: feed.timeDisplay,
-            createdAt: feed.createdAt,
-            category: '회의',
-            title: snippet,
-            description: '',
-            badgeText: '🤝 회의',
-            badgeColor: '#4338ca',
-            badgeBg: '#eef2ff',
-            badgeBorder: '#c7d2fe',
-            feed: feed
-          });
+          }
         }
       }
 
@@ -1843,90 +1916,154 @@ export default function Dashboard({
                     </div>
                   )}
 
-                  {/* Interactive Vacation Action (If pending & user is approver) */}
-                  {isPendingVacation && isApprover && (
-                    <div style={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      padding: '12px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px'
-                    }}>
-                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-                        결재권자(조상무)의 승인이 필요합니다.
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleRejectVacation(parentFeed.id)}
-                          style={{
-                            padding: '7px 14px',
-                            fontSize: '12.5px',
-                            fontWeight: '700',
-                            backgroundColor: '#fef2f2',
-                            color: '#dc2626',
-                            border: '1px solid #fca5a5',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            lineHeight: '1.2',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                        >
-                          요청반려
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApproveVacation(parentFeed.id)}
-                          style={{
-                            padding: '7px 14px',
-                            fontSize: '12.5px',
-                            fontWeight: '700',
-                            backgroundColor: '#ecfdf5',
-                            color: '#059669',
-                            border: '1px solid #a7f3d0',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            lineHeight: '1.2',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
-                        >
-                          요청수락
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
+                  {(() => {
+                    if (!item.vacationInfo) return null;
+                    const vInfo = item.vacationInfo;
+                    const isPending = vInfo.status === 'pending';
+                    const isApproved = vInfo.status === 'approved';
+                    const isRejected = vInfo.status === 'rejected';
 
-                  {/* Approved Badge */}
-                  {isApprovedVacation && (
-                    <div style={{
-                      backgroundColor: 'transparent',
-                      border: '1px solid #a7f3d0',
-                      borderRadius: '10px',
-                      padding: '8px 12px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      color: '#065f46',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span>✅</span>
-                      <span>{item.vacationInfo.approverName || '조상무 상무'} 승인 완료 ({item.vacationInfo.date} {item.vacationInfo.type})</span>
-                    </div>
-                  )}
+                    const targetUserId = vInfo.targetUserId || 'sangmoo';
+                    const targetName = vInfo.approverName || '조상무';
+                    const targetRole = vInfo.approverRole || '';
+                    const targetDisplay = `${targetName} ${targetRole}`.trim();
+
+                    const canApprove = (currentUser?.id === targetUserId) ||
+                                       (targetUserId === 'sangmoo' && isApprover) ||
+                                       (targetUserId === 'sh' && (currentUser?.id === 'sh' || currentUser?.name?.includes('정윤희') || currentUser?.role?.includes('부장'))) ||
+                                       (targetUserId === 'daeum' && (currentUser?.id === 'daeum' || currentUser?.name?.includes('정다음') || currentUser?.role?.includes('사원')));
+
+                    if (isPending) {
+                      if (canApprove) {
+                        return (
+                          <div style={{
+                            backgroundColor: '#ffffff',
+                            border: '1.5px solid #93c5fd',
+                            borderRadius: '12px',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)'
+                          }}>
+                            <div style={{ fontSize: '12.5px', color: '#1e40af', fontWeight: '700' }}>
+                              👉 {targetDisplay ? `${targetDisplay}님의 승인(수락)이 필요합니다.` : '결재/수락이 필요합니다.'}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleApproveVacation(parentFeed.id, false)}
+                                style={{
+                                  padding: '7px 14px',
+                                  fontSize: '12.5px',
+                                  fontWeight: '700',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fca5a5',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  lineHeight: '1.2',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                              >
+                                요청반려
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleApproveVacation(parentFeed.id, true)}
+                                style={{
+                                  padding: '7px 14px',
+                                  fontSize: '12.5px',
+                                  fontWeight: '700',
+                                  backgroundColor: '#ecfdf5',
+                                  color: '#059669',
+                                  border: '1px solid #a7f3d0',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  lineHeight: '1.2',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                              >
+                                요청수락
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div style={{
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            fontSize: '12px',
+                            color: '#64748b',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <span>⏳</span>
+                            <span>{targetDisplay ? `${targetDisplay}님의 응답(수락)을 기다리고 있습니다.` : '승인 대기 중입니다.'}</span>
+                          </div>
+                        );
+                      }
+                    }
+
+                    if (isApproved) {
+                      return (
+                        <div style={{
+                          backgroundColor: '#ecfdf5',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#065f46',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>✅</span>
+                          <span>{vInfo.approverName || '담당자'} 수락 완료 ({vInfo.type})</span>
+                        </div>
+                      );
+                    }
+
+                    if (isRejected) {
+                      return (
+                        <div style={{
+                          backgroundColor: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#991b1b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>❌</span>
+                          <span>{vInfo.approverName || '담당자'} 요청 반려됨</span>
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })()}
 
                   {/* Feed Action Bar (Likes, Cheers, Comments) */}
                   <div style={{

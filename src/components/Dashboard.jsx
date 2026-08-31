@@ -2195,8 +2195,16 @@ export default function Dashboard({
                       <button
                         type="button"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
-                          handleDeleteFeed(parentFeed.id);
+                          const idToDelete = item.feedId || parentFeed?.id;
+                          if (!idToDelete) return;
+                          setFeeds(prev => {
+                            const next = prev.filter(f => f.id !== idToDelete);
+                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                            return next;
+                          });
+                          showToast('🗑️ 항목이 삭제되었습니다.');
                         }}
                         title="이 카드 삭제"
                         style={{

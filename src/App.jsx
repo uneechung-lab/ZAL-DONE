@@ -1841,11 +1841,13 @@ export default function App() {
   };
 
   const closeLayerDialog = (confirmed = false) => {
-    setLayerDialog(prev => {
-      if (confirmed && prev.onConfirm) prev.onConfirm(prev.inputValue);
-      if (!confirmed && prev.onCancel) prev.onCancel();
-      return { ...prev, isOpen: false, inputValue: '', hasInput: false };
-    });
+    // Capture callbacks BEFORE clearing state, then call AFTER closing
+    const onConfirmFn = layerDialog.onConfirm;
+    const onCancelFn = layerDialog.onCancel;
+    const inputVal = layerDialog.inputValue;
+    setLayerDialog(prev => ({ ...prev, isOpen: false, inputValue: '', hasInput: false, onConfirm: null, onCancel: null }));
+    if (confirmed && onConfirmFn) onConfirmFn(inputVal);
+    if (!confirmed && onCancelFn) onCancelFn();
   };
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [isSavingEvent, setIsSavingEvent] = useState(false);

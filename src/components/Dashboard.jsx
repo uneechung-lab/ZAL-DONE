@@ -980,7 +980,7 @@ export default function Dashboard({
                 height: '42px',
                 padding: '0',
                 backgroundColor: 'transparent',
-                color: composerText.trim() ? '#6366f1' : '#cbd5e1',
+                color: composerText.trim() ? '#000000' : '#cbd5e1',
                 border: 'none',
                 borderRadius: '50%',
                 cursor: composerText.trim() ? 'pointer' : 'not-allowed',
@@ -992,13 +992,13 @@ export default function Dashboard({
               }}
               onMouseEnter={(e) => {
                 if (composerText.trim()) {
-                  e.currentTarget.style.color = '#4f46e5';
+                  e.currentTarget.style.color = '#000000';
                   e.currentTarget.style.backgroundColor = '#f1f5f9';
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = composerText.trim() ? '#6366f1' : '#cbd5e1';
+                e.currentTarget.style.color = composerText.trim() ? '#000000' : '#cbd5e1';
               }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">

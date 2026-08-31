@@ -1008,7 +1008,7 @@ export default function Dashboard({
         </div>
       </div>
 
-            {/* ──── FILTER TABS ABOVE SCREEN GRID ──── */}
+            {/* ──── FILTER TABS ABOVE SCREEN GRID (CENTER-ALIGNED) ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
@@ -1017,7 +1017,7 @@ export default function Dashboard({
         boxSizing: 'border-box',
         borderBottom: '1px solid #e2e8f0'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '28px' }}>
           {[
             { key: 'all', label: '전체 피드' },
             { key: 'issue', label: '이슈' },

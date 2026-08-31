@@ -123,9 +123,16 @@ export default function Dashboard({
   const [commentInputs, setCommentInputs] = useState({});
   const [reportModalType, setReportModalType] = useState(null); // 'daily' | 'weekly' | null
   const [timelineDate, setTimelineDate] = useState(new Date(2026, 7, 31)); // 2026-08-31
+  const [selectedMemberId, setSelectedMemberId] = useState('all');
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일 (${timelineDayNames[timelineDate.getDay()]})`;
+
+  const displayMembers = (teamMembers && teamMembers.length > 0) ? teamMembers : [
+    { id: 'sh', name: '정윤희', role: '부장', avatarPic: '/pic1_thumb.png', color: '#6366f1' },
+    { id: 'sangmoo', name: '조상무', role: '상무', avatarPic: '/pic2_thumb.png', color: '#10b981' },
+    { id: 'daeum', name: '정다음', role: '사원', avatarPic: '/pic3_thumb.png', color: '#f59e0b' }
+  ];
 
   const handlePrevTimelineDate = () => {
     setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 1));
@@ -630,6 +637,10 @@ export default function Dashboard({
         }
       }
     });
+
+    if (selectedMemberId && selectedMemberId !== 'all') {
+      return items.filter(item => item.authorId === selectedMemberId);
+    }
 
     return items;
   };
@@ -1500,6 +1511,101 @@ export default function Dashboard({
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </button>
+            </div>
+
+            {/* Right: Team Member Chips */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedMemberId('all')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '5px 11px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: selectedMemberId === 'all' ? '800' : '600',
+                  backgroundColor: selectedMemberId === 'all' ? '#0f172a' : '#ffffff',
+                  color: selectedMemberId === 'all' ? '#ffffff' : '#64748b',
+                  border: `1px solid ${selectedMemberId === 'all' ? '#0f172a' : '#e2e8f0'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: selectedMemberId === 'all' ? '0 2px 6px rgba(15, 23, 42, 0.15)' : 'none'
+                }}
+              >
+                <span>전체</span>
+              </button>
+
+              {displayMembers.map(tm => {
+                const isSelected = selectedMemberId === tm.id;
+                const isMe = (currentUser?.id || 'sh') === tm.id;
+                const memberName = isMe ? '나' : tm.name;
+                const roleText = tm.role ? (tm.role.includes(tm.name) ? tm.role.replace(tm.name, '').replace(/[()]/g, '').trim() : tm.role) : '';
+
+                return (
+                  <button
+                    key={tm.id}
+                    type="button"
+                    onClick={() => setSelectedMemberId(prev => prev === tm.id ? 'all' : tm.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px 4px 6px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: isSelected ? '800' : '600',
+                      backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                      color: isSelected ? '#2563eb' : '#475569',
+                      border: `1px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.15)' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                      }
+                    }}
+                  >
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      backgroundColor: tm.color || '#6366f1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img
+                        src={tm.avatarPic || '/pic1_thumb.png'}
+                        alt={tm.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <span>{memberName}</span>
+                    {roleText && (
+                      <span style={{
+                        fontSize: '11px',
+                        color: isSelected ? '#3b82f6' : '#94a3b8',
+                        fontWeight: '500'
+                      }}>
+                        {roleText}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

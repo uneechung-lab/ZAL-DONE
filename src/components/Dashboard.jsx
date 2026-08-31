@@ -589,9 +589,9 @@ export default function Dashboard({
         }
       }
 
-      // 5. Work / General updates
+      // 5. Work / General schedule updates
       if (categoryKey === 'all' || categoryKey === 'sync') {
-        const workBadges = (feed.aiBadges || []).filter(b => b.category === '일반' || b.category === '업무');
+        const workBadges = (feed.aiBadges || []).filter(b => b.category === '일반' || b.category === '업무' || b.category === '일정');
         if (workBadges.length > 0) {
           workBadges.forEach((b, bIdx) => {
             items.push({
@@ -604,10 +604,10 @@ export default function Dashboard({
               authorColor: feed.authorColor,
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
-              category: '팀싱크',
+              category: '일정',
               title: b.label,
               description: '',
-              badgeText: '☀️ 팀싱크',
+              badgeText: '📅 일정',
               badgeColor: '#64748b',
               badgeBg: '#f8fafc',
               badgeBorder: '#e2e8f0',
@@ -625,10 +625,10 @@ export default function Dashboard({
             authorColor: feed.authorColor,
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
-            category: '팀싱크',
+            category: '일정',
             title: feed.content,
             description: '',
-            badgeText: '☀️ 모닝 싱크',
+            badgeText: '📅 일정',
             badgeColor: '#64748b',
             badgeBg: '#f8fafc',
             badgeBorder: '#e2e8f0',

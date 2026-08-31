@@ -452,7 +452,7 @@ input:-webkit-autofill:active {
 /* ──── Dashboard 2-Column Feed Masonry + Right Sidebar Layout ──── */
 .dashboard-layout-container {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 350px;
+  grid-template-columns: minmax(0, 1fr) 375px;
   gap: 28px;
   max-width: 1360px;
   width: 100%;

@@ -1492,29 +1492,42 @@ export default function Dashboard({
           )}
         </section>
 
-        {/* ════════ RIGHT: FIXED SIDEBAR WIDGETS (3 CARDS) ════════ */}
-        <aside className="dashboard-sidebar-column" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* 1. Today's Team Timeline Mini-Gantt Widget */}
+        {/* ════════ RIGHT: EXPANDED VERTICAL TEAM TIMELINE (SYNC WEEKLY/DAILY STYLE) ════════ */}
+        <aside className="dashboard-sidebar-column" style={{ width: '100%' }}>
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '16px',
             border: '1.5px solid #e2e8f0',
-            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
-            padding: '18px 20px',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
+            flexDirection: 'column'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+            {/* Header: Title, Date, Live Badge & Link to Sync */}
+            <div style={{
+              padding: '16px 18px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#ffffff'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a' }}>
                   금일 팀 타임라인
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: '#6366f1', backgroundColor: '#eef2ff', padding: '1px 6px', borderRadius: '10px' }}>
-                  실시간 연동
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: '#6366f1',
+                  backgroundColor: '#eef2ff',
+                  padding: '2px 7px',
+                  borderRadius: '10px'
+                }}>
+                  8월 31일 (월)
                 </span>
               </div>
+
               <button
                 type="button"
                 onClick={onNavigateToSync}
@@ -1528,296 +1541,199 @@ export default function Dashboard({
                   padding: 0,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '2px'
+                  gap: '2px',
+                  transition: 'color 0.15s ease'
                 }}
-                title="상세 간트 타임라인으로 이동"
+                onMouseEnter={(e) => e.currentTarget.style.color = '#4338ca'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
+                title="상세 싱크 간트 화면으로 이동"
               >
-                <span>상세보기</span>
+                <span>싱크 화면</span>
                 <span>&gt;</span>
               </button>
             </div>
 
-            {/* Time Slot Ruler */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '50px', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>
-              <span>09:00</span>
-              <span>12:00</span>
-              <span>15:00</span>
-              <span>18:00</span>
-            </div>
-
-            {/* 3 Members Horizontal Bar Tracks */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { id: 'sh', name: '정윤희', role: '부장', color: '#000000', avatar: '/pic1_thumb.png' },
-                { id: 'sangmoo', name: '조상무', role: '상무', color: '#6366f1', avatar: '/pic2_thumb.png' },
-                { id: 'daum', name: '정다음', role: '사원', color: '#10b981', avatar: '/pic2_thumb.png' }
-              ].map(member => {
-                const memberEvents = memberScheduleMap[member.id] || [];
-                const totalHoursSpan = 11; // 08:00 to 19:00
-
-                return (
-                  <div
-                    key={member.id}
-                    onClick={onNavigateToSync}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      cursor: 'pointer',
-                      padding: '4px 6px',
-                      borderRadius: '8px',
-                      transition: 'background-color 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    title={`${member.name} ${member.role} 일정 상세 보기`}
-                  >
-                    {/* Member Avatar & Name */}
-                    <div style={{ width: '40px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        backgroundColor: member.color,
-                        flexShrink: 0
-                      }}>
-                        <img src={member.avatar} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#334155' }}>
-                        {member.name.slice(1)}
-                      </span>
-                    </div>
-
-                    {/* Progress Track Bar */}
-                    <div style={{
-                      flex: 1,
-                      height: '18px',
-                      backgroundColor: '#f1f5f9',
-                      borderRadius: '6px',
-                      position: 'relative',
-                      overflow: 'hidden'
+            {/* Vertical Timeline Table Grid */}
+            <div style={{ width: '100%', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '56px' }} />
+                  <col style={{ width: 'calc((100% - 56px) / 3)' }} />
+                  <col style={{ width: 'calc((100% - 56px) / 3)' }} />
+                  <col style={{ width: 'calc((100% - 56px) / 3)' }} />
+                </colgroup>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
+                    <th style={{
+                      padding: '10px 4px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#64748b',
+                      textAlign: 'center',
+                      borderRight: '1px solid #e2e8f0'
                     }}>
-                      {memberEvents.map((evt, idx) => {
-                        const leftPct = Math.max(0, ((evt.start - 8) / totalHoursSpan) * 100);
-                        const widthPct = Math.min(100 - leftPct, ((evt.end - evt.start) / totalHoursSpan) * 100);
-
-                        return (
-                          <div
-                            key={idx}
-                            style={{
-                              position: 'absolute',
-                              left: `${leftPct}%`,
-                              width: `${widthPct}%`,
-                              top: '2px',
-                              bottom: '2px',
-                              backgroundColor: evt.color,
-                              borderRadius: '4px',
-                              opacity: 0.88,
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '0 4px',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap',
-                              fontSize: '9.5px',
-                              fontWeight: '700',
-                              color: '#ffffff'
-                            }}
-                            title={`${evt.title} (${evt.start}:00 ~ ${evt.end}:00)`}
-                          >
-                            {evt.title}
+                      시간
+                    </th>
+                    {[
+                      { id: 'sh', name: '정윤희', role: '부장', color: '#000000', avatar: '/pic1_thumb.png' },
+                      { id: 'sangmoo', name: '조상무', role: '상무', color: '#6366f1', avatar: '/pic2_thumb.png' },
+                      { id: 'daum', name: '정다음', role: '사원', color: '#10b981', avatar: '/pic2_thumb.png' }
+                    ].map((m, idx) => (
+                      <th key={m.id} style={{
+                        padding: '8px 4px',
+                        textAlign: 'center',
+                        borderRight: idx < 2 ? '1px solid #e2e8f0' : 'none'
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                          <div style={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            backgroundColor: m.color,
+                            border: '1px solid #cbd5e1'
+                          }}>
+                            <img src={m.avatar} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                          <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#1e293b' }}>
+                            {m.name} <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span>
+                          </span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((hour) => {
+                    const membersList = [
+                      { id: 'sh', name: '정윤희' },
+                      { id: 'sangmoo', name: '조상무' },
+                      { id: 'daum', name: '정다음' }
+                    ];
+
+                    const isNoon = hour === 12;
+
+                    return (
+                      <tr key={hour} style={{ height: '48px', borderBottom: '1px solid #f1f5f9' }}>
+                        {/* Time Slot Label */}
+                        <td style={{
+                          padding: '0 4px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#64748b',
+                          backgroundColor: '#fbfcfd',
+                          borderRight: '1px solid #e2e8f0',
+                          verticalAlign: 'top',
+                          paddingTop: '6px'
+                        }}>
+                          {String(hour).padStart(2, '0')}:00
+                        </td>
+
+                        {/* 3 Members Hour Grid Cells */}
+                        {membersList.map((m, mIdx) => {
+                          // Find any event starting at this exact hour for this member
+                          const events = memberScheduleMap[m.id] || [];
+                          const startingEvt = events.find(e => Math.floor(e.start) === hour);
+
+                          return (
+                            <td
+                              key={m.id}
+                              style={{
+                                padding: '0',
+                                position: 'relative',
+                                verticalAlign: 'top',
+                                borderRight: mIdx < 2 ? '1px solid #f1f5f9' : 'none',
+                                backgroundColor: isNoon ? 'rgba(241, 245, 249, 0.4)' : 'transparent'
+                              }}
+                            >
+                              {startingEvt && (() => {
+                                const duration = startingEvt.end - startingEvt.start;
+                                const heightPx = duration * 48 - 4;
+                                const topOffset = (startingEvt.start - hour) * 48 + 2;
+
+                                return (
+                                  <div
+                                    onClick={onNavigateToSync}
+                                    style={{
+                                      position: 'absolute',
+                                      top: `${topOffset}px`,
+                                      left: '3px',
+                                      right: '3px',
+                                      height: `${heightPx}px`,
+                                      backgroundColor: startingEvt.color,
+                                      color: '#ffffff',
+                                      borderRadius: '6px',
+                                      padding: '4px 6px',
+                                      boxSizing: 'border-box',
+                                      zIndex: 10,
+                                      cursor: 'pointer',
+                                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+                                      overflow: 'hidden',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'flex-start',
+                                      gap: '1px',
+                                      transition: 'transform 0.15s ease, filter 0.15s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.filter = 'brightness(1.08)';
+                                      e.currentTarget.style.transform = 'scale(1.02)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.filter = 'none';
+                                      e.currentTarget.style.transform = 'none';
+                                    }}
+                                    title={`${startingEvt.title} (${startingEvt.start}:00 ~ ${startingEvt.end}:00)`}
+                                  >
+                                    <div style={{
+                                      fontSize: '11px',
+                                      fontWeight: '800',
+                                      lineHeight: '1.2',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}>
+                                      {startingEvt.title}
+                                    </div>
+                                    {duration >= 1 && (
+                                      <div style={{
+                                        fontSize: '9.5px',
+                                        fontWeight: '600',
+                                        opacity: 0.9,
+                                        lineHeight: '1'
+                                      }}>
+                                        {String(Math.floor(startingEvt.start)).padStart(2, '0')}:00~{String(Math.ceil(startingEvt.end)).padStart(2, '0')}:00
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer Summary Info */}
+            <div style={{
+              padding: '12px 16px',
+              backgroundColor: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '11.5px',
+              color: '#64748b'
+            }}>
+              <span>총 7개 일정 등록됨</span>
+              <span style={{ fontWeight: '700', color: '#0f172a' }}>점심 12:00 ~ 13:00</span>
             </div>
           </div>
-
-          {/* 2. Today's Team Issues & Approval Summary Card */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
-            padding: '18px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-              팀 이슈 & 결재 요약
-            </span>
-
-            {/* Pending Approvals Summary */}
-            <div
-              onClick={() => setActiveFilter('vacation')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 12px',
-                backgroundColor: pendingApprovalsCount > 0 ? '#fffbeb' : '#f8fafc',
-                borderRadius: '10px',
-                border: `1px solid ${pendingApprovalsCount > 0 ? '#fef08a' : '#e2e8f0'}`,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '16px' }}>🏖️</span>
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a' }}>
-                    휴가 / 결재 대기
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>
-                    {pendingApprovalsCount > 0 ? '정다음 사원 오전 반차 대기' : '모든 결재 처리 완료'}
-                  </div>
-                </div>
-              </div>
-              <span style={{
-                fontSize: '12px',
-                fontWeight: '800',
-                color: pendingApprovalsCount > 0 ? '#b45309' : '#64748b',
-                backgroundColor: pendingApprovalsCount > 0 ? '#fef3c7' : '#e2e8f0',
-                padding: '2px 8px',
-                borderRadius: '10px'
-              }}>
-                {pendingApprovalsCount}건
-              </span>
-            </div>
-
-            {/* Active Issues Summary */}
-            <div
-              onClick={() => setActiveFilter('issue')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 12px',
-                backgroundColor: activeIssues.length > 0 ? '#fef2f2' : '#f8fafc',
-                borderRadius: '10px',
-                border: `1px solid ${activeIssues.length > 0 ? '#fecaca' : '#e2e8f0'}`,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '16px' }}>🚨</span>
-                <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a' }}>
-                    진행 중인 장애/이슈
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>
-                    {activeIssues.length > 0 ? '로그인 세션 만료 에러' : '진행 중인 이슈 없음'}
-                  </div>
-                </div>
-              </div>
-              <span style={{
-                fontSize: '12px',
-                fontWeight: '800',
-                color: activeIssues.length > 0 ? '#dc2626' : '#64748b',
-                backgroundColor: activeIssues.length > 0 ? '#fee2e2' : '#e2e8f0',
-                padding: '2px 8px',
-                borderRadius: '10px'
-              }}>
-                {activeIssues.length}건
-              </span>
-            </div>
-          </div>
-
-          {/* 3. Smart Report Generation CTA Widget */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
-            padding: '18px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
-                스마트 보고서 생성
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#10b981', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '10px' }}>
-                AI 자동생성
-              </span>
-            </div>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
-              피드와 일정을 종합하여 마크다운 보고서를 1초 만에 즉시 추출합니다.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setReportModalType('daily')}
-                style={{
-                  width: '100%',
-                  padding: '9px 14px',
-                  backgroundColor: '#f8fafc',
-                  border: '1.5px solid #cbd5e1',
-                  borderRadius: '10px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: '#0f172a',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#6366f1';
-                  e.currentTarget.style.borderColor = '#6366f1';
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                  e.currentTarget.style.color = '#0f172a';
-                }}
-              >
-                <span>📄 오늘 일일 업무 보고서 출력</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setReportModalType('weekly')}
-                style={{
-                  width: '100%',
-                  padding: '9px 14px',
-                  backgroundColor: '#ffffff',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: '#475569',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  e.currentTarget.style.borderColor = '#94a3b8';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                }}
-              >
-                <span>📊 이번 주 주간 보고서 출력</span>
-              </button>
-            </div>
-          </div>
-
         </aside>
 
       </div>

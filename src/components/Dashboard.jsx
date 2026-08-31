@@ -456,102 +456,106 @@ export default function Dashboard({
         boxSizing: 'border-box',
         position: 'relative'
       }}>
-        {/* Peeking BI Character & Greeting Row with Chips & Login Info (Vertically Centered Baseline) */}
+        {/* Peeking BI Character (zIndex: 1 - behind input box) */}
+        <img
+          src="/bi2.png"
+          alt="잘됨이 BI"
+          style={{
+            position: 'absolute',
+            left: '48px',
+            bottom: '36px',
+            height: '110px',
+            width: 'auto',
+            objectFit: 'contain',
+            display: 'block',
+            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.06))',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}
+        />
+
+        {/* Greeting & Login Info Row (zIndex: 30 - above input box so dropdowns render in front) */}
         <div style={{
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          paddingLeft: '16px',
+          paddingLeft: '112px',
           marginBottom: '-27px',
           position: 'relative',
-          zIndex: 1
+          zIndex: 30
         }}>
-          {/* Left: Peeking BI + Date + Greeting & Chips */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-            <img
-              src="/bi2.png"
-              alt="잘됨이 BI"
-              style={{
-                height: '110px',
-                width: 'auto',
-                objectFit: 'contain',
-                display: 'block',
-                filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.06))',
-                userSelect: 'none',
-                pointerEvents: 'none'
-              }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 45px 0' }}>
-              <span style={{
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#64748b',
-                letterSpacing: '-0.2px',
-                lineHeight: '1.2'
+          {/* Left: Date + Greeting & Chips */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 45px 0' }}>
+            <span style={{
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#64748b',
+              letterSpacing: '-0.2px',
+              lineHeight: '1.2'
+            }}>
+              2026년 8월 31일 월요일
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <h2 style={{
+                fontSize: '19px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-0.4px',
+                margin: 0,
+                lineHeight: '1.25'
               }}>
-                2026년 8월 31일 월요일
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                <h2 style={{
-                  fontSize: '19px',
-                  fontWeight: '800',
-                  color: '#0f172a',
-                  letterSpacing: '-0.4px',
-                  margin: 0,
-                  lineHeight: '1.25'
-                }}>
-                  {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
-                </h2>
+                {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
+              </h2>
 
-                {/* Quick Hashtag Buttons (Center vertically aligned with greeting text) */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  {[
-                    { label: '#긴급이슈', tag: '긴급 이슈 대응' },
-                    { label: '#회식공지', tag: '금일 부서 회식 안내' },
-                    { label: '#오전반차', tag: '오전 반차 신청' },
-                    { label: '#오후반차', tag: '오후 반차 신청' }
-                  ].map(item => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => {
-                        addTagToComposer(item.tag);
-                        composerTextareaRef.current?.focus();
-                      }}
-                      style={{
-                        padding: '2px 6px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        color: '#94a3b8',
-                        cursor: 'pointer',
-                        transition: 'color 0.15s ease',
-                        display: 'inline-flex',
-                        alignItems: 'center'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#0f172a';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#94a3b8';
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+              {/* Quick Hashtag Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: '#긴급이슈', tag: '긴급 이슈 대응' },
+                  { label: '#회식공지', tag: '금일 부서 회식 안내' },
+                  { label: '#오전반차', tag: '오전 반차 신청' },
+                  { label: '#오후반차', tag: '오후 반차 신청' }
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      addTagToComposer(item.tag);
+                      composerTextareaRef.current?.focus();
+                    }}
+                    style={{
+                      padding: '2px 6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      transition: 'color 0.15s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#0f172a';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#94a3b8';
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Right: User Login Info & Project Controls (Vertically Center Aligned with Greeting Line) */}
+          {/* Right: User Login Info & Project Controls (Lowered slightly with margin 0 0 38px 0, zIndex 30) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            margin: '0 0 45px 0',
-            zIndex: 30
+            margin: '0 0 38px 0',
+            zIndex: 40
           }}>
             {/* 1. User Profile Trigger & Floating Dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -888,7 +892,7 @@ export default function Dashboard({
         {/* Input Box & Hashtags Area (zIndex: 2, background: #ffffff covers the lower half of the character) */}
         <div style={{
           position: 'relative',
-          zIndex: 2,
+          zIndex: 10,
           display: 'flex',
           flexDirection: 'column',
           gap: '10px'

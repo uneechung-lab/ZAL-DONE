@@ -405,7 +405,7 @@ export default function Dashboard({
             createdAt: feed.createdAt,
             category: '요청',
             title: `🏖️ ${feed.vacationInfo.type} 신청 (${feed.vacationInfo.date})`,
-            description: feed.vacationInfo.status === 'pending' ? '결재권자(조상무)의 승인이 필요합니다.' : (feed.vacationInfo.status === 'approved' ? `${feed.vacationInfo.approverName || '조상무 상무'} 승인 완료` : '반려된 신청입니다.'),
+            description: '',
             badgeText: feed.vacationInfo.status === 'approved' ? '✅ 승인완료' : '🏖️ 결재요청',
             badgeColor: feed.vacationInfo.status === 'approved' ? '#059669' : '#b45309',
             badgeBg: feed.vacationInfo.status === 'approved' ? '#ecfdf5' : '#fffbeb',

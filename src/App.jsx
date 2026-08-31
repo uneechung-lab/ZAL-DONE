@@ -7151,25 +7151,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Department Badge Card */}
-              <div style={{
-                height: '32px',
-                backgroundColor: '#f1f5f9',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '10px',
-                padding: '0 12px',
-                fontSize: '12.5px',
-                fontWeight: '800',
-                color: '#0f172a',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxSizing: 'border-box',
-                whiteSpace: 'nowrap'
-              }}>
-                {parsedUser.department || '개발'}
-              </div>
-
               {/* Custom Interactive Project Select Dropdown Card */}
               <div ref={projectMenuRef} style={{ position: 'relative' }}>
                 <div

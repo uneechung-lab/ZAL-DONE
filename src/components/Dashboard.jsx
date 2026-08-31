@@ -2199,61 +2199,6 @@ export default function Dashboard({
                         <span>공유</span>
                       </button>
 
-                      {/* Delete Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const idToDelete = item.feedId || parentFeed?.id;
-                          if (!idToDelete) return;
-                          setFeeds(prev => {
-                            const next = prev.filter(f => f.id !== idToDelete);
-                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                            return next;
-                          });
-                          if (setSchedules) {
-                            const itemTitle = (item.title || item.content || '').trim();
-                            setSchedules(prev => prev.filter(s => {
-                              if (s.id === idToDelete || s.id === item.id) return false;
-                              if (itemTitle && s.title && (s.title.includes(itemTitle) || itemTitle.includes(s.title))) return false;
-                              return true;
-                            }));
-                          }
-                          showToast('🗑️ 항목이 삭제되었습니다.');
-                        }}
-                        title="이 카드 삭제"
-                        style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#f8fafc',
-                          color: '#ef4444',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#fef2f2';
-                          e.currentTarget.style.color = '#dc2626';
-                          e.currentTarget.style.borderColor = '#fecaca';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f8fafc';
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.style.borderColor = '#e2e8f0';
-                        }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6"></polyline>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                        <span>삭제</span>
-                      </button>
                     </div>
 
                     <button

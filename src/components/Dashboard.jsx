@@ -1051,11 +1051,11 @@ export default function Dashboard({
             </button>
           </div>
 
-          {/* Bottom: Quick Hashtag Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {/* Bottom: Quick Hashtag Buttons (No border, larger font, 회식공지) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {[
               { label: '#긴급이슈', tag: '긴급 이슈 대응' },
-              { label: '#배포미팅', tag: '배포 미팅 14:00' },
+              { label: '#회식공지', tag: '금일 부서 회식 안내' },
               { label: '#오전반차', tag: '오전 반차 신청' },
               { label: '#오후반차', tag: '오후 반차 신청' }
             ].map(item => (
@@ -1067,27 +1067,25 @@ export default function Dashboard({
                   composerTextareaRef.current?.focus();
                 }}
                 style={{
-                  padding: '3px 10px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '12px',
-                  fontSize: '11.5px',
-                  fontWeight: '700',
-                  color: '#334155',
+                  padding: '5px 12px',
+                  backgroundColor: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '14px',
+                  fontSize: '12.5px',
+                  fontWeight: '600',
+                  color: '#475569',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   display: 'inline-flex',
                   alignItems: 'center'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  e.currentTarget.style.borderColor = '#94a3b8';
+                  e.currentTarget.style.backgroundColor = '#e2e8f0';
                   e.currentTarget.style.color = '#0f172a';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                  e.currentTarget.style.color = '#334155';
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  e.currentTarget.style.color = '#475569';
                 }}
               >
                 {item.label}

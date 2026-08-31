@@ -9222,25 +9222,24 @@ export default function App() {
                           '일정 삭제 확인',
                           async () => {
                             setIsDeletingEvent(true);
-                            try {
-                              if (isConfigured) {
-                                await appwriteService.deleteSchedule(selectedDetailEvent.id);
-                              }
-                              setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                              // Also delete the dashboard feed card if this modal was opened from dashboard
-                              if (dashboardFeedId) {
-                                const fid = dashboardFeedId;
-                                setFeeds(prev => {
-                                  const next = prev.filter(f => f.id !== fid);
-                                  try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                                  return next;
-                                });
-                                setDashboardFeedId(null);
-                              }
-                              setIsDetailModalOpen(false);
-                            } finally {
-                              setIsDeletingEvent(false);
+                            // Appwrite delete in its own try-catch so UI always updates even if remote fails
+                            if (isConfigured) {
+                              try { await appwriteService.deleteSchedule(selectedDetailEvent.id); } catch (_) {}
                             }
+                            // Always update local state regardless of Appwrite result
+                            setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                            // Delete the dashboard feed card too
+                            const fid = dashboardFeedId;
+                            if (fid) {
+                              setFeeds(prev => {
+                                const next = prev.filter(f => f.id !== fid);
+                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                return next;
+                              });
+                              setDashboardFeedId(null);
+                            }
+                            setIsDeletingEvent(false);
+                            setIsDetailModalOpen(false);
                           }
                         );
                       }

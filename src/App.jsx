@@ -4884,6 +4884,7 @@ export default function App() {
           headerSelectedProject={headerSelectedProject}
           onSelectProject={setHeaderSelectedProject}
           schedules={schedules}
+          setSchedules={setSchedules}
           feeds={feeds}
           setFeeds={setFeeds}
           onAddSchedule={handleDashboardAddSchedule}
@@ -9195,8 +9196,14 @@ export default function App() {
                     onClick={async () => {
                       if (isDeletingEvent) return;
                       setIsDeletingEvent(true);
-                      const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                      const targetEvent = selectedDetailEvent;
+                      const matchGroupId = targetEvent?.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                       const groupId = matchGroupId ? matchGroupId[1] : null;
+                      
+                      const targetEventTitle = (targetEvent?.title || '').trim();
+                      const targetEventId = targetEvent?.id;
+                      const fid = dashboardFeedId;
+
                       if (groupId) {
                         const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
                         if (isConfigured) {
@@ -9207,21 +9214,26 @@ export default function App() {
                         const targetIds = targets.map(t => t.id);
                         setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
                       } else {
-                        if (isConfigured) {
-                          try { await appwriteService.deleteSchedule(selectedDetailEvent.id); } catch (_) {}
+                        if (isConfigured && targetEventId) {
+                          try { await appwriteService.deleteSchedule(targetEventId); } catch (_) {}
                         }
-                        setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                        // Delete the dashboard feed card too
-                        const fid = dashboardFeedId;
-                        if (fid) {
-                          setFeeds(prev => {
-                            const next = prev.filter(f => f.id !== fid);
-                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                            return next;
-                          });
-                          setDashboardFeedId(null);
-                        }
+                        setSchedules(prev => prev.filter(s => s.id !== targetEventId));
                       }
+
+                      // Delete matching feed from feeds state and localStorage
+                      setFeeds(prev => {
+                        const next = prev.filter(f => {
+                          if (fid && f.id === fid) return false;
+                          if (targetEventId && f.id === targetEventId) return false;
+                          if (targetEventTitle && (f.content?.includes(targetEventTitle) || f.title?.includes(targetEventTitle))) return false;
+                          if (f.aiBadges?.some(b => (targetEventId && b.id?.includes(targetEventId)) || (targetEventTitle && b.label?.includes(targetEventTitle)))) return false;
+                          return true;
+                        });
+                        try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                        return next;
+                      });
+
+                      setDashboardFeedId(null);
                       setIsDeletingEvent(false);
                       setIsDetailModalOpen(false);
                     }}

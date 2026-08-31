@@ -11,6 +11,7 @@ export default function Dashboard({
   headerSelectedProject = '전체',
   onSelectProject,
   schedules = [],
+  setSchedules,
   feeds: feedsProp,
   setFeeds: setFeedsProp,
   onAddSchedule,
@@ -2211,6 +2212,14 @@ export default function Dashboard({
                             try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
                             return next;
                           });
+                          if (setSchedules) {
+                            const itemTitle = (item.title || item.content || '').trim();
+                            setSchedules(prev => prev.filter(s => {
+                              if (s.id === idToDelete || s.id === item.id) return false;
+                              if (itemTitle && s.title && (s.title.includes(itemTitle) || itemTitle.includes(s.title))) return false;
+                              return true;
+                            }));
+                          }
                           showToast('🗑️ 항목이 삭제되었습니다.');
                         }}
                         title="이 카드 삭제"

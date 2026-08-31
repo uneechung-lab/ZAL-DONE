@@ -440,7 +440,8 @@ export default function Dashboard({
       backgroundColor: '#ffffff',
       display: 'flex',
       flexDirection: 'column',
-      overflowY: 'auto',
+      overflowY: 'scroll',
+      scrollbarGutter: 'stable',
       color: '#0f172a'
     }}>
       {/* ──── TOP HEADER BAR INSIDE DASHBOARD ──── */}
@@ -493,12 +494,12 @@ export default function Dashboard({
                     justifyContent: 'center',
                     padding: '0 6px',
                     fontSize: '13.5px',
-                    fontWeight: isActive ? '700' : '500',
+                    fontWeight: '600',
                     color: isActive ? '#000000' : '#94a3b8',
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'color 0.12s ease',
                     whiteSpace: 'nowrap'
                   }}
                 >
@@ -1033,7 +1034,7 @@ export default function Dashboard({
         boxSizing: 'border-box'
       }}>
         {/* ════════ LEFT COLUMN: FEED STREAM ════════ */}
-        <section className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <section className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '520px' }}>
           
           {/* Feed Cards Stream (Reverse chronological) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

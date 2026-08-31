@@ -6974,7 +6974,7 @@ export default function App() {
                   
                   {/* User Name & Role */}
                   <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap' }}>
-                    나({displayUser.role || ME.role || '부장'})
+                    {displayUser.name}{displayUser.role ? ` ${displayUser.role}` : ''}
                   </span>
 
                   {/* Chevron Arrow */}

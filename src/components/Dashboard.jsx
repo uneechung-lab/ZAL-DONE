@@ -555,7 +555,7 @@ export default function Dashboard({
                 margin: 0,
                 lineHeight: '1.25'
               }}>
-                나(${(displayUser || currentUser)?.role || parsedUser.role || '부장'})님, 잘됨이와 잘되는 하루 :-)
+                {(displayUser || currentUser)?.name || '정윤희'}님, 잘됨이와 잘되는 하루 :-)
               </h2>
 
               {/* Quick Hashtag Buttons */}
@@ -654,7 +654,7 @@ export default function Dashboard({
                   <img src={(currentUser || displayUser)?.avatarPic || '/pic1_thumb.png'} alt={(currentUser || displayUser)?.name || '정윤희'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
-                  나(${(currentUser || displayUser)?.role || parsedUser.role || '부장'})
+                  {(currentUser || displayUser)?.name || parsedUser.name || '정윤희'} {(currentUser || displayUser)?.role || parsedUser.role || '부장'}
                 </span>
                 <svg
                   width="12"

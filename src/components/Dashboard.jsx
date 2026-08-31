@@ -15,7 +15,7 @@ const INITIAL_FEEDS = [
     content: '오전 9시부터 로그인 인증 세션 만료 에러 긴급 디버깅 진행 중입니다. 오후 2시까지 해결하고, 14시에 정부장님과 화면 퍼블리싱 리뷰 미팅 참석하겠습니다. 그리고 내일(9/1) 오전 반차 신청합니다!',
     aiBadges: [
       { id: 'b1', type: 'issue', label: '🚨 로그인 에러 디버깅 (09:00~14:00)', category: '이슈' },
-      { id: 'b2', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00, 참석: 정다음, 정윤희)', category: '미팅' },
+      { id: 'b2', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00, 참석: 정다음, 정윤희)', category: '회의' },
       { id: 'b3', type: 'vacation', label: '🏖️ 9/1 오전 반차 신청', category: '휴가' }
     ],
     vacationInfo: {
@@ -53,9 +53,9 @@ const INITIAL_FEEDS = [
     type: 'meeting',
     content: '오늘 10시 주간 기획 회의 및 오후 2시 화면 퍼블리싱 리뷰 진행 예정입니다. 4시에는 대신증권 시스템 연동 브리핑 자료 준비하겠습니다.',
     aiBadges: [
-      { id: 'b4', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30, 참석: 정윤희, 조상무)', category: '미팅' },
-      { id: 'b5', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00)', category: '미팅' },
-      { id: 'b6', type: 'work', label: '📄 대신증권 연동 브리핑 준비 (16:00~17:30)', category: '일반' }
+      { id: 'b4', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30, 참석: 정윤희, 조상무)', category: '회의' },
+      { id: 'b5', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00)', category: '회의' },
+      { id: 'b6', type: 'work', label: '💼 대신증권 연동 브리핑 준비 (16:00~17:30)', category: '업무' }
     ],
     likes: 6,
     hasLiked: false,
@@ -75,8 +75,8 @@ const INITIAL_FEEDS = [
     type: 'meeting',
     content: '오전 기획 회의 참석 후 오후 3시에는 임원 주간 경영 회의 있습니다. 다음 사원 로그인 세션 이슈는 배포 전 원인 확실히 파악해 조치 바랍니다.',
     aiBadges: [
-      { id: 'b7', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30)', category: '미팅' },
-      { id: 'b8', type: 'work', label: '🏢 임원 주간 경영 회의 (15:00~17:00)', category: '일반' }
+      { id: 'b7', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30)', category: '회의' },
+      { id: 'b8', type: 'work', label: '💼 임원 주간 경영 회의 (15:00~17:00)', category: '업무' }
     ],
     likes: 8,
     hasLiked: false,
@@ -589,11 +589,13 @@ export default function Dashboard({
         }
       }
 
-      // 5. Work / General schedule updates
-      if (categoryKey === 'all' || categoryKey === 'sync') {
-        const workBadges = (feed.aiBadges || []).filter(b => b.category === '일반' || b.category === '업무' || b.category === '일정');
-        if (workBadges.length > 0) {
-          workBadges.forEach((b, bIdx) => {
+      // 5. Work (Everything that is not issue, request, meeting, or notice)
+      if (categoryKey === 'all') {
+        const otherBadges = (feed.aiBadges || []).filter(b => 
+          b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지'
+        );
+        if (otherBadges.length > 0) {
+          otherBadges.forEach((b, bIdx) => {
             items.push({
               id: `${feed.id}_work_${bIdx}`,
               feedId: feed.id,
@@ -604,10 +606,10 @@ export default function Dashboard({
               authorColor: feed.authorColor,
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
-              category: '일정',
+              category: '업무',
               title: b.label,
               description: '',
-              badgeText: '📅 일정',
+              badgeText: '💼 업무',
               badgeColor: '#64748b',
               badgeBg: '#f8fafc',
               badgeBorder: '#e2e8f0',
@@ -616,7 +618,7 @@ export default function Dashboard({
           });
         } else if (!feed.aiBadges || feed.aiBadges.length === 0) {
           items.push({
-            id: `${feed.id}_sync_item`,
+            id: `${feed.id}_work_main`,
             feedId: feed.id,
             authorId: feed.authorId,
             authorName: feed.authorName,
@@ -625,10 +627,10 @@ export default function Dashboard({
             authorColor: feed.authorColor,
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
-            category: '일정',
+            category: '업무',
             title: feed.content,
             description: '',
-            badgeText: '📅 일정',
+            badgeText: '💼 업무',
             badgeColor: '#64748b',
             badgeBg: '#f8fafc',
             badgeBorder: '#e2e8f0',

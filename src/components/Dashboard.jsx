@@ -885,24 +885,18 @@ export default function Dashboard({
           flexDirection: 'column',
           gap: '12px'
         }}>
-          {/* Top: Avatar + Name Greeting */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              overflow: 'hidden',
-              backgroundColor: currentUser?.color || '#000000',
-              flexShrink: 0,
-              border: '1.5px solid #e2e8f0',
-              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)'
-            }}>
-              <img
-                src={currentUser?.avatarPic || '/pic1_thumb.png'}
-                alt={currentUser?.name || 'User'}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
+          {/* Top: BI Character Logo + Name Greeting */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img
+              src="/bi2.png"
+              alt="잘됨이 BI"
+              style={{
+                height: '38px',
+                width: 'auto',
+                objectFit: 'contain',
+                flexShrink: 0
+              }}
+            />
             <h2 style={{
               fontSize: '18.5px',
               fontWeight: '800',

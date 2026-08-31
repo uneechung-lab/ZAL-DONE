@@ -9193,49 +9193,58 @@ export default function App() {
                       cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
                       opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
                     }}
-                    onClick={async () => {
+                    onClick={() => {
                       if (isDeletingEvent) return;
-                      setIsDeletingEvent(true);
                       const targetEvent = selectedDetailEvent;
-                      const matchGroupId = targetEvent?.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
-                      const groupId = matchGroupId ? matchGroupId[1] : null;
-                      
+                      if (!targetEvent) return;
                       const targetEventTitle = (targetEvent?.title || '').trim();
                       const targetEventId = targetEvent?.id;
                       const fid = dashboardFeedId;
+                      const matchGroupId = targetEvent?.description && targetEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+                      const groupId = matchGroupId ? matchGroupId[1] : null;
 
-                      if (groupId) {
-                        const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                        if (isConfigured) {
-                          for (const t of targets) {
-                            try { await appwriteService.deleteSchedule(t.id); } catch (_) {}
+                      showLayerConfirm(
+                        `"${targetEvent.title}" 일정을 정말 삭제하시겠습니까?`,
+                        '일정 삭제 확인',
+                        async () => {
+                          setIsDeletingEvent(true);
+                          try {
+                            if (groupId) {
+                              const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                              if (isConfigured) {
+                                for (const t of targets) {
+                                  try { await appwriteService.deleteSchedule(t.id); } catch (_) {}
+                                }
+                              }
+                              const targetIds = targets.map(t => t.id);
+                              setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
+                            } else {
+                              if (isConfigured && targetEventId) {
+                                try { await appwriteService.deleteSchedule(targetEventId); } catch (_) {}
+                              }
+                              setSchedules(prev => prev.filter(s => s.id !== targetEventId));
+                            }
+
+                            // Delete matching feed from feeds state and localStorage
+                            setFeeds(prev => {
+                              const next = prev.filter(f => {
+                                if (fid && f.id === fid) return false;
+                                if (targetEventId && f.id === targetEventId) return false;
+                                if (targetEventTitle && (f.content?.includes(targetEventTitle) || f.title?.includes(targetEventTitle))) return false;
+                                if (f.aiBadges?.some(b => (targetEventId && b.id?.includes(targetEventId)) || (targetEventTitle && b.label?.includes(targetEventTitle)))) return false;
+                                return true;
+                              });
+                              try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                              return next;
+                            });
+
+                            setDashboardFeedId(null);
+                            setIsDetailModalOpen(false);
+                          } finally {
+                            setIsDeletingEvent(false);
                           }
                         }
-                        const targetIds = targets.map(t => t.id);
-                        setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-                      } else {
-                        if (isConfigured && targetEventId) {
-                          try { await appwriteService.deleteSchedule(targetEventId); } catch (_) {}
-                        }
-                        setSchedules(prev => prev.filter(s => s.id !== targetEventId));
-                      }
-
-                      // Delete matching feed from feeds state and localStorage
-                      setFeeds(prev => {
-                        const next = prev.filter(f => {
-                          if (fid && f.id === fid) return false;
-                          if (targetEventId && f.id === targetEventId) return false;
-                          if (targetEventTitle && (f.content?.includes(targetEventTitle) || f.title?.includes(targetEventTitle))) return false;
-                          if (f.aiBadges?.some(b => (targetEventId && b.id?.includes(targetEventId)) || (targetEventTitle && b.label?.includes(targetEventTitle)))) return false;
-                          return true;
-                        });
-                        try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                        return next;
-                      });
-
-                      setDashboardFeedId(null);
-                      setIsDeletingEvent(false);
-                      setIsDetailModalOpen(false);
+                      );
                     }}
                   >
                     {isDeletingEvent ? (

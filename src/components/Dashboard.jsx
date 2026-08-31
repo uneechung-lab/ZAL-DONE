@@ -443,6 +443,8 @@ export default function Dashboard({
       flexDirection: 'column',
       overflowY: 'scroll',
       scrollbarGutter: 'stable',
+      paddingTop: '30px',
+      boxSizing: 'border-box',
       color: '#0f172a'
     }}>
       
@@ -451,7 +453,7 @@ export default function Dashboard({
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '28px auto 0 auto',
+        margin: '0 auto',
         padding: '0 32px',
         boxSizing: 'border-box',
         position: 'relative'

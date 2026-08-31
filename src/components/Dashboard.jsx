@@ -1947,8 +1947,8 @@ export default function Dashboard({
                             justifyContent: 'space-between',
                             gap: '12px'
                           }}>
-                            <div style={{ fontSize: '12.5px', color: '#0f172a', fontWeight: '700', flex: 1, lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>👉</span>
+                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', flex: 1, lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>⏳</span>
                               <span>{targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
@@ -2010,8 +2010,8 @@ export default function Dashboard({
                             border: '1px solid #e2e8f0',
                             borderRadius: '10px',
                             padding: '10px 14px',
-                            fontSize: '12.5px',
-                            color: '#0f172a',
+                            fontSize: '12px',
+                            color: '#64748b',
                             fontWeight: '600',
                             display: 'flex',
                             alignItems: 'center',

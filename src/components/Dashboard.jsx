@@ -904,7 +904,7 @@ export default function Dashboard({
               pointerEvents: 'none'
             }}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', margin: '0 0 55px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', margin: '0 0 45px 0' }}>
             <span style={{
               fontSize: '13px',
               fontWeight: '600',

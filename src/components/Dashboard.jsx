@@ -113,6 +113,7 @@ export default function Dashboard({
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'issue' | 'vacation' | 'meeting'
   const [composerText, setComposerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [feeds, setFeeds] = useState(() => {
     const saved = localStorage.getItem('zal_feeds');
     return saved ? JSON.parse(saved) : INITIAL_FEEDS;
@@ -941,10 +942,10 @@ export default function Dashboard({
             alignItems: 'center',
             backgroundColor: '#ffffff',
             borderRadius: '26px',
-            border: '1.5px solid #cbd5e1',
-            padding: '6px 8px 6px 22px',
+            border: isInputFocused ? '2px solid #0f172a' : '1.5px solid #cbd5e1',
+            padding: isInputFocused ? '5.5px 7.5px 5.5px 21.5px' : '6px 8px 6px 22px',
             minHeight: '52px',
-            transition: 'all 0.15s ease',
+            transition: 'border-color 0.15s ease, border-width 0.15s ease',
             width: '100%',
             boxSizing: 'border-box'
           }}>
@@ -952,6 +953,8 @@ export default function Dashboard({
               ref={composerTextareaRef}
               type="text"
               value={composerText}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
               onChange={(e) => setComposerText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {

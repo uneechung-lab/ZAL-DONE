@@ -1413,10 +1413,99 @@ export default function Dashboard({
       {/* ──── MAIN DASHBOARD CONTAINER (LEFT 2-COLUMN MASONRY + RIGHT FIXED SIDEBAR) ──── */}
       <div className="dashboard-layout-container">
         
-        {/* ════════ LEFT: 2-COLUMN FEED MASONRY GRID ════════ */}
-        <section className="dashboard-feed-masonry">
-          {(() => {
-            const categoryItems = getCategoryItems(activeFilter);
+        {/* ════════ LEFT: DATE NAVIGATOR + 2-COLUMN FEED MASONRY GRID ════════ */}
+        <div className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+          
+          {/* Card Section Header: Date Navigator on Left */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '2px 0 0 0'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handlePrevTimelineDate}
+                style={{
+                  background: 'none',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#ffffff',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.color = '#0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.color = '#64748b';
+                }}
+                title="이전 날짜"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              <span style={{
+                fontSize: '17px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-0.3px',
+                padding: '0 4px',
+                userSelect: 'none'
+              }}>
+                {formattedTimelineDate}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleNextTimelineDate}
+                style={{
+                  background: 'none',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#ffffff',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.color = '#0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.color = '#64748b';
+                }}
+                title="다음 날짜"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <section className="dashboard-feed-masonry">
+            {(() => {
+              const categoryItems = getCategoryItems(activeFilter);
             if (categoryItems.length === 0) {
               return (
                 <div className="masonry-card" style={{
@@ -1804,6 +1893,7 @@ export default function Dashboard({
             });
           })()}
         </section>
+        </div>
 
 
         {/* ════════ RIGHT: EXPANDED VERTICAL TEAM TIMELINE (SYNC WEEKLY/DAILY STYLE) ════════ */}

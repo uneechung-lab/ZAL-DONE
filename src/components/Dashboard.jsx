@@ -872,42 +872,57 @@ export default function Dashboard({
         </div>
       </header>
 
-      {/* ──── TOP MORNING COMPOSER AREA (NO CARD/BACKGROUND) ──── */}
+      {/* ──── TOP MORNING COMPOSER AREA (PEEKING BI CHARACTER) ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '22px auto 0 auto',
+        margin: '12px auto 0 auto',
         padding: '0 32px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        position: 'relative'
       }}>
+        {/* Peeking BI Character & Greeting Title */}
         <div style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
+          alignItems: 'flex-end',
+          gap: '12px',
+          paddingLeft: '16px',
+          marginBottom: '-32px',
+          position: 'relative',
+          zIndex: 1
         }}>
-          {/* Top: BI Character Logo + Name Greeting */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img
-              src="/bi2.png"
-              alt="잘됨이 BI"
-              style={{
-                height: '38px',
-                width: 'auto',
-                objectFit: 'contain',
-                flexShrink: 0
-              }}
-            />
-            <h2 style={{
-              fontSize: '18.5px',
-              fontWeight: '800',
-              color: '#0f172a',
-              letterSpacing: '-0.4px',
-              margin: 0
-            }}>
-              {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
-            </h2>
-          </div>
+          <img
+            src="/bi2.png"
+            alt="잘됨이 BI"
+            style={{
+              height: '110px',
+              width: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.06))',
+              userSelect: 'none',
+              pointerEvents: 'none'
+            }}
+          />
+          <h2 style={{
+            fontSize: '19px',
+            fontWeight: '800',
+            color: '#0f172a',
+            letterSpacing: '-0.4px',
+            margin: '0 0 38px 0'
+          }}>
+            {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
+          </h2>
+        </div>
 
+        {/* Input Box & Hashtags Area (zIndex: 2, background: #ffffff covers the lower half of the character) */}
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
           {/* Middle: Integrated Quick Sync Input Box */}
           <div style={{
             display: 'flex',
@@ -915,8 +930,8 @@ export default function Dashboard({
             backgroundColor: '#ffffff',
             borderRadius: '24px',
             border: '1.5px solid #cbd5e1',
-            padding: '4px 6px 4px 16px',
-            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+            padding: '4px 6px 4px 18px',
+            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
             transition: 'border-color 0.15s ease',
             width: '100%',
             boxSizing: 'border-box'
@@ -936,7 +951,7 @@ export default function Dashboard({
                 flex: 1,
                 border: 'none',
                 outline: 'none',
-                fontSize: '13.5px',
+                fontSize: '14px',
                 fontWeight: '500',
                 color: '#0f172a',
                 backgroundColor: 'transparent'
@@ -947,12 +962,12 @@ export default function Dashboard({
               onClick={handleComposerSubmit}
               disabled={!composerText.trim() || isSubmitting}
               style={{
-                padding: '6px 16px',
+                padding: '7px 18px',
                 backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
                 color: composerText.trim() ? '#ffffff' : '#94a3b8',
                 border: 'none',
-                borderRadius: '18px',
-                fontSize: '12.5px',
+                borderRadius: '20px',
+                fontSize: '13px',
                 fontWeight: '700',
                 cursor: composerText.trim() ? 'pointer' : 'not-allowed',
                 display: 'inline-flex',

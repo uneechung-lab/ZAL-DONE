@@ -881,19 +881,15 @@ export default function Dashboard({
         </div>
       </header>
 
-      {/* ──── TOP MORNING COMPOSER BANNER ──── */}
+      {/* ──── TOP MORNING COMPOSER AREA (NO CARD/BACKGROUND) ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '18px auto 0 auto',
+        margin: '22px auto 0 auto',
         padding: '0 32px',
         boxSizing: 'border-box'
       }}>
         <div style={{
-          backgroundColor: '#f8fafc',
-          borderRadius: '16px',
-          border: '1.5px solid #e2e8f0',
-          padding: '18px 24px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px'

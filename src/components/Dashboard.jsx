@@ -1949,7 +1949,7 @@ export default function Dashboard({
                             boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)'
                           }}>
                             <div style={{ fontSize: '12px', color: '#1e40af', fontWeight: '700', flex: 1, lineHeight: '1.4' }}>
-                              👉 {targetDisplay ? `${targetDisplay}님의 승인(수락)이 필요합니다.` : '결재/수락이 필요합니다.'}
+                              👉 {targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                               <button
@@ -2018,7 +2018,7 @@ export default function Dashboard({
                             gap: '6px'
                           }}>
                             <span>⏳</span>
-                            <span>{targetDisplay ? `${targetDisplay}님의 응답(수락)을 기다리고 있습니다.` : '승인 대기 중입니다.'}</span>
+                            <span>{targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}</span>
                           </div>
                         );
                       }

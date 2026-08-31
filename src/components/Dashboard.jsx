@@ -887,7 +887,7 @@ export default function Dashboard({
           alignItems: 'flex-end',
           gap: '12px',
           paddingLeft: '16px',
-          marginBottom: '-32px',
+          marginBottom: '-12px',
           position: 'relative',
           zIndex: 1
         }}>
@@ -909,7 +909,7 @@ export default function Dashboard({
             fontWeight: '800',
             color: '#0f172a',
             letterSpacing: '-0.4px',
-            margin: '0 0 38px 0'
+            margin: '0 0 18px 0'
           }}>
             {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
           </h2>

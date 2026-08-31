@@ -4827,7 +4827,12 @@ export default function App() {
         {/* ──── LEFT COLLAPSIBLE AI DRAWER ─────────────────── */}
         <div className={`chat-drawer ${isDrawerOpen ? '' : 'closed'}`}>
         <div className="chat-header">
-          <div className="chat-header-title" style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'flex-start', paddingTop: '6px' }}>
+          <div 
+            className="chat-header-title" 
+            onClick={() => navigateToView('dashboard')}
+            title="피드 대시보드로 이동"
+            style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'flex-start', paddingTop: '6px', cursor: 'pointer' }}
+          >
             <img src="/bi2.png" alt="BI Logo 2" style={{ height: '58px', width: 'auto', maxHeight: 'none', objectFit: 'contain', objectPosition: 'top left', flexShrink: 0, marginTop: '6px' }} />
             <span style={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'baseline', gap: '2px' }}>
               <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px' }}>ZAL</span>
@@ -6664,18 +6669,29 @@ export default function App() {
             {/* Left Navigations */}
             <div className="date-navigator" style={{ display: 'flex', alignItems: 'center' }}>
               {!isDrawerOpen && (
-                <button 
-                  className="close-drawer-btn" 
-                  onClick={() => setIsDrawerOpen(true)}
-                  title="사이드바 열기"
-                  style={{ marginRight: '10px', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="4" y1="12" x2="16" y2="12" />
-                    <polyline points="10 6 16 12 10 18" />
-                    <line x1="20" y1="5" x2="20" y2="19" />
-                  </svg>
-                </button>
+                <>
+                  <div
+                    onClick={() => navigateToView('dashboard')}
+                    title="피드 대시보드로 이동"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', cursor: 'pointer', marginRight: '6px' }}
+                  >
+                    <img src="/bi2.png" alt="BI Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+                    <span style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>ZAL</span>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#475569' }}> : 잘됨</span>
+                  </div>
+                  <button 
+                    className="close-drawer-btn" 
+                    onClick={() => setIsDrawerOpen(true)}
+                    title="사이드바 열기"
+                    style={{ marginRight: '10px', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="4" y1="12" x2="16" y2="12" />
+                      <polyline points="10 6 16 12 10 18" />
+                      <line x1="20" y1="5" x2="20" y2="19" />
+                    </svg>
+                  </button>
+                </>
               )}
               <button 
                 className="nav-arrow-text" 
@@ -6825,30 +6841,90 @@ export default function App() {
               </div>
             </div>
 
-            {/* Right Tabs */}
-            <div className="toggle-tab-container">
-              <div className="toggle-group">
+            {/* Right Tabs: DAY / WEEK / MONTH / LIST */}
+            <div className="toggle-tab-container" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', height: '100%', display: 'flex', alignItems: 'center', zIndex: 20 }}>
+              <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '24px' }}>
                 <button 
                   className={`toggle-item ${timeViewTab === 'daily' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('daily')}
+                  style={{
+                    position: 'relative',
+                    height: '100%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                    fontSize: '13.5px',
+                    fontWeight: timeViewTab === 'daily' ? '700' : '500',
+                    color: timeViewTab === 'daily' ? '#000000' : '#94a3b8',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
                 >
                   DAY
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'weekly' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('weekly')}
+                  style={{
+                    position: 'relative',
+                    height: '100%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                    fontSize: '13.5px',
+                    fontWeight: timeViewTab === 'weekly' ? '700' : '500',
+                    color: timeViewTab === 'weekly' ? '#000000' : '#94a3b8',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
                 >
                   WEEK
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'monthly' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('monthly')}
+                  style={{
+                    position: 'relative',
+                    height: '100%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                    fontSize: '13.5px',
+                    fontWeight: timeViewTab === 'monthly' ? '700' : '500',
+                    color: timeViewTab === 'monthly' ? '#000000' : '#94a3b8',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
                 >
                   MONTH
                 </button>
                 <button 
                   className={`toggle-item ${timeViewTab === 'list' ? 'active-blue' : ''}`} 
                   onClick={() => setTimeViewTab('list')}
+                  style={{
+                    position: 'relative',
+                    height: '100%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                    fontSize: '13.5px',
+                    fontWeight: timeViewTab === 'list' ? '700' : '500',
+                    color: timeViewTab === 'list' ? '#000000' : '#94a3b8',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
                 >
                   LIST
                 </button>

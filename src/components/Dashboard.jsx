@@ -341,6 +341,41 @@ export default function Dashboard({
     setExpandedCommentFeedIds(prev => ({ ...prev, [feedId]: true }));
   };
 
+  // Extract only the sentence(s) directly relevant to a specific category, avoiding cross-contamination
+  const getRelevantSnippet = (content, category) => {
+    if (!content) return '';
+    const sentences = content.split(/(?<=[.!?\n])\s+/).map(s => s.trim()).filter(Boolean);
+
+    if (category === '이슈') {
+      const matched = sentences.filter(s => 
+        (s.includes('에러') || s.includes('버그') || s.includes('디버깅') || s.includes('장애') || s.includes('긴급') || s.includes('해결') || s.includes('수정') || s.includes('조치')) &&
+        !s.includes('미팅') && !s.includes('반차') && !s.includes('휴가')
+      );
+      return matched.join(' ');
+    }
+    if (category === '미팅') {
+      const matched = sentences.filter(s => 
+        (s.includes('회의') || s.includes('미팅') || s.includes('리뷰') || s.includes('참석') || s.includes('브리핑') || s.includes('논의')) &&
+        !s.includes('반차') && !s.includes('휴가')
+      );
+      return matched.join(' ');
+    }
+    if (category === '요청' || category === '휴가') {
+      const matched = sentences.filter(s => 
+        (s.includes('반차') || s.includes('휴가') || s.includes('신청') || s.includes('요청') || s.includes('승인') || s.includes('부탁')) &&
+        !s.includes('디버깅')
+      );
+      return matched.join(' ');
+    }
+    if (category === '공지') {
+      const matched = sentences.filter(s => 
+        s.includes('공지') || s.includes('안내') || s.includes('알림') || s.includes('회식') || s.includes('전사')
+      );
+      return matched.join(' ');
+    }
+    return '';
+  };
+
   // Granular categorized items when specific category tab is selected (이슈, 요청, 미팅, 공지, 팀싱크)
   const getCategoryItems = (categoryKey) => {
     const items = [];
@@ -350,6 +385,7 @@ export default function Dashboard({
         const issueBadges = (feed.aiBadges || []).filter(b => b.category === '이슈' || b.type === 'issue');
         if (issueBadges.length > 0) {
           issueBadges.forEach((b, bIdx) => {
+            const snippet = getRelevantSnippet(feed.content, '이슈');
             items.push({
               id: `${feed.id}_issue_${bIdx}`,
               feedId: feed.id,
@@ -361,8 +397,8 @@ export default function Dashboard({
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
               category: '이슈',
-              title: b.label || feed.content,
-              description: feed.content !== b.label ? feed.content : '',
+              title: b.label,
+              description: snippet && snippet !== b.label ? snippet : '',
               badgeText: '🚨 이슈 대응',
               badgeColor: '#dc2626',
               badgeBg: '#fef2f2',
@@ -370,7 +406,8 @@ export default function Dashboard({
               feed: feed
             });
           });
-        } else if (feed.type === 'issue' || feed.content.includes('에러') || feed.content.includes('장애') || feed.content.includes('이슈')) {
+        } else if (feed.type === 'issue' && (feed.content.includes('에러') || feed.content.includes('장애') || feed.content.includes('버그') || feed.content.includes('디버깅'))) {
+          const snippet = getRelevantSnippet(feed.content, '이슈') || feed.content;
           items.push({
             id: `${feed.id}_issue_main`,
             feedId: feed.id,
@@ -382,7 +419,7 @@ export default function Dashboard({
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
             category: '이슈',
-            title: feed.content,
+            title: snippet,
             description: '',
             badgeText: '🚨 이슈 대응',
             badgeColor: '#dc2626',
@@ -417,6 +454,7 @@ export default function Dashboard({
         const reqBadges = (feed.aiBadges || []).filter(b => b.category === '휴가' || b.category === '요청' || b.type === 'vacation');
         reqBadges.forEach((b, bIdx) => {
           if (!feed.vacationInfo || !b.label?.includes(feed.vacationInfo.type)) {
+            const snippet = getRelevantSnippet(feed.content, '요청');
             items.push({
               id: `${feed.id}_req_${bIdx}`,
               feedId: feed.id,
@@ -429,7 +467,7 @@ export default function Dashboard({
               createdAt: feed.createdAt,
               category: '요청',
               title: b.label,
-              description: feed.content !== b.label ? feed.content : '',
+              description: snippet && snippet !== b.label ? snippet : '',
               badgeText: '📋 업무요청',
               badgeColor: '#6366f1',
               badgeBg: '#eef2ff',
@@ -442,6 +480,7 @@ export default function Dashboard({
         const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.type === 'meeting');
         if (meetingBadges.length > 0) {
           meetingBadges.forEach((b, bIdx) => {
+            const snippet = getRelevantSnippet(feed.content, '미팅');
             items.push({
               id: `${feed.id}_meeting_${bIdx}`,
               feedId: feed.id,
@@ -454,7 +493,7 @@ export default function Dashboard({
               createdAt: feed.createdAt,
               category: '미팅',
               title: b.label,
-              description: feed.content !== b.label ? feed.content : '',
+              description: snippet && snippet !== b.label ? snippet : '',
               badgeText: '🤝 미팅',
               badgeColor: '#4338ca',
               badgeBg: '#eef2ff',
@@ -462,7 +501,8 @@ export default function Dashboard({
               feed: feed
             });
           });
-        } else if (feed.type === 'meeting' || feed.content.includes('회의') || feed.content.includes('미팅') || feed.content.includes('리뷰')) {
+        } else if (feed.type === 'meeting' && (feed.content.includes('회의') || feed.content.includes('미팅') || feed.content.includes('리뷰'))) {
+          const snippet = getRelevantSnippet(feed.content, '미팅') || feed.content;
           items.push({
             id: `${feed.id}_meeting_main`,
             feedId: feed.id,
@@ -474,7 +514,7 @@ export default function Dashboard({
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
             category: '미팅',
-            title: feed.content,
+            title: snippet,
             description: '',
             badgeText: '🤝 미팅',
             badgeColor: '#4338ca',
@@ -487,6 +527,7 @@ export default function Dashboard({
         const noticeBadges = (feed.aiBadges || []).filter(b => b.category === '공지' || b.category === '전사공지' || b.type === 'notice');
         if (noticeBadges.length > 0) {
           noticeBadges.forEach((b, bIdx) => {
+            const snippet = getRelevantSnippet(feed.content, '공지');
             items.push({
               id: `${feed.id}_notice_${bIdx}`,
               feedId: feed.id,
@@ -499,7 +540,7 @@ export default function Dashboard({
               createdAt: feed.createdAt,
               category: '공지',
               title: b.label,
-              description: feed.content !== b.label ? feed.content : '',
+              description: snippet && snippet !== b.label ? snippet : '',
               badgeText: '📢 공지',
               badgeColor: '#475569',
               badgeBg: '#f8fafc',
@@ -507,7 +548,8 @@ export default function Dashboard({
               feed: feed
             });
           });
-        } else if (feed.type === 'notice' || feed.authorId === 'sangmoo' || feed.content.includes('공지') || feed.content.includes('회식') || feed.content.includes('안내')) {
+        } else if (feed.type === 'notice' || feed.content.includes('공지') || feed.content.includes('회식') || feed.content.includes('안내')) {
+          const snippet = getRelevantSnippet(feed.content, '공지') || feed.content;
           items.push({
             id: `${feed.id}_notice_main`,
             feedId: feed.id,
@@ -519,7 +561,7 @@ export default function Dashboard({
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
             category: '공지',
-            title: feed.content,
+            title: snippet,
             description: '',
             badgeText: '📢 공지',
             badgeColor: '#475569',
@@ -553,6 +595,7 @@ export default function Dashboard({
 
     return items;
   };
+
 
   // Filtered feeds
   const filteredFeeds = feeds.filter(feed => {

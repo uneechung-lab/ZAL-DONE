@@ -702,7 +702,7 @@ export default function Dashboard({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onSwitchUser && onSwitchUser(tm.id);
+                        onSwitchUser && onSwitchUser(tm);
                         setIsUserMenuOpen(false);
                       }}
                       style={{

@@ -4781,9 +4781,10 @@ export default function App() {
           schedules={schedules}
           onAddSchedule={handleDashboardAddSchedule}
           onNavigateToSync={() => navigateToView('sync')}
-          onSwitchUser={(tm) => {
-            setVirtualUser(tm);
-            showLayerAlert(`${tm.name} ${tm.role || ''}(으)로 계정이 전환되었습니다.`, '계정 전환', 'success');
+          onSwitchUser={(userOrId) => {
+            const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;
+            setVirtualUser(targetUser);
+            showLayerAlert(`${targetUser.name} ${targetUser.role || ''}(으)로 계정이 전환되었습니다.`, '계정 전환', 'success');
           }}
           onLogout={() => {
             if (isConfigured) {

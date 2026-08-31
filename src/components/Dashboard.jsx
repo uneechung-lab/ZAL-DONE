@@ -1521,40 +1521,60 @@ export default function Dashboard({
                     background: 'none',
                     border: 'none',
                     color: '#64748b',
-                    fontSize: '14px',
-                    fontWeight: '800',
                     cursor: 'pointer',
-                    padding: '2px 6px',
+                    padding: '4px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: '4px'
+                    borderRadius: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                    e.currentTarget.style.color = '#0f172a';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#64748b';
                   }}
                   title="이전 날짜"
                 >
-                  &lt;
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
                 </button>
-                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
+
+                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px', padding: '0 2px' }}>
                   8월 31일 (월)
                 </span>
+
                 <button
                   type="button"
                   style={{
                     background: 'none',
                     border: 'none',
                     color: '#64748b',
-                    fontSize: '14px',
-                    fontWeight: '800',
                     cursor: 'pointer',
-                    padding: '2px 6px',
+                    padding: '4px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: '4px'
+                    borderRadius: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                    e.currentTarget.style.color = '#0f172a';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#64748b';
                   }}
                   title="다음 날짜"
                 >
-                  &gt;
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </button>
               </div>
 
@@ -1568,10 +1588,10 @@ export default function Dashboard({
                   fontSize: '12.5px',
                   fontWeight: '700',
                   cursor: 'pointer',
-                  padding: 0,
+                  padding: '2px 4px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '2px',
+                  gap: '3px',
                   transition: 'color 0.15s ease'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#4338ca'}
@@ -1579,7 +1599,9 @@ export default function Dashboard({
                 title="상세 싱크 간트 화면으로 이동"
               >
                 <span>총 7개 일정 등록됨</span>
-                <span>&gt;</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </button>
             </div>
 

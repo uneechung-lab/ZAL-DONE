@@ -1330,7 +1330,7 @@ export default function Dashboard({
                             e.currentTarget.style.backgroundColor = '#fef2f2';
                           }}
                         >
-                          반려
+                          요청반려
                         </button>
                         <button
                           type="button"
@@ -1357,7 +1357,7 @@ export default function Dashboard({
                             e.currentTarget.style.backgroundColor = '#ecfdf5';
                           }}
                         >
-                          승인
+                          요청수락
                         </button>
                       </div>
                     </div>

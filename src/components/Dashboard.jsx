@@ -592,8 +592,8 @@ export default function Dashboard({
         }
       }
 
-      // 5. Work (Everything that is not issue, request, meeting, or notice)
-      if (categoryKey === 'all' || categoryKey === 'work') {
+      // 5. General / Work (Everything that is not issue, request, meeting, or notice)
+      if (categoryKey === 'all' || categoryKey === 'work' || categoryKey === 'general') {
         const otherBadges = (feed.aiBadges || []).filter(b => 
           b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지' &&
           !b.label?.includes('회의') && !b.label?.includes('미팅') && !b.label?.includes('리뷰') &&
@@ -613,10 +613,10 @@ export default function Dashboard({
               authorColor: feed.authorColor,
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
-              category: '업무',
-              title: b.label,
+              category: '일반',
+              title: b.label.replace(/^💼/, '📄'),
               description: '',
-              badgeText: '💼 업무',
+              badgeText: '📄 일반',
               badgeColor: '#64748b',
               badgeBg: '#f8fafc',
               badgeBorder: '#e2e8f0',
@@ -634,10 +634,10 @@ export default function Dashboard({
             authorColor: feed.authorColor,
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
-            category: '업무',
+            category: '일반',
             title: feed.content,
             description: '',
-            badgeText: '💼 업무',
+            badgeText: '📄 일반',
             badgeColor: '#64748b',
             badgeBg: '#f8fafc',
             badgeBorder: '#e2e8f0',
@@ -1402,7 +1402,7 @@ export default function Dashboard({
             { key: 'vacation', label: '요청' },
             { key: 'meeting', label: '회의' },
             { key: 'notice', label: '공지' },
-            { key: 'work', label: '업무' }
+            { key: 'general', label: '일반' }
           ].map(tab => {
             const isActive = activeFilter === tab.key;
             return (

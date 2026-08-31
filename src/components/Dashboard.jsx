@@ -472,11 +472,11 @@ export default function Dashboard({
           <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '18px' }}>
             {[
               { key: 'all', label: '전체 피드', count: null },
-              { key: 'issue', label: '긴급 이슈', count: activeIssues.length },
-              { key: 'vacation', label: '결재/휴가', count: pendingApprovalsCount },
+              { key: 'issue', label: '이슈', count: activeIssues.length },
+              { key: 'vacation', label: '요청', count: pendingApprovalsCount },
               { key: 'meeting', label: '미팅', count: 3 },
-              { key: 'notice', label: '전사 공지', count: 1 },
-              { key: 'sync', label: '팀 싱크율', count: Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3) }
+              { key: 'notice', label: '공지', count: 1 },
+              { key: 'sync', label: '팀싱크', count: Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3) }
             ].map(tab => {
               const isActive = activeFilter === tab.key;
               return (

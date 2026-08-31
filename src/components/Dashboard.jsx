@@ -340,10 +340,16 @@ export default function Dashboard({
     if (activeFilter === 'meeting') {
       return feed.type === 'meeting' || feed.aiBadges?.some(b => b.category === '미팅');
     }
+    if (activeFilter === 'notice') {
+      return feed.type === 'notice' || feed.aiBadges?.some(b => b.category === '공지' || b.category === '전사공지') || feed.authorId === 'sangmoo';
+    }
+    if (activeFilter === 'sync') {
+      return feed.type === 'daily_sync' || !!feed.authorId;
+    }
     return true;
   });
 
-  // Calculate statistics for sidebar
+  // Calculate statistics for sidebar and header tabs
   const pendingApprovalsCount = feeds.filter(f => f.vacationInfo && f.vacationInfo.status === 'pending').length;
   const activeIssues = feeds.filter(f => f.type === 'issue' || f.aiBadges?.some(b => b.category === '이슈'));
 
@@ -461,14 +467,16 @@ export default function Dashboard({
           </span>
         </div>
 
-        {/* Center: Tabs with 100% same design as Sync view */}
+        {/* Center: Tabs with numbers (전체 피드, 긴급 이슈, 결재/휴가, 미팅, 전사 공지, 팀 싱크율) */}
         <div className="toggle-tab-container" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', height: '100%', display: 'flex', alignItems: 'center' }}>
-          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '20px' }}>
+          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '16px' }}>
             {[
-              { key: 'all', label: '전체 피드' },
-              { key: 'issue', label: '긴급 이슈' },
-              { key: 'vacation', label: '결재/휴가' },
-              { key: 'meeting', label: '미팅' }
+              { key: 'all', label: '전체 피드', count: null },
+              { key: 'issue', label: '긴급 이슈', count: activeIssues.length },
+              { key: 'vacation', label: '결재/휴가', count: `${pendingApprovalsCount}/${Math.max(pendingApprovalsCount + (feeds.filter(f => f.vacationInfo?.status === 'approved').length), 2)}` },
+              { key: 'meeting', label: '미팅', count: 3 },
+              { key: 'notice', label: '전사 공지', count: '1/2' },
+              { key: 'sync', label: '팀 싱크율', count: `${Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3)}/${teamMembers.length || 3}` }
             ].map(tab => {
               const isActive = activeFilter === tab.key;
               return (
@@ -484,16 +492,31 @@ export default function Dashboard({
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '0 6px',
-                    fontSize: '13.5px',
+                    fontSize: '13px',
                     fontWeight: isActive ? '700' : '500',
                     color: isActive ? '#000000' : '#94a3b8',
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap',
+                    gap: '4px'
                   }}
                 >
                   <span>{tab.label}</span>
+                  {tab.count !== null && (
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      color: isActive ? '#f97316' : '#94a3b8',
+                      backgroundColor: isActive ? 'rgba(249, 115, 22, 0.1)' : 'rgba(148, 163, 184, 0.12)',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      lineHeight: '1.2'
+                    }}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -862,11 +885,11 @@ export default function Dashboard({
         </div>
       </header>
 
-      {/* ──── TOP MORNING SUMMARY BANNER WIDGET ──── */}
+      {/* ──── TOP MORNING COMPOSER BANNER ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '20px auto 0 auto',
+        margin: '18px auto 0 auto',
         padding: '0 32px',
         boxSizing: 'border-box'
       }}>
@@ -874,302 +897,145 @@ export default function Dashboard({
           backgroundColor: '#f8fafc',
           borderRadius: '16px',
           border: '1.5px solid #e2e8f0',
-          padding: '22px 28px',
+          padding: '18px 24px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '24px',
-          flexWrap: 'wrap'
+          flexDirection: 'column',
+          gap: '12px'
         }}>
-          {/* Left Greeting, Avatar, Inline Input & Quick Action Tags */}
-          <div style={{ minWidth: '380px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            
-            {/* Top: Avatar + Name Greeting */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                backgroundColor: currentUser?.color || '#000000',
-                flexShrink: 0,
-                border: '1.5px solid #e2e8f0',
-                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)'
-              }}>
-                <img
-                  src={currentUser?.avatarPic || '/pic1_thumb.png'}
-                  alt={currentUser?.name || 'User'}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-              <h2 style={{
-                fontSize: '19px',
-                fontWeight: '800',
-                color: '#0f172a',
-                letterSpacing: '-0.4px',
-                margin: 0
-              }}>
-                {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
-              </h2>
-            </div>
-
-            {/* Middle: Integrated Quick Sync Input Box */}
+          {/* Top: Avatar + Name Greeting */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: '#ffffff',
-              borderRadius: '24px',
-              border: '1.5px solid #cbd5e1',
-              padding: '4px 6px 4px 16px',
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
-              transition: 'border-color 0.15s ease',
-              maxWidth: '520px'
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              backgroundColor: currentUser?.color || '#000000',
+              flexShrink: 0,
+              border: '1.5px solid #e2e8f0',
+              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)'
             }}>
-              <input
-                ref={composerTextareaRef}
-                type="text"
-                value={composerText}
-                onChange={(e) => setComposerText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleComposerSubmit(e);
-                  }
-                }}
-                placeholder="오늘의 모닝싱크를 작성하세요!"
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: '13.5px',
-                  fontWeight: '500',
-                  color: '#0f172a',
-                  backgroundColor: 'transparent'
-                }}
+              <img
+                src={currentUser?.avatarPic || '/pic1_thumb.png'}
+                alt={currentUser?.name || 'User'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              <button
-                type="button"
-                onClick={handleComposerSubmit}
-                disabled={!composerText.trim() || isSubmitting}
-                style={{
-                  padding: '6px 14px',
-                  backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
-                  color: composerText.trim() ? '#ffffff' : '#94a3b8',
-                  border: 'none',
-                  borderRadius: '18px',
-                  fontSize: '12.5px',
-                  fontWeight: '700',
-                  cursor: composerText.trim() ? 'pointer' : 'not-allowed',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-                <span>등록</span>
-              </button>
             </div>
-
-            {/* Bottom: Quick Hashtag Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {[
-                { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
-                { label: '#🤝 배포미팅', tag: '배포 미팅 14:00' },
-                { label: '#🏖️ 오전반차', tag: '오전 반차 신청' },
-                { label: '#🏖️ 오후반차', tag: '오후 반차 신청' }
-              ].map(item => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => {
-                    addTagToComposer(item.tag);
-                    composerTextareaRef.current?.focus();
-                  }}
-                  style={{
-                    padding: '3px 9px',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '12px',
-                    fontSize: '11.5px',
-                    fontWeight: '700',
-                    color: '#334155',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'inline-flex',
-                    alignItems: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f1f5f9';
-                    e.currentTarget.style.borderColor = '#94a3b8';
-                    e.currentTarget.style.color = '#0f172a';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.borderColor = '#cbd5e1';
-                    e.currentTarget.style.color = '#334155';
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
+            <h2 style={{
+              fontSize: '18.5px',
+              fontWeight: '800',
+              color: '#0f172a',
+              letterSpacing: '-0.4px',
+              margin: 0
+            }}>
+              {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
+            </h2>
           </div>
 
-          {/* Right 5 Metric stats with vertical dividers */}
+          {/* Middle: Integrated Quick Sync Input Box */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0px',
-            flexWrap: 'nowrap'
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            border: '1.5px solid #cbd5e1',
+            padding: '4px 6px 4px 16px',
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+            transition: 'border-color 0.15s ease',
+            width: '100%',
+            boxSizing: 'border-box'
           }}>
-            {/* Stat 1: 결재/휴가 */}
-            <div
-              onClick={() => setActiveFilter('vacation')}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '0 18px',
-                cursor: 'pointer',
-                userSelect: 'none'
+            <input
+              ref={composerTextareaRef}
+              type="text"
+              value={composerText}
+              onChange={(e) => setComposerText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleComposerSubmit(e);
+                }
               }}
-              title="결재/휴가 피드 필터링"
-            >
-              {/* Edit/Note Icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '5px' }}>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
-                <span style={{ fontSize: '20px', fontWeight: '800', color: '#f97316' }}>{pendingApprovalsCount}</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#64748b' }}>/{Math.max(pendingApprovalsCount + (feeds.filter(f => f.vacationInfo?.status === 'approved').length), 2)}</span>
-              </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b', marginTop: '5px' }}>결재/휴가</span>
-            </div>
-
-            {/* Vertical Divider 1 */}
-            <div style={{ width: '1px', height: '40px', backgroundColor: '#e2e8f0' }}></div>
-
-            {/* Stat 2: 금일 미팅 */}
-            <div
-              onClick={() => setActiveFilter('meeting')}
+              placeholder="오늘의 모닝싱크를 작성하세요!"
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '0 18px',
-                cursor: 'pointer',
-                userSelect: 'none'
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontSize: '13.5px',
+                fontWeight: '500',
+                color: '#0f172a',
+                backgroundColor: 'transparent'
               }}
-              title="금일 미팅 피드 필터링"
-            >
-              {/* Calendar Meeting Icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '5px' }}>
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <circle cx="12" cy="15" r="2"/>
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
-                <span style={{ fontSize: '20px', fontWeight: '800', color: '#f97316' }}>3</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#64748b' }}>건</span>
-              </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b', marginTop: '5px' }}>금일 미팅</span>
-            </div>
-
-            {/* Vertical Divider 2 */}
-            <div style={{ width: '1px', height: '40px', backgroundColor: '#e2e8f0' }}></div>
-
-            {/* Stat 3: 진행 이슈 */}
-            <div
-              onClick={() => setActiveFilter('issue')}
+            />
+            <button
+              type="button"
+              onClick={handleComposerSubmit}
+              disabled={!composerText.trim() || isSubmitting}
               style={{
-                display: 'flex',
-                flexDirection: 'column',
+                padding: '6px 16px',
+                backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
+                color: composerText.trim() ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '18px',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: composerText.trim() ? 'pointer' : 'not-allowed',
+                display: 'inline-flex',
                 alignItems: 'center',
-                padding: '0 18px',
-                cursor: 'pointer',
-                userSelect: 'none'
+                gap: '4px',
+                transition: 'all 0.15s ease'
               }}
-              title="진행 중인 긴급 이슈 필터링"
             >
-              {/* Alert Icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '5px' }}>
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
-              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
-                <span style={{ fontSize: '20px', fontWeight: '800', color: activeIssues.length > 0 ? '#ef4444' : '#64748b' }}>{activeIssues.length}</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#64748b' }}>건</span>
-              </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b', marginTop: '5px' }}>진행 이슈</span>
-            </div>
-
-            {/* Vertical Divider 3 */}
-            <div style={{ width: '1px', height: '40px', backgroundColor: '#e2e8f0' }}></div>
-
-            {/* Stat 4: 전사 공지 */}
-            <div
-              onClick={() => setActiveFilter('all')}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '0 18px',
-                cursor: 'pointer',
-                userSelect: 'none'
-              }}
-              title="전사 공지사항 보기"
-            >
-              {/* Megaphone / Bell Notice Icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '5px' }}>
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
-                <span style={{ fontSize: '20px', fontWeight: '800', color: '#f97316' }}>1</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#64748b' }}>/2</span>
-              </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b', marginTop: '5px' }}>전사 공지</span>
-            </div>
-
-            {/* Vertical Divider 4 */}
-            <div style={{ width: '1px', height: '40px', backgroundColor: '#e2e8f0' }}></div>
-
-            {/* Stat 5: 팀 싱크율 */}
-            <div
-              onClick={() => setActiveFilter('all')}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '0 18px',
-                cursor: 'pointer',
-                userSelect: 'none'
-              }}
-              title="팀 일정 싱크율 보기"
-            >
-              {/* Users Team Icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '5px' }}>
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1' }}>
-                <span style={{ fontSize: '20px', fontWeight: '800', color: '#f97316' }}>{Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3)}</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#64748b' }}>/{teamMembers.length || 3}</span>
-              </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b', marginTop: '5px' }}>팀 싱크율</span>
-            </div>
-
+              <span>등록</span>
+            </button>
           </div>
+
+          {/* Bottom: Quick Hashtag Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            {[
+              { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
+              { label: '#🤝 배포미팅', tag: '배포 미팅 14:00' },
+              { label: '#🏖️ 오전반차', tag: '오전 반차 신청' },
+              { label: '#🏖️ 오후반차', tag: '오후 반차 신청' }
+            ].map(item => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  addTagToComposer(item.tag);
+                  composerTextareaRef.current?.focus();
+                }}
+                style={{
+                  padding: '3px 10px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '12px',
+                  fontSize: '11.5px',
+                  fontWeight: '700',
+                  color: '#334155',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  e.currentTarget.style.borderColor = '#94a3b8';
+                  e.currentTarget.style.color = '#0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.color = '#334155';
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
         </div>
       </div>
 

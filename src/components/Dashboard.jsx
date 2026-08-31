@@ -935,16 +935,17 @@ export default function Dashboard({
           flexDirection: 'column',
           gap: '10px'
         }}>
-          {/* Middle: Integrated Quick Sync Input Box */}
+          {/* Middle: Integrated Quick Sync Input Box (Enlarged & Clear Placeholder) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             backgroundColor: '#ffffff',
-            borderRadius: '24px',
+            borderRadius: '26px',
             border: '1.5px solid #cbd5e1',
-            padding: '4px 6px 4px 18px',
-            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
-            transition: 'border-color 0.15s ease',
+            padding: '6px 8px 6px 22px',
+            minHeight: '52px',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)',
+            transition: 'all 0.15s ease',
             width: '100%',
             boxSizing: 'border-box'
           }}>
@@ -958,12 +959,12 @@ export default function Dashboard({
                   handleComposerSubmit(e);
                 }
               }}
-              placeholder="오늘의 모닝싱크를 작성하세요!"
+              placeholder="오늘 진행할 주요 업무, 미팅, 긴급 이슈나 휴가 일정을 공유해 주세요 (Enter 등록)"
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
-                fontSize: '14px',
+                fontSize: '14.5px',
                 fontWeight: '500',
                 color: '#0f172a',
                 backgroundColor: 'transparent'
@@ -974,21 +975,21 @@ export default function Dashboard({
               onClick={handleComposerSubmit}
               disabled={!composerText.trim() || isSubmitting}
               style={{
-                padding: '7px 18px',
+                padding: '8px 20px',
                 backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
                 color: composerText.trim() ? '#ffffff' : '#94a3b8',
                 border: 'none',
                 borderRadius: '20px',
-                fontSize: '13px',
+                fontSize: '13.5px',
                 fontWeight: '700',
                 cursor: composerText.trim() ? 'pointer' : 'not-allowed',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '5px',
                 transition: 'all 0.15s ease'
               }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>

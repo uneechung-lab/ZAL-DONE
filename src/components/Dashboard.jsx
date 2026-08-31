@@ -944,7 +944,6 @@ export default function Dashboard({
             border: '1.5px solid #cbd5e1',
             padding: '6px 8px 6px 22px',
             minHeight: '52px',
-            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)',
             transition: 'all 0.15s ease',
             width: '100%',
             boxSizing: 'border-box'

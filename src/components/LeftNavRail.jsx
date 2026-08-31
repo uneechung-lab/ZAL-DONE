@@ -85,7 +85,7 @@ export default function LeftNavRail({ currentView, onNavigate }) {
               height: '40px',
               borderRadius: '10px',
               backgroundColor: item.active ? '#f1f5f9' : 'transparent',
-              color: item.active ? '#0f172a' : '#64748b',
+              color: item.active ? '#0f172a' : '#94a3b8',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
@@ -99,13 +99,13 @@ export default function LeftNavRail({ currentView, onNavigate }) {
             onMouseEnter={(e) => {
               if (!item.active) {
                 e.currentTarget.style.backgroundColor = '#f8fafc';
-                e.currentTarget.style.color = '#0f172a';
+                e.currentTarget.style.color = '#334155';
               }
             }}
             onMouseLeave={(e) => {
               if (!item.active) {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#64748b';
+                e.currentTarget.style.color = '#94a3b8';
               }
             }}
           >
@@ -127,9 +127,10 @@ export default function LeftNavRail({ currentView, onNavigate }) {
               <span style={{
                 fontSize: '12.5px',
                 fontWeight: item.active ? '700' : '600',
-                color: item.active ? '#0f172a' : '#64748b',
+                color: item.active ? '#0f172a' : '#94a3b8',
                 whiteSpace: 'nowrap',
-                paddingRight: '14px'
+                paddingRight: '14px',
+                transition: 'color 0.15s ease'
               }}>
                 {item.label}
               </span>
@@ -148,7 +149,7 @@ export default function LeftNavRail({ currentView, onNavigate }) {
             height: '40px',
             borderRadius: '10px',
             backgroundColor: 'transparent',
-            color: '#64748b',
+            color: '#94a3b8',
             border: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -161,11 +162,11 @@ export default function LeftNavRail({ currentView, onNavigate }) {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#f8fafc';
-            e.currentTarget.style.color = '#0f172a';
+            e.currentTarget.style.color = '#334155';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#64748b';
+            e.currentTarget.style.color = '#94a3b8';
           }}
         >
           <div style={{
@@ -186,9 +187,10 @@ export default function LeftNavRail({ currentView, onNavigate }) {
             <span style={{
               fontSize: '12.5px',
               fontWeight: '600',
-              color: '#64748b',
+              color: '#94a3b8',
               whiteSpace: 'nowrap',
-              paddingRight: '14px'
+              paddingRight: '14px',
+              transition: 'color 0.15s ease'
             }}>
               설정
             </span>

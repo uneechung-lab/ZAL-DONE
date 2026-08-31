@@ -1304,39 +1304,60 @@ export default function Dashboard({
                           결재권자(조상무)의 승인이 필요합니다.
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleApproveVacation(feed.id)}
-                          style={{
-                            padding: '6px 14px',
-                            backgroundColor: '#10b981',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
-                          }}
-                        >
-                          승인하기
-                        </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <button
                           type="button"
                           onClick={() => handleRejectVacation(feed.id)}
                           style={{
-                            padding: '6px 14px',
-                            backgroundColor: '#ffffff',
-                            color: '#ef4444',
-                            border: '1px solid #fecaca',
-                            borderRadius: '8px',
-                            fontSize: '12px',
+                            padding: '7px 14px',
+                            fontSize: '12.5px',
                             fontWeight: '700',
-                            cursor: 'pointer'
+                            backgroundColor: '#fef2f2',
+                            color: '#dc2626',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            lineHeight: '1.2',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fee2e2';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fef2f2';
                           }}
                         >
                           반려
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApproveVacation(feed.id)}
+                          style={{
+                            padding: '7px 14px',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            backgroundColor: '#ecfdf5',
+                            color: '#059669',
+                            border: '1px solid #a7f3d0',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            lineHeight: '1.2',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#d1fae5';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#ecfdf5';
+                          }}
+                        >
+                          승인
                         </button>
                       </div>
                     </div>

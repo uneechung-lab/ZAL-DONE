@@ -11,6 +11,8 @@ export default function Dashboard({
   headerSelectedProject = '전체',
   onSelectProject,
   schedules = [],
+  feeds: feedsProp,
+  setFeeds: setFeedsProp,
   onAddSchedule,
   onOpenScheduleDetail,
   onNavigateToSync,
@@ -23,7 +25,7 @@ export default function Dashboard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  const [feeds, setFeeds] = useState(() => {
+  const [internalFeeds, setInternalFeeds] = useState(() => {
     try {
       localStorage.removeItem('zal_feeds'); // purge old cache
       const saved = localStorage.getItem('zal_feeds_v2');
@@ -32,6 +34,11 @@ export default function Dashboard({
       return [];
     }
   });
+
+  // Use external feeds/setFeeds if provided (lifted state from App.jsx), else use internal
+  const feeds = feedsProp !== undefined ? feedsProp : internalFeeds;
+  const setFeeds = setFeedsProp !== undefined ? setFeedsProp : setInternalFeeds;
+
 
   const [expandedCommentFeedIds, setExpandedCommentFeedIds] = useState({});
   const [commentInputs, setCommentInputs] = useState({});

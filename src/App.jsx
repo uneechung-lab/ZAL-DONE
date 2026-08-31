@@ -1751,6 +1751,16 @@ export default function App() {
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [dashboardResetKey, setDashboardResetKey] = useState(0);
+  const [feeds, setFeeds] = useState(() => {
+    try {
+      localStorage.removeItem('zal_feeds');
+      const saved = localStorage.getItem('zal_feeds_v2');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
 
   const openReportModal = () => {
     setIsEditingReport(false);
@@ -3755,6 +3765,62 @@ export default function App() {
 
         setSchedules(prev => [...prev, ...savedSchedules]);
 
+        // Also push a dashboard feed card so Dashboard shows this registration too
+        if (savedSchedules.length > 0) {
+          const now = new Date();
+          const timeDisplay = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          const text = (textInput || '').trim();
+          const hasVacation = /반차|연차|휴가|병가|조퇴/i.test(text);
+          const hasMeeting = /회의|미팅|리뷰|브리핑/i.test(text);
+          const hasIssueInText = /에러|버그|장애|디버깅|긴급|이슈/i.test(text);
+          const hasRequest = /요청|부탁|신청|컨펌|검토/i.test(text);
+
+          const primaryType = hasIssueInText ? 'issue' : hasVacation ? 'vacation' : hasMeeting ? 'meeting' : 'work';
+
+          const badges = savedSchedules.map((s, i) => ({
+            id: `b_${s.id}_${i}`,
+            type: s.status === 'requested' ? 'vacation' : (s.isIssue ? 'issue' : 'meeting'),
+            label: s.isIssue ? `🚨 ${s.title}` : (s.status === 'requested' ? `📋 ${s.title}` : `🤝 ${s.title}`),
+            category: s.isIssue ? '이슈' : (s.status === 'requested' ? '요청' : '회의')
+          }));
+
+          const newFeed = {
+            id: `feed_${Date.now()}`,
+            authorId: actingUser.id,
+            authorName: actingUser.name,
+            authorRole: actingUser.role,
+            authorAvatarPic: actingUser.avatarPic || '/pic1_thumb.png',
+            authorColor: actingUser.color || '#000000',
+            createdAt: now.toISOString(),
+            timeDisplay,
+            type: primaryType,
+            content: text,
+            aiBadges: badges,
+            vacationInfo: (hasVacation || hasRequest) ? {
+              type: hasVacation ? (text.includes('오전') ? '오전 반차' : text.includes('오후') ? '오후 반차' : '휴가') : '업무 요청',
+              date: `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`,
+              status: 'pending',
+              approverName: '정윤희',
+              approverRole: '부장',
+              targetUserId: 'sh',
+              requesterId: actingUser.id,
+              requesterName: actingUser.name,
+              approvedAt: null
+            } : null,
+            likes: 0,
+            hasLiked: false,
+            cheers: 0,
+            hasCheered: false,
+            comments: []
+          };
+
+          setFeeds(prev => {
+            const next = [newFeed, ...prev];
+            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+            return next;
+          });
+        }
+
         const hasIssues = groupedForReply.some(g => g.isIssue);
         if (hasIssues) {
           const issueSummaryLines = groupedForReply
@@ -4816,6 +4882,8 @@ export default function App() {
           headerSelectedProject={headerSelectedProject}
           onSelectProject={setHeaderSelectedProject}
           schedules={schedules}
+          feeds={feeds}
+          setFeeds={setFeeds}
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onNavigateToSync={() => navigateToView('sync')}

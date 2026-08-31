@@ -970,6 +970,47 @@ export default function Dashboard({
                 backgroundColor: 'transparent'
               }}
             />
+            {/* Clear (Delete) button when text is inputted */}
+            {composerText.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setComposerText('');
+                  composerTextareaRef.current?.focus();
+                }}
+                title="입력 내용 지우기"
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  padding: '0',
+                  backgroundColor: 'rgba(148, 163, 184, 0.15)',
+                  color: '#64748b',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                  marginRight: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.28)';
+                  e.currentTarget.style.color = '#0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.15)';
+                  e.currentTarget.style.color = '#64748b';
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleComposerSubmit}

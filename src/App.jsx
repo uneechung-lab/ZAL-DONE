@@ -9229,14 +9229,13 @@ export default function App() {
                               setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
                               // Also delete the dashboard feed card if this modal was opened from dashboard
                               if (dashboardFeedId) {
-                                try {
-                                  const stored = localStorage.getItem('zal_feeds_v2');
-                                  const arr = stored ? JSON.parse(stored) : [];
-                                  const next = arr.filter(f => f.id !== dashboardFeedId);
-                                  localStorage.setItem('zal_feeds_v2', JSON.stringify(next));
-                                } catch (_) {}
+                                const fid = dashboardFeedId;
+                                setFeeds(prev => {
+                                  const next = prev.filter(f => f.id !== fid);
+                                  try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                  return next;
+                                });
                                 setDashboardFeedId(null);
-                                setDashboardResetKey(k => k + 1);
                               }
                               setIsDetailModalOpen(false);
                             } finally {

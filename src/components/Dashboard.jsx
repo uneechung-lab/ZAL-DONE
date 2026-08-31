@@ -1263,26 +1263,34 @@ export default function Dashboard({
                   </div>
 
                   {/* AI Automated Categorization Badges */}
-                  {feed.aiBadges && feed.aiBadges.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '-4px' }}>
-                      {feed.aiBadges.map((badge, idx) => (
-                        <span
-                          key={idx}
-                          style={{
-                            padding: '3px 9px',
-                            backgroundColor: badge.color ? `${badge.color}15` : '#f1f5f9',
-                            color: badge.color || '#475569',
-                            borderRadius: '8px',
-                            fontSize: '11.5px',
-                            fontWeight: '700',
-                            border: `1px solid ${badge.color ? `${badge.color}30` : '#e2e8f0'}`
-                          }}
-                        >
-                          {badge.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {feed.aiBadges && feed.aiBadges.length > 0 && (() => {
+                    const filteredBadges = hasVacation
+                      ? feed.aiBadges.filter(badge => badge.type !== 'vacation' && !badge.label?.includes('반차') && !badge.label?.includes('휴가'))
+                      : feed.aiBadges;
+
+                    if (filteredBadges.length === 0) return null;
+
+                    return (
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '-4px' }}>
+                        {filteredBadges.map((badge, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              padding: '3px 9px',
+                              backgroundColor: badge.color ? `${badge.color}15` : '#f1f5f9',
+                              color: badge.color || '#475569',
+                              borderRadius: '8px',
+                              fontSize: '11.5px',
+                              fontWeight: '700',
+                              border: `1px solid ${badge.color ? `${badge.color}30` : '#e2e8f0'}`
+                            }}
+                          >
+                            {badge.label}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Interactive Vacation Approval Action Box (If pending and user is approver) */}
                   {hasVacation && isVacationPending && isApprover && (

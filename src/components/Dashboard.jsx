@@ -966,8 +966,8 @@ export default function Dashboard({
             </button>
           </div>
 
-          {/* Bottom: Quick Hashtag Buttons (Pure Transparent Text Tags) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingLeft: '4px' }}>
+          {/* Bottom: Quick Hashtag Buttons (Center-aligned, Softer Dimmer Font) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
             {[
               { label: '#긴급이슈', tag: '긴급 이슈 대응' },
               { label: '#회식공지', tag: '금일 부서 회식 안내' },
@@ -985,19 +985,19 @@ export default function Dashboard({
                   padding: '2px 8px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#64748b',
+                  fontSize: '12.5px',
+                  fontWeight: '500',
+                  color: '#94a3b8',
                   cursor: 'pointer',
                   transition: 'color 0.15s ease',
                   display: 'inline-flex',
                   alignItems: 'center'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#0f172a';
+                  e.currentTarget.style.color = '#334155';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#64748b';
+                  e.currentTarget.style.color = '#94a3b8';
                 }}
               >
                 {item.label}

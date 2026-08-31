@@ -904,12 +904,13 @@ export default function Dashboard({
               pointerEvents: 'none'
             }}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '0 0 26px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', margin: '0 0 40px 0' }}>
             <span style={{
-              fontSize: '13.5px',
+              fontSize: '13px',
               fontWeight: '600',
               color: '#64748b',
-              letterSpacing: '-0.2px'
+              letterSpacing: '-0.2px',
+              lineHeight: '1.2'
             }}>
               2026년 8월 31일 월요일
             </span>
@@ -918,7 +919,8 @@ export default function Dashboard({
               fontWeight: '800',
               color: '#0f172a',
               letterSpacing: '-0.4px',
-              margin: 0
+              margin: 0,
+              lineHeight: '1.25'
             }}>
               {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
             </h2>

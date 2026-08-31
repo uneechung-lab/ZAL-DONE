@@ -467,16 +467,16 @@ export default function Dashboard({
           </span>
         </div>
 
-        {/* Center: Tabs with numbers in parenthesis e.g. 전체 피드, 긴급 이슈 (1), 결재/휴가 (1) */}
+        {/* Center: Clean Tabs (전체 피드, 이슈, 요청, 미팅, 공지, 팀싱크) */}
         <div className="toggle-tab-container" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', height: '100%', display: 'flex', alignItems: 'center' }}>
-          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '18px' }}>
+          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '22px' }}>
             {[
-              { key: 'all', label: '전체 피드', count: null },
-              { key: 'issue', label: '이슈', count: activeIssues.length },
-              { key: 'vacation', label: '요청', count: pendingApprovalsCount },
-              { key: 'meeting', label: '미팅', count: 3 },
-              { key: 'notice', label: '공지', count: 1 },
-              { key: 'sync', label: '팀싱크', count: Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3) }
+              { key: 'all', label: '전체 피드' },
+              { key: 'issue', label: '이슈' },
+              { key: 'vacation', label: '요청' },
+              { key: 'meeting', label: '미팅' },
+              { key: 'notice', label: '공지' },
+              { key: 'sync', label: '팀싱크' }
             ].map(tab => {
               const isActive = activeFilter === tab.key;
               return (
@@ -503,16 +503,6 @@ export default function Dashboard({
                   }}
                 >
                   <span>{tab.label}</span>
-                  {tab.count !== null && (
-                    <span style={{
-                      fontSize: '13.5px',
-                      fontWeight: isActive ? '700' : '500',
-                      color: isActive ? '#f97316' : '#94a3b8',
-                      marginLeft: '3px'
-                    }}>
-                      ({tab.count})
-                    </span>
-                  )}
                 </button>
               );
             })}

@@ -3388,14 +3388,13 @@ export default function App() {
     showLayerAlert(`"${target.title}" 일정 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };
 
-  const handleSend = () => {
-    const text = input.trim();
+  const processMessageAndCreateSchedule = (textInput, actingUser = ME) => {
+    const text = (textInput || '').trim();
     if (!text) return;
 
     const userSuffix = user ? user.$id : 'local';
-    const userMsg = { id: msgId.current++, from: `user_${userSuffix}_${ME.id}`, text, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+    const userMsg = { id: msgId.current++, from: `user_${userSuffix}_${actingUser.id}`, text, time: formatTime(new Date()), createdAt: new Date().toISOString() };
     
-    setInput('');
     setIsTyping(true);
 
     // Optimistically add the user message to UI immediately
@@ -3404,7 +3403,7 @@ export default function App() {
     const proceedWithAI = async () => {
       try {
         const todayDate = selectedDate || new Date().getDate();
-        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth, ME);
+        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth, actingUser);
         
         let aiResult;
         if (rawResult && typeof rawResult === 'object' && rawResult.action) {
@@ -3412,7 +3411,7 @@ export default function App() {
         } else if (Array.isArray(rawResult)) {
           aiResult = { action: 'create', schedules: rawResult };
         } else {
-          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth, ME);
+          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth, actingUser);
           aiResult = { action: 'create', schedules: fallbackList };
         }
 
@@ -3460,7 +3459,7 @@ export default function App() {
           }
           
           const aiReply = `요청하신 조건에 따라 ${updatedCount}개의 등록된 일정을 변경해 드렸습니다!`;
-          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${actingUser.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
           if (isConfigured) {
             await appwriteService.createMessage(aiMsg);
           }
@@ -3502,7 +3501,7 @@ export default function App() {
           }
           
           const aiReply = `요청하신 조건에 부합하는 ${deletedCount}개의 일정을 삭제했습니다!`;
-          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${ME.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
+          const aiMsg = { id: msgId.current++, from: `ai_${userSuffix}_${actingUser.id}`, text: aiReply, time: formatTime(new Date()), createdAt: new Date().toISOString() };
           if (isConfigured) {
             await appwriteService.createMessage(aiMsg);
           }
@@ -3527,19 +3526,19 @@ export default function App() {
           const isPersonalLeave = ((parsed.title || '').includes('연차') || (parsed.title || '').includes('휴가') || (parsed.title || '').includes('반차') || (parsed.title || '').includes('병가')) && !/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(parsed.title || '');
 
           // Detect target delegatee mentions
-          const isDelegatedToDaum = ME.id !== 'daum' && (parsed.memberId === 'daum' || (/정사원|정사인|정다음|다음/i.test(titleAndText) && /한테|에게|맡기|지시|잡으라고/i.test(text)));
-          const isDelegatedToYoonhee = (ME.id !== 'sh' && ME.id !== 'yoonhee') && (parsed.memberId === 'sh' || parsed.memberId === 'yoonhee' || (/정윤희|정부장/i.test(titleAndText) && /한테|에게|맡기|지시|부탁/i.test(text) && !/정부장\s*브리핑|정부장이랑/i.test(text)));
+          const isDelegatedToDaum = actingUser.id !== 'daum' && (parsed.memberId === 'daum' || (/정사원|정사인|정다음|다음/i.test(titleAndText) && /한테|에게|맡기|지시|잡으라고/i.test(text)));
+          const isDelegatedToYoonhee = (actingUser.id !== 'sh' && actingUser.id !== 'yoonhee') && (parsed.memberId === 'sh' || parsed.memberId === 'yoonhee' || (/정윤희|정부장/i.test(titleAndText) && /한테|에게|맡기|지시|부탁/i.test(text) && !/정부장\s*브리핑|정부장이랑/i.test(text)));
 
-          let assignedMemberId = ME.id;
-          let assignedMemberIds = [ME.id];
+          let assignedMemberId = actingUser.id;
+          let assignedMemberIds = [actingUser.id];
           let isSelf = true;
           let schedStatus = 'accepted';
           let schedApproverId = null;
 
           if (isPersonalLeave) {
             // 1) Personal Leave / Vacation (연차, 반차, 휴가) - 모든 휴가는 항상 조상무 상무 결재
-            assignedMemberId = ME.id;
-            assignedMemberIds = [ME.id];
+            assignedMemberId = actingUser.id;
+            assignedMemberIds = [actingUser.id];
             isSelf = true;
             schedStatus = 'requested';
             schedApproverId = 'sangmoo';
@@ -3560,11 +3559,11 @@ export default function App() {
           } else if (parsed.isAll) {
             // 4) All team members (팀 전체 일정 / 회식 / 전체 회의 등 - 팀원들의 수락을 받도록 requested 상태로 생성)
             assignedMemberIds = activeTeam.map(m => m.id);
-            assignedMemberId = ME.id;
+            assignedMemberId = actingUser.id;
             isSelf = false;
             schedStatus = 'requested';
             schedApproverId = null;
-          } else if (parsed.memberId && parsed.memberId !== ME.id) {
+          } else if (parsed.memberId && parsed.memberId !== actingUser.id) {
             // 5) Explicitly delegated to another colleague (타인 배정 일정은 항상 수락 대기)
             assignedMemberId = parsed.memberId;
             assignedMemberIds = [parsed.memberId];
@@ -3573,8 +3572,8 @@ export default function App() {
             schedApproverId = parsed.memberId;
           } else {
             // 6) Normal personal schedule of the logged-in user (본인 개인 업무만 확정)
-            assignedMemberId = ME.id;
-            assignedMemberIds = [ME.id];
+            assignedMemberId = actingUser.id;
+            assignedMemberIds = [actingUser.id];
             isSelf = true;
             schedStatus = 'accepted';
             schedApproverId = null;
@@ -3614,7 +3613,7 @@ export default function App() {
             color: randomColor,
             status: schedStatus,
             date: parsed.date,
-            requesterId: ME.id,
+            requesterId: actingUser.id,
             approverId: schedApproverId,
             isIssue: isItemIssue,
             description: parsed.groupId 
@@ -3683,14 +3682,14 @@ export default function App() {
             const names = group.memberIds.map(id => {
               const m = activeTeam.find(teamMember => teamMember.id === id);
               const mName = m ? m.name : id;
-              if (group.status === 'requested' && id !== ME.id && (id === 'sh' || id === 'yoonhee' || id === 'sangmoo')) {
+              if (group.status === 'requested' && id !== actingUser.id && (id === 'sh' || id === 'yoonhee' || id === 'sangmoo')) {
                 return `${mName} (요청됨)`;
               }
               return mName;
             });
             displayAssigneeText = names.join(', ');
           } else {
-            const assignedMember = activeTeam.find(m => m.id === group.memberId) || ME;
+            const assignedMember = activeTeam.find(m => m.id === group.memberId) || actingUser;
             displayAssigneeText = assignedMember.name;
             if (group.status === 'requested' && (group.isPersonalLeave || group.approverId)) {
               displayAssigneeText += ' (요청됨)';
@@ -3825,6 +3824,11 @@ export default function App() {
     }
   };
 
+  const handleSend = () => {
+    processMessageAndCreateSchedule(input, ME);
+    setInput('');
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -3842,40 +3846,58 @@ export default function App() {
   };
 
   const handleDashboardAddSchedule = (text, user) => {
-    const actingUser = user || ME;
-    const parsedList = parseMessageToSchedules(text, selectedDate, TEAM, currentYear, currentMonth, actingUser);
-    if (parsedList && parsedList.length > 0) {
-      const newItems = parsedList.map((p, idx) => {
-        const isVac = /반차|연차|휴가|병가/i.test(p.title || '');
-        const isIss = /이슈|에러|장애|오류|버그|디버깅/i.test(p.title || '') || p.isIssue;
-        return {
-          id: `sched_dash_${Date.now()}_${idx}`,
-          title: p.title,
-          date: p.date || selectedDate,
-          month: p.month || currentMonth,
-          year: p.year || currentYear,
-          startHour: p.startHour,
-          endHour: p.endHour,
-          memberId: p.memberId || actingUser.id,
-          memberIds: p.memberIds || [p.memberId || actingUser.id],
-          isRequested: p.isRequested || false,
-          approverId: p.approverId || (isVac ? 'sangmoo' : null),
-          status: p.isRequested ? 'requested' : 'accepted',
-          category: isVac ? '휴가' : isIss ? '이슈' : '일반',
-          color: isIss ? 'red' : isVac ? 'orange' : (p.color || 'purple'),
-          description: text,
-          createdAt: new Date().toISOString()
-        };
-      });
+    processMessageAndCreateSchedule(text, user || ME);
+  };
 
-      setSchedules(prev => {
-        const next = [...prev, ...newItems];
-        try {
-          localStorage.setItem('zal_schedules', JSON.stringify(next));
-        } catch (e) {}
-        return next;
+  const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {
+    if (!itemOrFeed) return;
+    
+    // 1. Try direct id match in schedules
+    let match = schedules.find(s => s.id === itemOrFeed.id || s.id === itemOrFeed.feedId);
+    
+    // 2. Try match by title or content
+    if (!match) {
+      const itemTitle = (itemOrFeed.title || '').trim();
+      const itemContent = (itemOrFeed.content || itemOrFeed.description || '').trim();
+      
+      match = schedules.find(s => {
+        if (!s.title) return false;
+        if (itemTitle && (itemTitle.includes(s.title) || s.title.includes(itemTitle))) return true;
+        if (itemContent && (itemContent.includes(s.title) || s.title.includes(itemContent))) return true;
+        return false;
       });
     }
+
+    // 3. If no existing schedule match in schedules array, synthesize an editable schedule object
+    if (!match) {
+      const isVac = /반차|연차|휴가|병가/i.test(itemOrFeed.title || itemOrFeed.content || '');
+      const isIss = /이슈|에러|장애|오류|버그|디버깅/i.test(itemOrFeed.title || itemOrFeed.content || '');
+      const isMtg = /회의|미팅|리뷰|브리핑/i.test(itemOrFeed.title || itemOrFeed.content || '');
+      
+      const authorId = itemOrFeed.authorId || itemOrFeed.memberId || ME.id;
+      const cleanTitle = (itemOrFeed.title || itemOrFeed.content || '일정').replace(/^[🏖️🚨🤝📋📄⚡\s]+/, '').trim();
+      
+      match = {
+        id: itemOrFeed.id || `sched_dash_sync_${Date.now()}`,
+        title: cleanTitle || '일정',
+        date: selectedDate || new Date().getDate(),
+        month: currentMonth || (new Date().getMonth() + 1),
+        year: currentYear || new Date().getFullYear(),
+        startHour: itemOrFeed.start || 9.0,
+        endHour: itemOrFeed.end || 18.0,
+        memberId: authorId,
+        memberIds: [authorId],
+        isRequested: itemOrFeed.vacationInfo?.status === 'pending' || false,
+        approverId: itemOrFeed.vacationInfo?.targetUserId || (isVac ? 'sangmoo' : null),
+        status: itemOrFeed.vacationInfo?.status || 'accepted',
+        category: isVac ? '휴가' : isIss ? '이슈' : (isMtg ? '회의' : '일반'),
+        color: isIss ? 'red' : isVac ? 'orange' : (isMtg ? 'purple' : 'blue'),
+        description: itemOrFeed.content || itemOrFeed.description || itemOrFeed.title || '',
+        createdAt: itemOrFeed.createdAt || new Date().toISOString()
+      };
+    }
+
+    openDetailModal(match);
   };
 
   const openAddModal = (member = null, hour = 9, date = null, month = null, year = null) => {
@@ -4780,6 +4802,7 @@ export default function App() {
           onSelectProject={setHeaderSelectedProject}
           schedules={schedules}
           onAddSchedule={handleDashboardAddSchedule}
+          onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {
             const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;

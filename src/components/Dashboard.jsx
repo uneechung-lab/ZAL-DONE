@@ -105,6 +105,7 @@ export default function Dashboard({
   onSelectProject,
   schedules = [],
   onAddSchedule,
+  onOpenScheduleDetail,
   onNavigateToSync,
   onSwitchUser,
   onLogout,
@@ -2175,7 +2176,22 @@ export default function Dashboard({
                       </div>
                     </div>
                   ) : (
-                    <>
+                    <div
+                      onClick={() => {
+                        if (editingFeedId !== parentFeed.id && onOpenScheduleDetail) {
+                          onOpenScheduleDetail(item);
+                        }
+                      }}
+                      style={{
+                        cursor: onOpenScheduleDetail ? 'pointer' : 'default',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        borderRadius: '8px',
+                        transition: 'opacity 0.15s ease'
+                      }}
+                      title="클릭하여 일정 상세 및 수정 열기"
+                    >
                       <div style={{
                         fontSize: '14.5px',
                         color: '#0f172a',
@@ -2191,14 +2207,13 @@ export default function Dashboard({
                           fontSize: '13.5px',
                           color: '#475569',
                           lineHeight: '1.55',
-                          marginTop: '-4px',
                           whiteSpace: 'pre-wrap',
                           fontWeight: '500'
                         }}>
                           {item.description}
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
@@ -2686,7 +2701,14 @@ export default function Dashboard({
 
                                 return (
                                   <div
-                                    onClick={onNavigateToSync}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onOpenScheduleDetail) {
+                                        onOpenScheduleDetail(startingEvt);
+                                      } else if (onNavigateToSync) {
+                                        onNavigateToSync();
+                                      }
+                                    }}
                                     style={{
                                       position: 'absolute',
                                       top: `${topOffset}px`,

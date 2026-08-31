@@ -1947,8 +1947,9 @@ export default function Dashboard({
                             justifyContent: 'space-between',
                             gap: '12px'
                           }}>
-                            <div style={{ fontSize: '12.5px', color: '#0f172a', fontWeight: '700', flex: 1, lineHeight: '1.4' }}>
-                              {targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}
+                            <div style={{ fontSize: '12.5px', color: '#0f172a', fontWeight: '700', flex: 1, lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>👉</span>
+                              <span>{targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                               <button

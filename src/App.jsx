@@ -411,9 +411,9 @@ function getMemberRoleText(member, meUser) {
 
   const isMe = meUser && (member.id === meUser.id || member.name === meUser.name);
   if (isMe) {
-    return `나(${role})`;
+    return role ? `나 ${role}` : '나';
   }
-  return `${member.name}(${role})`;
+  return role ? `${member.name} ${role}` : member.name;
 }
 
 function getMemberAvatarStyle(member, index) {
@@ -6122,7 +6122,7 @@ export default function App() {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     <span>요청자</span>
                                   </div>
-                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{reqMember.name} ({reqMember.role || '팀원'})</div>
+                                  <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line', fontWeight: '700', color: '#0f172a' }}>{reqMember.id === ME.id ? '나' : reqMember.name} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{reqMember.role || '팀원'}</span></div>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
@@ -7474,7 +7474,11 @@ export default function App() {
                             </div>
                           )}
                           <span className="member-role-label" style={{ fontSize: isMemberSelected ? undefined : '11.5px', whiteSpace: 'nowrap' }}>
-                            {getMemberRoleText(member, ME)}
+                            {member.id === ME.id || member.name === ME.name ? (
+                              <><strong>나</strong> <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>{member.role || '부장'}</span></>
+                            ) : (
+                              <><strong>{member.name}</strong> <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>{member.role || '팀원'}</span></>
+                            )}
                           </span>
                         </div>
                       </td>
@@ -7659,7 +7663,11 @@ export default function App() {
                               )}
                             </div>
                             <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {getMemberRoleText(member, ME)}
+                              {member.id === ME.id || member.name === ME.name ? (
+                                <><strong style={{ color: '#0f172a' }}>나</strong> <span style={{ fontSize: '10px', color: '#64748b' }}>{member.role || '부장'}</span></>
+                              ) : (
+                                <><strong style={{ color: '#0f172a' }}>{member.name}</strong> <span style={{ fontSize: '10px', color: '#64748b' }}>{member.role || '팀원'}</span></>
+                              )}
                             </span>
                           </div>
                         </th>

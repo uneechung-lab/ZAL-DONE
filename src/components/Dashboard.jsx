@@ -467,16 +467,16 @@ export default function Dashboard({
           </span>
         </div>
 
-        {/* Center: Tabs with numbers (전체 피드, 긴급 이슈, 결재/휴가, 미팅, 전사 공지, 팀 싱크율) */}
+        {/* Center: Tabs with numbers in parenthesis e.g. 전체 피드, 긴급 이슈 (1), 결재/휴가 (1) */}
         <div className="toggle-tab-container" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', height: '100%', display: 'flex', alignItems: 'center' }}>
-          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '16px' }}>
+          <div className="toggle-group" style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '18px' }}>
             {[
               { key: 'all', label: '전체 피드', count: null },
               { key: 'issue', label: '긴급 이슈', count: activeIssues.length },
-              { key: 'vacation', label: '결재/휴가', count: `${pendingApprovalsCount}/${Math.max(pendingApprovalsCount + (feeds.filter(f => f.vacationInfo?.status === 'approved').length), 2)}` },
+              { key: 'vacation', label: '결재/휴가', count: pendingApprovalsCount },
               { key: 'meeting', label: '미팅', count: 3 },
-              { key: 'notice', label: '전사 공지', count: '1/2' },
-              { key: 'sync', label: '팀 싱크율', count: `${Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3)}/${teamMembers.length || 3}` }
+              { key: 'notice', label: '전사 공지', count: 1 },
+              { key: 'sync', label: '팀 싱크율', count: Math.min(new Set(feeds.map(f => f.authorId)).size, teamMembers.length || 3) }
             ].map(tab => {
               const isActive = activeFilter === tab.key;
               return (
@@ -492,29 +492,25 @@ export default function Dashboard({
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '0 6px',
-                    fontSize: '13px',
+                    fontSize: '13.5px',
                     fontWeight: isActive ? '700' : '500',
                     color: isActive ? '#000000' : '#94a3b8',
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    whiteSpace: 'nowrap',
-                    gap: '4px'
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <span>{tab.label}</span>
                   {tab.count !== null && (
                     <span style={{
-                      fontSize: '11px',
-                      fontWeight: '800',
+                      fontSize: '13.5px',
+                      fontWeight: isActive ? '700' : '500',
                       color: isActive ? '#f97316' : '#94a3b8',
-                      backgroundColor: isActive ? 'rgba(249, 115, 22, 0.1)' : 'rgba(148, 163, 184, 0.12)',
-                      padding: '1px 6px',
-                      borderRadius: '10px',
-                      lineHeight: '1.2'
+                      marginLeft: '3px'
                     }}>
-                      {tab.count}
+                      ({tab.count})
                     </span>
                   )}
                 </button>

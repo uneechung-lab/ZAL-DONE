@@ -246,27 +246,26 @@ export default function Dashboard({
       vacInfo = {
         type: /오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가',
         date: '2026.08.31',
-        status: isApprover ? 'approved' : 'pending',
+        status: 'pending',
         approverName: targetUserName,
         approverRole: targetUserRole,
         targetUserId: targetUserId,
         requesterId: currentUser?.id || 'sh',
         requesterName: currentUser?.name || '정윤희',
-        approvedAt: isApprover ? timeDisplay : null
+        approvedAt: null
       };
     } else if (hasRequest) {
       const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
-      const isTargetMe = currentUser?.id === targetUserId || currentUser?.name === targetUserName;
       vacInfo = {
         type: reqType,
         date: '2026.08.31',
-        status: isTargetMe ? 'approved' : 'pending',
+        status: 'pending',
         approverName: targetUserName,
         approverRole: targetUserRole,
         targetUserId: targetUserId,
         requesterId: currentUser?.id || 'sh',
         requesterName: currentUser?.name || '정윤희',
-        approvedAt: isTargetMe ? timeDisplay : null
+        approvedAt: null
       };
     }
 
@@ -2190,6 +2189,46 @@ export default function Dashboard({
                           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                         </svg>
                         <span>공유</span>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFeed(parentFeed.id);
+                        }}
+                        title="이 카드 삭제"
+                        style={{
+                          padding: '5px 10px',
+                          backgroundColor: '#f8fafc',
+                          color: '#ef4444',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fef2f2';
+                          e.currentTarget.style.color = '#dc2626';
+                          e.currentTarget.style.borderColor = '#fecaca';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>삭제</span>
                       </button>
                     </div>
 

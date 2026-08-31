@@ -904,15 +904,25 @@ export default function Dashboard({
               pointerEvents: 'none'
             }}
           />
-          <h2 style={{
-            fontSize: '19px',
-            fontWeight: '800',
-            color: '#0f172a',
-            letterSpacing: '-0.4px',
-            margin: '0 0 33px 0'
-          }}>
-            {(displayUser || currentUser)?.name || '정윤희'}님, 좋은 하루되세요.
-          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '0 0 26px 0' }}>
+            <span style={{
+              fontSize: '13.5px',
+              fontWeight: '600',
+              color: '#64748b',
+              letterSpacing: '-0.2px'
+            }}>
+              2026년 8월 31일 월요일
+            </span>
+            <h2 style={{
+              fontSize: '19px',
+              fontWeight: '800',
+              color: '#0f172a',
+              letterSpacing: '-0.4px',
+              margin: 0
+            }}>
+              {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
+            </h2>
+          </div>
         </div>
 
         {/* Input Box & Hashtags Area (zIndex: 2, background: #ffffff covers the lower half of the character) */}

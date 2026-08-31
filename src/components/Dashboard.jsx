@@ -142,11 +142,66 @@ export default function Dashboard({
     setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1));
   };
   const [copiedReport, setCopiedReport] = useState(false);
+  const [highlightedCardId, setHighlightedCardId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const projectMenuRef = useRef(null);
   const composerTextareaRef = useRef(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
+  const handleShareCard = (item) => {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('cardId', item.id);
+      url.searchParams.set('feedId', item.feedId);
+      url.searchParams.set('date', '2026-08-31');
+      if (item.category) {
+        url.searchParams.set('category', item.category);
+      }
+      
+      const shareUrl = url.toString();
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('🔗 카카오톡/메신저 공유 링크가 복사되었습니다! 카카오톡에 붙여넣으세요.');
+      }).catch(() => {
+        showToast('🔗 공유 링크가 복사되었습니다: ' + shareUrl);
+      });
+    } catch (err) {
+      console.error('Failed to copy share link:', err);
+      showToast('🔗 공유 링크 생성 완료');
+    }
+  };
+
+  // Deep Link detection on page load (URL query param cardId / feedId)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cardId = params.get('cardId');
+    const feedId = params.get('feedId');
+    const targetId = cardId || feedId;
+
+    if (targetId) {
+      setHighlightedCardId(cardId || feedId);
+      // Wait for DOM to finish rendering cards
+      setTimeout(() => {
+        const el = document.getElementById(`card_${cardId}`) || document.getElementById(`card_${feedId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+
+      // Keep highlight for 4 seconds then gracefully clear
+      setTimeout(() => {
+        setHighlightedCardId(null);
+      }, 4000);
+    }
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -1641,8 +1696,9 @@ export default function Dashboard({
 
               return (
                 <article
+                  id={`card_${item.id}`}
                   key={item.id}
-                  className="masonry-card"
+                  className={`masonry-card ${highlightedCardId === item.id || highlightedCardId === item.feedId ? 'deep-link-highlighted-card' : ''}`}
                   style={{
                     backgroundColor: '#ffffff',
                     borderRadius: '16px',
@@ -1664,7 +1720,7 @@ export default function Dashboard({
                     e.currentTarget.style.boxShadow = '0 2px 10px rgba(15, 23, 42, 0.03)';
                   }}
                 >
-                  {/* Header: Author Info + Category Status Badge */}
+                  {/* Header: Author Info + Category Status Badge & Share Button */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{
@@ -1700,21 +1756,62 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {/* Status / Category Badge */}
-                    {item.badgeText && (
-                      <span style={{
-                        padding: '4px 10px',
-                        backgroundColor: item.badgeBg || '#f8fafc',
-                        color: item.badgeColor || '#475569',
-                        border: `1px solid ${item.badgeBorder || '#e2e8f0'}`,
-                        borderRadius: '12px',
-                        fontSize: '11.5px',
-                        fontWeight: '700',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {item.badgeText}
-                      </span>
-                    )}
+                    {/* Right: Badge & Share / Link Copy Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {item.badgeText && (
+                        <span style={{
+                          padding: '4px 10px',
+                          backgroundColor: item.badgeBg || '#f8fafc',
+                          color: item.badgeColor || '#475569',
+                          border: `1px solid ${item.badgeBorder || '#e2e8f0'}`,
+                          borderRadius: '12px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {item.badgeText}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleShareCard(item)}
+                        title="카카오톡/메신저 공유 링크 복사"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 8px',
+                          backgroundColor: '#f8fafc',
+                          color: '#64748b',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                          e.currentTarget.style.color = '#2563eb';
+                          e.currentTarget.style.borderColor = '#bfdbfe';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.color = '#64748b';
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="18" cy="5" r="3"></circle>
+                          <circle cx="6" cy="12" r="3"></circle>
+                          <circle cx="18" cy="19" r="3"></circle>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>공유</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Main Content Title */}
@@ -2368,6 +2465,32 @@ export default function Dashboard({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ──── FLOATING TOAST NOTIFICATION (FOR DEEP-LINK COPY, ETC.) ──── */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '32px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          padding: '12px 24px',
+          borderRadius: '30px',
+          fontSize: '13.5px',
+          fontWeight: '700',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          zIndex: 9999,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          pointerEvents: 'none',
+          transition: 'all 0.2s ease'
+        }}>
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

@@ -2264,6 +2264,7 @@ export default function App() {
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDetailEvent, setSelectedDetailEvent] = useState(null);
+  const [dashboardFeedId, setDashboardFeedId] = useState(null); // feedId from dashboard card that opened this modal
 
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('업무');
@@ -3899,6 +3900,8 @@ export default function App() {
     }
 
     openDetailModal(match);
+    // Remember the feedId so we can delete the dashboard card if user deletes from modal
+    setDashboardFeedId(itemOrFeed.feedId || itemOrFeed.id || null);
   };
 
   const openAddModal = (member = null, hour = 9, date = null, month = null, year = null) => {
@@ -9154,6 +9157,17 @@ export default function App() {
                                 await appwriteService.deleteSchedule(selectedDetailEvent.id);
                               }
                               setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                              // Also delete the dashboard feed card if this modal was opened from dashboard
+                              if (dashboardFeedId) {
+                                try {
+                                  const stored = localStorage.getItem('zal_feeds_v2');
+                                  const arr = stored ? JSON.parse(stored) : [];
+                                  const next = arr.filter(f => f.id !== dashboardFeedId);
+                                  localStorage.setItem('zal_feeds_v2', JSON.stringify(next));
+                                } catch (_) {}
+                                setDashboardFeedId(null);
+                                setDashboardResetKey(k => k + 1);
+                              }
                               setIsDetailModalOpen(false);
                             } finally {
                               setIsDeletingEvent(false);

@@ -593,7 +593,7 @@ export default function Dashboard({
       }
 
       // 5. Work (Everything that is not issue, request, meeting, or notice)
-      if (categoryKey === 'all') {
+      if (categoryKey === 'all' || categoryKey === 'work') {
         const otherBadges = (feed.aiBadges || []).filter(b => 
           b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지' &&
           !b.label?.includes('회의') && !b.label?.includes('미팅') && !b.label?.includes('리뷰') &&
@@ -1401,7 +1401,8 @@ export default function Dashboard({
             { key: 'issue', label: '이슈' },
             { key: 'vacation', label: '요청' },
             { key: 'meeting', label: '회의' },
-            { key: 'notice', label: '공지' }
+            { key: 'notice', label: '공지' },
+            { key: 'work', label: '업무' }
           ].map(tab => {
             const isActive = activeFilter === tab.key;
             return (

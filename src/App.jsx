@@ -4824,8 +4824,9 @@ export default function App() {
                 const nowTs = Date.now().toString();
                 localStorage.setItem('zal_reset_timestamp', nowTs);
                 localStorage.setItem('zal_schedules', JSON.stringify([]));
+                localStorage.removeItem('zal_feeds');
                 Object.keys(localStorage).forEach(key => {
-                  if (key.startsWith('zal_messages')) {
+                  if (key.startsWith('zal_messages') || key.startsWith('zal_feeds') || key.startsWith('zal_schedules')) {
                     localStorage.removeItem(key);
                   }
                 });
@@ -7127,8 +7128,9 @@ export default function App() {
                             const nowTs = Date.now().toString();
                             localStorage.setItem('zal_reset_timestamp', nowTs);
                             localStorage.setItem('zal_schedules', JSON.stringify([]));
+                            localStorage.removeItem('zal_feeds');
                             Object.keys(localStorage).forEach(key => {
-                              if (key.startsWith('zal_messages')) {
+                              if (key.startsWith('zal_messages') || key.startsWith('zal_feeds') || key.startsWith('zal_schedules')) {
                                 localStorage.removeItem(key);
                               }
                             });

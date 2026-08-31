@@ -1410,7 +1410,12 @@ export default function Dashboard({
                         e.preventDefault();
                         e.stopPropagation();
                         setIsUserMenuOpen(false);
-                        if (window.confirm('모든 대화 및 일정 데이터를 초기화하시겠습니까?')) {
+                        if (window.confirm('모든 대화, 피드 및 일정 데이터를 초기화하시겠습니까?')) {
+                          try {
+                            localStorage.removeItem('zal_feeds');
+                            localStorage.removeItem('zal_schedules');
+                          } catch (err) {}
+                          setFeeds(INITIAL_FEEDS);
                           onResetData();
                         }
                       }}

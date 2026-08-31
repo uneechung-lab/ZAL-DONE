@@ -1750,6 +1750,7 @@ export default function App() {
   const [selectedReportMembers, setSelectedReportMembers] = useState([ME.id]);
   const [showReportTooltip, setShowReportTooltip] = useState(true);
   const [isEditingReport, setIsEditingReport] = useState(false);
+  const [dashboardResetKey, setDashboardResetKey] = useState(0);
 
   const openReportModal = () => {
     setIsEditingReport(false);
@@ -4794,6 +4795,7 @@ export default function App() {
       {/* ──── MAIN VIEW AREA: DASHBOARD VIEW ──── */}
       {currentView === 'dashboard' && (
         <Dashboard
+          key={dashboardResetKey}
           currentUser={ME}
           displayUser={displayUser}
           parsedUser={parsedUser}
@@ -4818,7 +4820,7 @@ export default function App() {
           }}
           onResetData={() => {
             showLayerConfirm(
-              '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
+              '모든 대화, 피드 및 일정 데이터를 초기화하시겠습니까?',
               '데이터 초기화 확인',
               async () => {
                 const nowTs = Date.now().toString();
@@ -4833,6 +4835,7 @@ export default function App() {
                 setSchedules([]);
                 setShowPreviousMessages(false);
                 setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+                setDashboardResetKey(k => k + 1);
 
                 if (isConfigured) {
                   try {
@@ -7137,6 +7140,7 @@ export default function App() {
                             setSchedules([]);
                             setShowPreviousMessages(false);
                             setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+                            setDashboardResetKey(k => k + 1);
 
                             if (isConfigured) {
                               try {

@@ -1539,7 +1539,6 @@ export default function Dashboard({
                 const isSelected = selectedMemberId === tm.id;
                 const isMe = (currentUser?.id || 'sh') === tm.id;
                 const memberName = isMe ? '나' : tm.name;
-                const roleText = tm.role ? (tm.role.includes(tm.name) ? tm.role.replace(tm.name, '').replace(/[()]/g, '').trim() : tm.role) : '';
 
                 return (
                   <button
@@ -1549,7 +1548,6 @@ export default function Dashboard({
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
                       padding: '5px 12px',
                       borderRadius: '20px',
                       fontSize: '12px',
@@ -1574,15 +1572,6 @@ export default function Dashboard({
                     }}
                   >
                     <span>{memberName}</span>
-                    {roleText && (
-                      <span style={{
-                        fontSize: '11px',
-                        color: isSelected ? '#3b82f6' : '#94a3b8',
-                        fontWeight: '500'
-                      }}>
-                        {roleText}
-                      </span>
-                    )}
                   </button>
                 );
               })}

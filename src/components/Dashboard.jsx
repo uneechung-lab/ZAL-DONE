@@ -1939,17 +1939,16 @@ export default function Dashboard({
                         return (
                           <div style={{
                             backgroundColor: '#ffffff',
-                            border: '1.5px solid #93c5fd',
+                            border: '1px solid #e2e8f0',
                             borderRadius: '12px',
                             padding: '12px 16px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            gap: '12px',
-                            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)'
+                            gap: '12px'
                           }}>
-                            <div style={{ fontSize: '12px', color: '#1e40af', fontWeight: '700', flex: 1, lineHeight: '1.4' }}>
-                              👉 {targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}
+                            <div style={{ fontSize: '12.5px', color: '#0f172a', fontWeight: '700', flex: 1, lineHeight: '1.4' }}>
+                              {targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                               <button
@@ -2006,12 +2005,12 @@ export default function Dashboard({
                       } else {
                         return (
                           <div style={{
-                            backgroundColor: '#f8fafc',
+                            backgroundColor: '#ffffff',
                             border: '1px solid #e2e8f0',
                             borderRadius: '10px',
                             padding: '10px 14px',
-                            fontSize: '12px',
-                            color: '#64748b',
+                            fontSize: '12.5px',
+                            color: '#0f172a',
                             fontWeight: '600',
                             display: 'flex',
                             alignItems: 'center',
@@ -2027,13 +2026,13 @@ export default function Dashboard({
                     if (isApproved) {
                       return (
                         <div style={{
-                          backgroundColor: '#ecfdf5',
-                          border: '1px solid #a7f3d0',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
                           borderRadius: '10px',
                           padding: '10px 14px',
-                          fontSize: '12px',
+                          fontSize: '12.5px',
                           fontWeight: '700',
-                          color: '#065f46',
+                          color: '#0f172a',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px'
@@ -2047,13 +2046,13 @@ export default function Dashboard({
                     if (isRejected) {
                       return (
                         <div style={{
-                          backgroundColor: '#fef2f2',
-                          border: '1px solid #fecaca',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
                           borderRadius: '10px',
                           padding: '10px 14px',
-                          fontSize: '12px',
+                          fontSize: '12.5px',
                           fontWeight: '700',
-                          color: '#991b1b',
+                          color: '#0f172a',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px'

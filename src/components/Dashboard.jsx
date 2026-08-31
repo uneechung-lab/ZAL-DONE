@@ -1,100 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Default initial feeds for realistic team morning sync on 2026.08.31 (Mon)
-const INITIAL_FEEDS = [
-  {
-    id: 'feed_1',
-    authorId: 'daum',
-    authorName: '정다음',
-    authorRole: '사원',
-    authorAvatarPic: '/pic2_thumb.png',
-    authorColor: '#10b981',
-    createdAt: '2026-08-31T09:10:00.000Z',
-    timeDisplay: '오전 09:10',
-    type: 'issue', // 'all' | 'issue' | 'vacation' | 'meeting'
-    content: '오전 9시부터 로그인 인증 세션 만료 에러 긴급 디버깅 진행 중입니다. 오후 2시까지 해결하고, 14시에 정부장님과 화면 퍼블리싱 리뷰 미팅 참석하겠습니다. 그리고 내일(9/1) 오전 반차 신청합니다!',
-    aiBadges: [
-      { id: 'b1', type: 'issue', label: '🚨 로그인 에러 디버깅 (09:00~14:00)', category: '이슈' },
-      { id: 'b2', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00, 참석: 정다음, 정윤희)', category: '회의' },
-      { id: 'b3', type: 'vacation', label: '🏖️ 9/1 오전 반차 신청', category: '휴가' }
-    ],
-    vacationInfo: {
-      type: '오전 반차',
-      date: '2026.09.01',
-      status: 'pending', // 'pending' | 'approved' | 'rejected'
-      approverName: '조상무 상무',
-      approvedAt: null
-    },
-    likes: 4,
-    hasLiked: false,
-    cheers: 3,
-    hasCheered: false,
-    comments: [
-      {
-        id: 'c1',
-        authorId: 'sh',
-        authorName: '정윤희',
-        authorRole: '부장',
-        authorAvatarPic: '/pic1_thumb.png',
-        text: '세션 토큰 만료 시간 관련해서 로그 확인 필요하면 말씀하세요! 2시 미팅 전에 슬랙으로 공유 부탁드립니다.',
-        createdAt: '오전 09:18'
-      }
-    ]
-  },
-  {
-    id: 'feed_2',
-    authorId: 'sh',
-    authorName: '정윤희',
-    authorRole: '부장',
-    authorAvatarPic: '/pic1_thumb.png',
-    authorColor: '#000000',
-    createdAt: '2026-08-31T08:50:00.000Z',
-    timeDisplay: '오전 08:50',
-    type: 'meeting',
-    content: '오늘 10시 주간 기획 회의 및 오후 2시 화면 퍼블리싱 리뷰 진행 예정입니다. 4시에는 대신증권 시스템 연동 브리핑 자료 준비하겠습니다.',
-    aiBadges: [
-      { id: 'b4', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30, 참석: 정윤희, 조상무)', category: '회의' },
-      { id: 'b5', type: 'meeting', label: '🤝 화면 퍼블리싱 리뷰 (14:00~15:00)', category: '회의' },
-      { id: 'b6', type: 'work', label: '💼 대신증권 연동 브리핑 준비 (16:00~17:30)', category: '업무' }
-    ],
-    likes: 6,
-    hasLiked: false,
-    cheers: 2,
-    hasCheered: false,
-    comments: []
-  },
-  {
-    id: 'feed_3',
-    authorId: 'sangmoo',
-    authorName: '조상무',
-    authorRole: '상무',
-    authorAvatarPic: '/pic2_thumb.png',
-    authorColor: '#6366f1',
-    createdAt: '2026-08-31T08:35:00.000Z',
-    timeDisplay: '오전 08:35',
-    type: 'meeting',
-    content: '오전 기획 회의 참석 후 오후 3시에는 임원 주간 경영 회의 있습니다. 다음 사원 로그인 세션 이슈는 배포 전 원인 확실히 파악해 조치 바랍니다.',
-    aiBadges: [
-      { id: 'b7', type: 'meeting', label: '🤝 주간 기획 회의 (10:00~11:30)', category: '회의' },
-      { id: 'b8', type: 'work', label: '💼 임원 주간 경영 회의 (15:00~17:00)', category: '업무' }
-    ],
-    likes: 8,
-    hasLiked: false,
-    cheers: 5,
-    hasCheered: false,
-    comments: [
-      {
-        id: 'c2',
-        authorId: 'daum',
-        authorName: '정다음',
-        authorRole: '사원',
-        authorAvatarPic: '/pic2_thumb.png',
-        text: '네 상무님, 원인 분석 후 정오 전에 1차 보고 드리겠습니다!',
-        createdAt: '오전 09:12'
-      }
-    ]
-  }
-];
+// Default initial feeds is empty so reset completely clears all data
+const INITIAL_FEEDS = [];
 
 export default function Dashboard({
   currentUser,
@@ -2063,8 +1970,8 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {/* Right: Category Status Badge & Delete Button */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {/* Right: Category Status Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       {item.badgeText && (
                         <span style={{
                           padding: '4px 10px',
@@ -2079,39 +1986,6 @@ export default function Dashboard({
                           {item.badgeText}
                         </span>
                       )}
-
-                      {/* Direct Card Delete Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFeed(parentFeed.id);
-                        }}
-                        title="이 카드 삭제"
-                        style={{
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                          padding: '3px 5px',
-                          borderRadius: '6px',
-                          color: '#94a3b8',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '13px',
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.style.backgroundColor = '#fef2f2';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#94a3b8';
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                      >
-                        ✕
-                      </button>
                     </div>
                   </div>
 

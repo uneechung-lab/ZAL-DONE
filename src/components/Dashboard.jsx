@@ -1948,23 +1948,24 @@ export default function Dashboard({
                             gap: '12px',
                             boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)'
                           }}>
-                            <div style={{ fontSize: '12.5px', color: '#1e40af', fontWeight: '700' }}>
+                            <div style={{ fontSize: '12px', color: '#1e40af', fontWeight: '700', flex: 1, lineHeight: '1.4' }}>
                               👉 {targetDisplay ? `${targetDisplay}님의 승인(수락)이 필요합니다.` : '결재/수락이 필요합니다.'}
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                               <button
                                 type="button"
                                 onClick={() => handleApproveVacation(parentFeed.id, false)}
                                 style={{
                                   padding: '7px 14px',
-                                  fontSize: '12.5px',
+                                  fontSize: '12px',
                                   fontWeight: '700',
                                   backgroundColor: '#fef2f2',
                                   color: '#dc2626',
                                   border: '1px solid #fca5a5',
                                   borderRadius: '8px',
                                   cursor: 'pointer',
-                                  lineHeight: '1.2',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -1980,14 +1981,15 @@ export default function Dashboard({
                                 onClick={() => handleApproveVacation(parentFeed.id, true)}
                                 style={{
                                   padding: '7px 14px',
-                                  fontSize: '12.5px',
+                                  fontSize: '12px',
                                   fontWeight: '700',
                                   backgroundColor: '#ecfdf5',
                                   color: '#059669',
                                   border: '1px solid #a7f3d0',
                                   borderRadius: '8px',
                                   cursor: 'pointer',
-                                  lineHeight: '1.2',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',

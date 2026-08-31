@@ -652,10 +652,14 @@ export default function Dashboard({
 
   // Delete Feed
   const handleDeleteFeed = (feedId) => {
-    if (window.confirm('등록된 항목을 삭제하시겠습니까?')) {
-      setFeeds(prev => prev.filter(f => f.id !== feedId));
-      showToast('🗑️ 항목이 삭제되었습니다.');
-    }
+    setFeeds(prev => {
+      const next = prev.filter(f => f.id !== feedId);
+      try {
+        localStorage.setItem('zal_feeds', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    showToast('🗑️ 항목이 삭제되었습니다.');
   };
 
   // Add Comment to Feed
@@ -2059,8 +2063,8 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {/* Right: Category Status Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    {/* Right: Category Status Badge & Delete Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {item.badgeText && (
                         <span style={{
                           padding: '4px 10px',
@@ -2075,6 +2079,39 @@ export default function Dashboard({
                           {item.badgeText}
                         </span>
                       )}
+
+                      {/* Direct Card Delete Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFeed(parentFeed.id);
+                        }}
+                        title="이 카드 삭제"
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          padding: '3px 5px',
+                          borderRadius: '6px',
+                          color: '#94a3b8',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '13px',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.backgroundColor = '#fef2f2';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#94a3b8';
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
 

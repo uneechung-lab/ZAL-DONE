@@ -9192,57 +9192,38 @@ export default function App() {
                       cursor: (isDeletingEvent || isSavingEvent) ? 'not-allowed' : 'pointer',
                       opacity: (isDeletingEvent || isSavingEvent) ? 0.7 : 1
                     }}
-                    onClick={() => {
+                    onClick={async () => {
+                      if (isDeletingEvent) return;
+                      setIsDeletingEvent(true);
                       const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
                       const groupId = matchGroupId ? matchGroupId[1] : null;
                       if (groupId) {
-                        showLayerConfirm(
-                          `"${selectedDetailEvent.title}"은 그룹 일정입니다. 연결된 모든 일정을 함께 삭제하시겠습니까?`,
-                          '그룹 일정 삭제',
-                          async () => {
-                            setIsDeletingEvent(true);
-                            try {
-                              const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
-                              if (isConfigured) {
-                                for (const t of targets) {
-                                  await appwriteService.deleteSchedule(t.id);
-                                }
-                              }
-                              const targetIds = targets.map(t => t.id);
-                              setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-                              setIsDetailModalOpen(false);
-                            } finally {
-                              setIsDeletingEvent(false);
-                            }
+                        const targets = schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`));
+                        if (isConfigured) {
+                          for (const t of targets) {
+                            try { await appwriteService.deleteSchedule(t.id); } catch (_) {}
                           }
-                        );
+                        }
+                        const targetIds = targets.map(t => t.id);
+                        setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
                       } else {
-                        showLayerConfirm(
-                          `"${selectedDetailEvent.title}" 일정을 정말 삭제하시겠습니까?`,
-                          '일정 삭제 확인',
-                          async () => {
-                            setIsDeletingEvent(true);
-                            // Appwrite delete in its own try-catch so UI always updates even if remote fails
-                            if (isConfigured) {
-                              try { await appwriteService.deleteSchedule(selectedDetailEvent.id); } catch (_) {}
-                            }
-                            // Always update local state regardless of Appwrite result
-                            setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
-                            // Delete the dashboard feed card too
-                            const fid = dashboardFeedId;
-                            if (fid) {
-                              setFeeds(prev => {
-                                const next = prev.filter(f => f.id !== fid);
-                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                                return next;
-                              });
-                              setDashboardFeedId(null);
-                            }
-                            setIsDeletingEvent(false);
-                            setIsDetailModalOpen(false);
-                          }
-                        );
+                        if (isConfigured) {
+                          try { await appwriteService.deleteSchedule(selectedDetailEvent.id); } catch (_) {}
+                        }
+                        setSchedules(prev => prev.filter(s => s.id !== selectedDetailEvent.id));
+                        // Delete the dashboard feed card too
+                        const fid = dashboardFeedId;
+                        if (fid) {
+                          setFeeds(prev => {
+                            const next = prev.filter(f => f.id !== fid);
+                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                            return next;
+                          });
+                          setDashboardFeedId(null);
+                        }
                       }
+                      setIsDeletingEvent(false);
+                      setIsDetailModalOpen(false);
                     }}
                   >
                     {isDeletingEvent ? (

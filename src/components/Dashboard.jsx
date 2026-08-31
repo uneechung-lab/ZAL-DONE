@@ -1008,16 +1008,25 @@ export default function Dashboard({
         </div>
       </div>
 
-            {/* ──── FILTER TABS ABOVE SCREEN GRID (CENTER-ALIGNED) ──── */}
+            {/* ──── FULL SCREEN WIDTH FILTER TABS DIVIDER ──── */}
       <div style={{
-        maxWidth: '1360px',
         width: '100%',
-        margin: '28px auto 0 auto',
-        padding: '0 32px',
-        boxSizing: 'border-box',
-        borderBottom: '1px solid #e2e8f0'
+        borderBottom: '1px solid #e2e8f0',
+        margin: '28px 0 0 0',
+        display: 'flex',
+        justifyContent: 'center',
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '28px' }}>
+        <div style={{
+          maxWidth: '1360px',
+          width: '100%',
+          padding: '0 32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '28px',
+          boxSizing: 'border-box'
+        }}>
           {[
             { key: 'all', label: '전체 피드' },
             { key: 'issue', label: '이슈' },

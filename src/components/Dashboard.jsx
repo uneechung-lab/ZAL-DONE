@@ -456,6 +456,366 @@ export default function Dashboard({
         boxSizing: 'border-box',
         position: 'relative'
       }}>
+        {/* Top-Right: User Login Info, Department & Project Controls */}
+        <div style={{
+          position: 'absolute',
+          top: '0',
+          right: '32px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          zIndex: 30
+        }}>
+          {/* 1. User Profile Trigger & Floating Dropdown */}
+          <div ref={userMenuRef} style={{ position: 'relative' }}>
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsUserMenuOpen(prev => !prev);
+              }}
+              style={{
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                userSelect: 'none',
+                padding: '0 8px 0 4px',
+                borderRadius: '8px',
+                backgroundColor: isUserMenuOpen ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isUserMenuOpen) e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              title="사용자 메뉴 열기"
+            >
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: (currentUser || displayUser)?.color || '#000000',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: '600',
+                overflow: 'hidden',
+                padding: 0,
+                border: '1px solid #e2e8f0',
+                flexShrink: 0
+              }}>
+                <img src={(currentUser || displayUser)?.avatarPic || '/pic1_thumb.png'} alt={(currentUser || displayUser)?.name || '정윤희'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
+                {(currentUser || displayUser)?.name || parsedUser.name || '정윤희'} {(currentUser || displayUser)?.role || parsedUser.role || '부장'}
+              </span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                  flexShrink: 0,
+                  marginLeft: '2px'
+                }}
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            {/* Floating Profile Dropdown Layer */}
+            {isUserMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                right: 0,
+                minWidth: '200px',
+                backgroundColor: '#ffffff',
+                borderRadius: '12px',
+                border: '1.5px solid #e2e8f0',
+                boxShadow: '0 12px 30px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05)',
+                zIndex: 9999,
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px'
+              }}>
+                <div style={{ padding: '6px 10px 4px 10px', fontSize: '11px', fontWeight: '800', color: '#94a3b8' }}>
+                  계정 / 멤버 전환
+                </div>
+                {teamMembers.map(tm => (
+                  <div
+                    key={tm.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSwitchUser && onSwitchUser(tm.id);
+                      setIsUserMenuOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: (currentUser?.id || 'sh') === tm.id ? '800' : '600',
+                      color: (currentUser?.id || 'sh') === tm.id ? '#6366f1' : '#334155',
+                      backgroundColor: (currentUser?.id || 'sh') === tm.id ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tm.color || '#6366f1' }}></span>
+                    <span>{tm.name} ({tm.role || '팀원'})</span>
+                    {(currentUser?.id || 'sh') === tm.id && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
+                  </div>
+                ))}
+
+                <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '4px 0' }}></div>
+
+                {/* Reset Data Option */}
+                {onResetData && (
+                  <div
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsUserMenuOpen(false);
+                      if (window.confirm('모든 대화 및 일정 데이터를 초기화하시겠습니까?')) {
+                        onResetData();
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      color: '#ef4444',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
+                      transition: 'background-color 0.12s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                  >
+                    <span>🔄</span>
+                    <span>시연 데이터 초기화</span>
+                  </div>
+                )}
+
+                {/* Logout Option */}
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsUserMenuOpen(false);
+                    onLogout && onLogout();
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    color: '#334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                    transition: 'background-color 0.12s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                >
+                  <span>🚪</span>
+                  <span>로그아웃</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Department Badge Card */}
+          <div style={{
+            height: '32px',
+            backgroundColor: '#f1f5f9',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '10px',
+            padding: '0 12px',
+            fontSize: '12.5px',
+            fontWeight: '800',
+            color: '#0f172a',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSizing: 'border-box',
+            whiteSpace: 'nowrap'
+          }}>
+            {parsedUser?.department || (currentUser || displayUser)?.department || '개발'}
+          </div>
+
+          {/* 3. Custom Interactive Project Select Dropdown Card */}
+          <div ref={projectMenuRef} style={{ position: 'relative' }}>
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsProjectMenuOpen(prev => !prev);
+              }}
+              style={{
+                height: '32px',
+                backgroundColor: '#ffffff',
+                border: isProjectMenuOpen ? '1.5px solid #000000' : '1.5px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '0 10px 0 12px',
+                fontSize: '12.5px',
+                fontWeight: '800',
+                color: '#0f172a',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxSizing: 'border-box',
+                transition: 'all 0.15s ease',
+                userSelect: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+              }}
+              onMouseEnter={(e) => {
+                if (!isProjectMenuOpen) {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.borderColor = '#94a3b8';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isProjectMenuOpen) {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                }
+              }}
+              title="프로젝트 선택"
+            >
+              <span style={{
+                maxWidth: '200px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: '1'
+              }}>
+                {headerSelectedProject === '전체' ? (parsedUser?.project || '대신증권 연금 경쟁력 강화') : headerSelectedProject}
+              </span>
+
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: isProjectMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                  flexShrink: 0
+                }}
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            {/* Floating Options Layer */}
+            {isProjectMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                right: 0,
+                width: '260px',
+                backgroundColor: '#ffffff',
+                borderRadius: '14px',
+                border: '1.5px solid #e2e8f0',
+                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(0, 0, 0, 0.05)',
+                zIndex: 9999,
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+                maxHeight: '320px',
+                overflowY: 'auto'
+              }}>
+                {[
+                  '전체',
+                  '신영증권 외화표시펀드 매매 시스템 구축',
+                  '삼성증권 연금 고객중심 서비스 개선',
+                  'NH투자증권 퇴직연금시스템 운영',
+                  '경찰공제회 시스템 유지보수',
+                  '대신증권 연금 경쟁력 강화',
+                  '다음 D-RPS 고도화',
+                  '해당없음'
+                ].map((projOption) => {
+                  const isSelected = headerSelectedProject === projOption || (headerSelectedProject === '전체' && projOption === '대신증권 연금 경쟁력 강화');
+                  return (
+                    <div
+                      key={projOption}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSelectProject && onSelectProject(projOption);
+                        setIsProjectMenuOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '9px',
+                        fontSize: '12.5px',
+                        fontWeight: isSelected ? '800' : '600',
+                        color: isSelected ? '#000000' : '#334155',
+                        backgroundColor: isSelected ? '#f1f5f9' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.12s ease',
+                        lineHeight: '1.3'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <span>{projOption}</span>
+                      {isSelected && (
+                        <span style={{ fontWeight: '900', color: '#000000', fontSize: '14px', flexShrink: 0 }}>✓</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Peeking BI Character & Greeting Title */}
         <div style={{
           display: 'flex',

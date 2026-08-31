@@ -1522,15 +1522,29 @@ export default function Dashboard({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '5px 12px',
+              padding: '5px 13px',
               borderRadius: '20px',
-              fontSize: '12px',
+              fontSize: '12.5px',
               fontWeight: selectedMemberId === 'all' ? '800' : '600',
-              backgroundColor: selectedMemberId === 'all' ? '#0f172a' : '#ffffff',
-              color: selectedMemberId === 'all' ? '#ffffff' : '#64748b',
-              border: `1px solid ${selectedMemberId === 'all' ? '#0f172a' : '#e2e8f0'}`,
+              backgroundColor: selectedMemberId === 'all' ? '#f1f5f9' : '#ffffff',
+              color: selectedMemberId === 'all' ? '#000000' : '#64748b',
+              border: selectedMemberId === 'all' ? '1.5px solid #000000' : '1px solid #e2e8f0',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (selectedMemberId !== 'all') {
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.color = '#0f172a';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedMemberId !== 'all') {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.color = '#64748b';
+              }
             }}
           >
             <span>전체</span>
@@ -1549,13 +1563,13 @@ export default function Dashboard({
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  padding: '5px 12px',
+                  padding: '5px 13px',
                   borderRadius: '20px',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: isSelected ? '800' : '600',
-                  backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                  color: isSelected ? '#2563eb' : '#475569',
-                  border: `1px solid ${isSelected ? '#93c5fd' : '#e2e8f0'}`,
+                  backgroundColor: isSelected ? '#f1f5f9' : '#ffffff',
+                  color: isSelected ? '#000000' : '#64748b',
+                  border: isSelected ? '1.5px solid #000000' : '1px solid #e2e8f0',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
@@ -1563,12 +1577,14 @@ export default function Dashboard({
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = '#f8fafc';
                     e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.color = '#0f172a';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.color = '#64748b';
                   }
                 }}
               >

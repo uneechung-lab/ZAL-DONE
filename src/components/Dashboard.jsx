@@ -1051,8 +1051,8 @@ export default function Dashboard({
             </button>
           </div>
 
-          {/* Bottom: Quick Hashtag Buttons (No border, larger font, 회식공지) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Bottom: Quick Hashtag Buttons (Pure Transparent Text Tags) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingLeft: '4px' }}>
             {[
               { label: '#긴급이슈', tag: '긴급 이슈 대응' },
               { label: '#회식공지', tag: '금일 부서 회식 안내' },
@@ -1067,25 +1067,22 @@ export default function Dashboard({
                   composerTextareaRef.current?.focus();
                 }}
                 style={{
-                  padding: '5px 12px',
-                  backgroundColor: '#f1f5f9',
+                  padding: '2px 8px',
+                  backgroundColor: 'transparent',
                   border: 'none',
-                  borderRadius: '14px',
-                  fontSize: '12.5px',
+                  fontSize: '13px',
                   fontWeight: '600',
-                  color: '#475569',
+                  color: '#64748b',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  transition: 'color 0.15s ease',
                   display: 'inline-flex',
                   alignItems: 'center'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e2e8f0';
                   e.currentTarget.style.color = '#0f172a';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  e.currentTarget.style.color = '#475569';
+                  e.currentTarget.style.color = '#64748b';
                 }}
               >
                 {item.label}

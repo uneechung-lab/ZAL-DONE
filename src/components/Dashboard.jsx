@@ -491,7 +491,10 @@ export default function Dashboard({
 
       // 3. Meetings / Conferences
       if (categoryKey === 'all' || categoryKey === 'meeting') {
-        const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.category === '회의' || b.type === 'meeting');
+        const meetingBadges = (feed.aiBadges || []).filter(b => 
+          b.category === '미팅' || b.category === '회의' || b.type === 'meeting' ||
+          b.label?.includes('회의') || b.label?.includes('미팅') || b.label?.includes('리뷰')
+        );
         if (meetingBadges.length > 0) {
           meetingBadges.forEach((b, bIdx) => {
             const snippet = getRelevantSnippet(feed.content, '미팅');
@@ -506,7 +509,7 @@ export default function Dashboard({
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
               category: '회의',
-              title: b.label,
+              title: b.label.replace(/^💼/, '🤝').replace(/^🏢/, '🤝'),
               description: snippet && snippet !== b.label ? snippet : '',
               badgeText: '🤝 회의',
               badgeColor: '#4338ca',
@@ -541,7 +544,7 @@ export default function Dashboard({
 
       // 4. Notices
       if (categoryKey === 'all' || categoryKey === 'notice') {
-        const noticeBadges = (feed.aiBadges || []).filter(b => b.category === '공지' || b.category === '전사공지' || b.type === 'notice');
+        const noticeBadges = (feed.aiBadges || []).filter(b => b.category === '공지' || b.category === '전사공지' || b.type === 'notice' || b.label?.includes('공지'));
         if (noticeBadges.length > 0) {
           noticeBadges.forEach((b, bIdx) => {
             const snippet = getRelevantSnippet(feed.content, '공지');
@@ -592,7 +595,11 @@ export default function Dashboard({
       // 5. Work (Everything that is not issue, request, meeting, or notice)
       if (categoryKey === 'all') {
         const otherBadges = (feed.aiBadges || []).filter(b => 
-          b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지'
+          b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지' &&
+          !b.label?.includes('회의') && !b.label?.includes('미팅') && !b.label?.includes('리뷰') &&
+          !b.label?.includes('반차') && !b.label?.includes('휴가') &&
+          !b.label?.includes('에러') && !b.label?.includes('버그') && !b.label?.includes('디버깅') && !b.label?.includes('장애') &&
+          !b.label?.includes('공지')
         );
         if (otherBadges.length > 0) {
           otherBadges.forEach((b, bIdx) => {
@@ -616,7 +623,7 @@ export default function Dashboard({
               feed: feed
             });
           });
-        } else if (!feed.aiBadges || feed.aiBadges.length === 0) {
+        } else if ((!feed.aiBadges || feed.aiBadges.length === 0) && feed.type !== 'meeting' && feed.type !== 'issue' && feed.type !== 'vacation' && feed.type !== 'notice') {
           items.push({
             id: `${feed.id}_work_main`,
             feedId: feed.id,

@@ -341,6 +341,219 @@ export default function Dashboard({
     setExpandedCommentFeedIds(prev => ({ ...prev, [feedId]: true }));
   };
 
+  // Granular categorized items when specific category tab is selected (이슈, 요청, 미팅, 공지, 팀싱크)
+  const getCategoryItems = (categoryKey) => {
+    const items = [];
+
+    feeds.forEach(feed => {
+      if (categoryKey === 'issue') {
+        const issueBadges = (feed.aiBadges || []).filter(b => b.category === '이슈' || b.type === 'issue');
+        if (issueBadges.length > 0) {
+          issueBadges.forEach((b, bIdx) => {
+            items.push({
+              id: `${feed.id}_issue_${bIdx}`,
+              feedId: feed.id,
+              authorId: feed.authorId,
+              authorName: feed.authorName,
+              authorRole: feed.authorRole,
+              authorAvatarPic: feed.authorAvatarPic,
+              authorColor: feed.authorColor,
+              timeDisplay: feed.timeDisplay,
+              createdAt: feed.createdAt,
+              category: '이슈',
+              title: b.label || feed.content,
+              description: feed.content !== b.label ? feed.content : '',
+              badgeText: '🚨 이슈 대응',
+              badgeColor: '#dc2626',
+              badgeBg: '#fef2f2',
+              badgeBorder: '#fecaca',
+              feed: feed
+            });
+          });
+        } else if (feed.type === 'issue' || feed.content.includes('에러') || feed.content.includes('장애') || feed.content.includes('이슈')) {
+          items.push({
+            id: `${feed.id}_issue_main`,
+            feedId: feed.id,
+            authorId: feed.authorId,
+            authorName: feed.authorName,
+            authorRole: feed.authorRole,
+            authorAvatarPic: feed.authorAvatarPic,
+            authorColor: feed.authorColor,
+            timeDisplay: feed.timeDisplay,
+            createdAt: feed.createdAt,
+            category: '이슈',
+            title: feed.content,
+            description: '',
+            badgeText: '🚨 이슈 대응',
+            badgeColor: '#dc2626',
+            badgeBg: '#fef2f2',
+            badgeBorder: '#fecaca',
+            feed: feed
+          });
+        }
+      } else if (categoryKey === 'vacation') {
+        if (feed.vacationInfo) {
+          items.push({
+            id: `${feed.id}_vacation`,
+            feedId: feed.id,
+            authorId: feed.authorId,
+            authorName: feed.authorName,
+            authorRole: feed.authorRole,
+            authorAvatarPic: feed.authorAvatarPic,
+            authorColor: feed.authorColor,
+            timeDisplay: feed.timeDisplay,
+            createdAt: feed.createdAt,
+            category: '요청',
+            title: `🏖️ ${feed.vacationInfo.type} 신청 (${feed.vacationInfo.date})`,
+            description: feed.vacationInfo.status === 'pending' ? '결재권자(조상무)의 승인이 필요합니다.' : (feed.vacationInfo.status === 'approved' ? `${feed.vacationInfo.approverName || '조상무 상무'} 승인 완료` : '반려된 신청입니다.'),
+            badgeText: feed.vacationInfo.status === 'approved' ? '✅ 승인완료' : '🏖️ 결재요청',
+            badgeColor: feed.vacationInfo.status === 'approved' ? '#059669' : '#b45309',
+            badgeBg: feed.vacationInfo.status === 'approved' ? '#ecfdf5' : '#fffbeb',
+            badgeBorder: feed.vacationInfo.status === 'approved' ? '#a7f3d0' : '#fde68a',
+            vacationInfo: feed.vacationInfo,
+            feed: feed
+          });
+        }
+        const reqBadges = (feed.aiBadges || []).filter(b => b.category === '휴가' || b.category === '요청' || b.type === 'vacation');
+        reqBadges.forEach((b, bIdx) => {
+          if (!feed.vacationInfo || !b.label?.includes(feed.vacationInfo.type)) {
+            items.push({
+              id: `${feed.id}_req_${bIdx}`,
+              feedId: feed.id,
+              authorId: feed.authorId,
+              authorName: feed.authorName,
+              authorRole: feed.authorRole,
+              authorAvatarPic: feed.authorAvatarPic,
+              authorColor: feed.authorColor,
+              timeDisplay: feed.timeDisplay,
+              createdAt: feed.createdAt,
+              category: '요청',
+              title: b.label,
+              description: feed.content !== b.label ? feed.content : '',
+              badgeText: '📋 업무요청',
+              badgeColor: '#6366f1',
+              badgeBg: '#eef2ff',
+              badgeBorder: '#c7d2fe',
+              feed: feed
+            });
+          }
+        });
+      } else if (categoryKey === 'meeting') {
+        const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.type === 'meeting');
+        if (meetingBadges.length > 0) {
+          meetingBadges.forEach((b, bIdx) => {
+            items.push({
+              id: `${feed.id}_meeting_${bIdx}`,
+              feedId: feed.id,
+              authorId: feed.authorId,
+              authorName: feed.authorName,
+              authorRole: feed.authorRole,
+              authorAvatarPic: feed.authorAvatarPic,
+              authorColor: feed.authorColor,
+              timeDisplay: feed.timeDisplay,
+              createdAt: feed.createdAt,
+              category: '미팅',
+              title: b.label,
+              description: feed.content !== b.label ? feed.content : '',
+              badgeText: '🤝 미팅',
+              badgeColor: '#4338ca',
+              badgeBg: '#eef2ff',
+              badgeBorder: '#c7d2fe',
+              feed: feed
+            });
+          });
+        } else if (feed.type === 'meeting' || feed.content.includes('회의') || feed.content.includes('미팅') || feed.content.includes('리뷰')) {
+          items.push({
+            id: `${feed.id}_meeting_main`,
+            feedId: feed.id,
+            authorId: feed.authorId,
+            authorName: feed.authorName,
+            authorRole: feed.authorRole,
+            authorAvatarPic: feed.authorAvatarPic,
+            authorColor: feed.authorColor,
+            timeDisplay: feed.timeDisplay,
+            createdAt: feed.createdAt,
+            category: '미팅',
+            title: feed.content,
+            description: '',
+            badgeText: '🤝 미팅',
+            badgeColor: '#4338ca',
+            badgeBg: '#eef2ff',
+            badgeBorder: '#c7d2fe',
+            feed: feed
+          });
+        }
+      } else if (categoryKey === 'notice') {
+        const noticeBadges = (feed.aiBadges || []).filter(b => b.category === '공지' || b.category === '전사공지' || b.type === 'notice');
+        if (noticeBadges.length > 0) {
+          noticeBadges.forEach((b, bIdx) => {
+            items.push({
+              id: `${feed.id}_notice_${bIdx}`,
+              feedId: feed.id,
+              authorId: feed.authorId,
+              authorName: feed.authorName,
+              authorRole: feed.authorRole,
+              authorAvatarPic: feed.authorAvatarPic,
+              authorColor: feed.authorColor,
+              timeDisplay: feed.timeDisplay,
+              createdAt: feed.createdAt,
+              category: '공지',
+              title: b.label,
+              description: feed.content !== b.label ? feed.content : '',
+              badgeText: '📢 공지',
+              badgeColor: '#475569',
+              badgeBg: '#f8fafc',
+              badgeBorder: '#e2e8f0',
+              feed: feed
+            });
+          });
+        } else if (feed.type === 'notice' || feed.authorId === 'sangmoo' || feed.content.includes('공지') || feed.content.includes('회식') || feed.content.includes('안내')) {
+          items.push({
+            id: `${feed.id}_notice_main`,
+            feedId: feed.id,
+            authorId: feed.authorId,
+            authorName: feed.authorName,
+            authorRole: feed.authorRole,
+            authorAvatarPic: feed.authorAvatarPic,
+            authorColor: feed.authorColor,
+            timeDisplay: feed.timeDisplay,
+            createdAt: feed.createdAt,
+            category: '공지',
+            title: feed.content,
+            description: '',
+            badgeText: '📢 공지',
+            badgeColor: '#475569',
+            badgeBg: '#f8fafc',
+            badgeBorder: '#e2e8f0',
+            feed: feed
+          });
+        }
+      } else if (categoryKey === 'sync') {
+        items.push({
+          id: `${feed.id}_sync_item`,
+          feedId: feed.id,
+          authorId: feed.authorId,
+          authorName: feed.authorName,
+          authorRole: feed.authorRole,
+          authorAvatarPic: feed.authorAvatarPic,
+          authorColor: feed.authorColor,
+          timeDisplay: feed.timeDisplay,
+          createdAt: feed.createdAt,
+          category: '팀싱크',
+          title: feed.content,
+          description: '',
+          badgeText: '☀️ 모닝 싱크',
+          badgeColor: '#64748b',
+          badgeBg: '#f8fafc',
+          badgeBorder: '#e2e8f0',
+          feed: feed
+        });
+      }
+    });
+
+    return items;
+  };
+
   // Filtered feeds
   const filteredFeeds = feeds.filter(feed => {
     if (activeFilter === 'all') return true;
@@ -1121,7 +1334,399 @@ export default function Dashboard({
         
         {/* ════════ LEFT: 2-COLUMN FEED MASONRY GRID ════════ */}
         <section className="dashboard-feed-masonry">
-          {filteredFeeds.length === 0 ? (
+          {activeFilter !== 'all' ? (
+            /* Specific Category Tab: Render individual item cards */
+            (() => {
+              const categoryItems = getCategoryItems(activeFilter);
+              if (categoryItems.length === 0) {
+                return (
+                  <div className="masonry-card" style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: '16px',
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: '#94a3b8'
+                  }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>💬</div>
+                    <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#475569' }}>
+                      해당 카테고리의 항목이 없습니다.
+                    </div>
+                    <div style={{ fontSize: '12.5px', marginTop: '4px' }}>
+                      상단 입력창에 새로운 일정을 등록해 보세요!
+                    </div>
+                  </div>
+                );
+              }
+
+              return categoryItems.map(item => {
+                const parentFeed = item.feed;
+                const isCommentOpen = !!expandedCommentFeedIds[parentFeed.id];
+                const isPendingVacation = item.vacationInfo && item.vacationInfo.status === 'pending';
+                const isApprovedVacation = item.vacationInfo && item.vacationInfo.status === 'approved';
+
+                return (
+                  <article
+                    key={item.id}
+                    className="masonry-card"
+                    style={{
+                      backgroundColor: '#ffffff',
+                      borderRadius: '16px',
+                      border: '1.5px solid #e2e8f0',
+                      boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
+                      padding: '20px 22px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(15, 23, 42, 0.06)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.boxShadow = '0 2px 10px rgba(15, 23, 42, 0.03)';
+                    }}
+                  >
+                    {/* Header: Author Info + Category Status Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          backgroundColor: item.authorColor || '#6366f1',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1.5px solid #e2e8f0',
+                          flexShrink: 0
+                        }}>
+                          <img
+                            src={item.authorAvatarPic || '/pic1_thumb.png'}
+                            alt={item.authorName}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
+                              {item.authorId === (currentUser?.id || 'sh') ? '나' : item.authorName}
+                            </span>
+                            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
+                              {item.authorRole}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '1px', fontWeight: '500' }}>
+                            {item.timeDisplay}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status / Category Badge */}
+                      {item.badgeText && (
+                        <span style={{
+                          padding: '4px 10px',
+                          backgroundColor: item.badgeBg || '#f8fafc',
+                          color: item.badgeColor || '#475569',
+                          border: `1px solid ${item.badgeBorder || '#e2e8f0'}`,
+                          borderRadius: '12px',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {item.badgeText}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Main Content Title */}
+                    <div style={{
+                      fontSize: '14.5px',
+                      color: '#0f172a',
+                      lineHeight: '1.6',
+                      fontWeight: '700',
+                      letterSpacing: '-0.2px'
+                    }}>
+                      {item.title}
+                    </div>
+
+                    {item.description && item.description !== item.title && (
+                      <div style={{
+                        fontSize: '13.5px',
+                        color: '#475569',
+                        lineHeight: '1.55',
+                        marginTop: '-4px',
+                        whiteSpace: 'pre-wrap',
+                        fontWeight: '500'
+                      }}>
+                        {item.description}
+                      </div>
+                    )}
+
+                    {/* Interactive Vacation Action (If pending & user is approver) */}
+                    {isPendingVacation && isApprover && (
+                      <div style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px'
+                      }}>
+                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                          결재권자(조상무)의 승인이 필요합니다.
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectVacation(parentFeed.id)}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '12.5px',
+                              fontWeight: '700',
+                              backgroundColor: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              lineHeight: '1.2',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                          >
+                            요청반려
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleApproveVacation(parentFeed.id)}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '12.5px',
+                              fontWeight: '700',
+                              backgroundColor: '#ecfdf5',
+                              color: '#059669',
+                              border: '1px solid #a7f3d0',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              lineHeight: '1.2',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                          >
+                            요청수락
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Approved Badge */}
+                    {isApprovedVacation && (
+                      <div style={{
+                        backgroundColor: 'transparent',
+                        border: '1px solid #a7f3d0',
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        color: '#065f46',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <span>✅</span>
+                        <span>{item.vacationInfo.approverName || '조상무 상무'} 승인 완료 ({item.vacationInfo.date} {item.vacationInfo.type})</span>
+                      </div>
+                    )}
+
+                    {/* Feed Action Bar (Likes, Cheers, Comments) */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingTop: '10px',
+                      borderTop: '1px solid #f1f5f9',
+                      marginTop: '2px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(parentFeed.id)}
+                          style={{
+                            padding: '5px 10px',
+                            backgroundColor: parentFeed.hasLiked ? '#eff6ff' : '#f8fafc',
+                            color: parentFeed.hasLiked ? '#2563eb' : '#64748b',
+                            border: `1px solid ${parentFeed.hasLiked ? '#bfdbfe' : '#e2e8f0'}`,
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span>👍</span>
+                          <span>{parentFeed.likes}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCheer(parentFeed.id)}
+                          style={{
+                            padding: '5px 10px',
+                            backgroundColor: parentFeed.hasCheered ? '#fdf2f8' : '#f8fafc',
+                            color: parentFeed.hasCheered ? '#db2777' : '#64748b',
+                            border: `1px solid ${parentFeed.hasCheered ? '#fbcfe8' : '#e2e8f0'}`,
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span>🔥</span>
+                          <span>{parentFeed.cheers}</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCommentFeedIds(prev => ({ ...prev, [parentFeed.id]: !prev[parentFeed.id] }))}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: isCommentOpen ? '#6366f1' : '#64748b',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 6px',
+                          borderRadius: '6px'
+                        }}
+                      >
+                        <span>댓글 {parentFeed.comments?.length || 0}</span>
+                      </button>
+                    </div>
+
+                    {/* Comments Section */}
+                    {isCommentOpen && (
+                      <div style={{
+                        marginTop: '4px',
+                        paddingTop: '12px',
+                        borderTop: '1px dashed #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px'
+                      }}>
+                        {parentFeed.comments?.map(c => (
+                          <div
+                            key={c.id}
+                            style={{
+                              backgroundColor: '#f8fafc',
+                              borderRadius: '10px',
+                              padding: '10px 12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  backgroundColor: '#6366f1'
+                                }}>
+                                  <img src={c.authorAvatarPic || '/pic2_thumb.png'} alt={c.authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>
+                                  {c.authorId === (currentUser?.id || 'sh') ? '나' : c.authorName}
+                                </span>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  {c.authorRole}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
+                                {c.createdAt}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: '12.5px', color: '#334155', margin: 0, lineHeight: '1.45' }}>
+                              {c.text}
+                            </p>
+                          </div>
+                        ))}
+
+                        {/* Inline Comment Input Box */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                          <input
+                            type="text"
+                            value={commentInputs[parentFeed.id] || ''}
+                            onChange={(e) => handleCommentInputChange(parentFeed.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSubmitComment(parentFeed.id);
+                              }
+                            }}
+                            placeholder="동료에게 응원이나 피드백 댓글을 남겨보세요..."
+                            style={{
+                              flex: 1,
+                              padding: '7px 12px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '10px',
+                              fontSize: '12.5px',
+                              outline: 'none',
+                              color: '#0f172a'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSubmitComment(parentFeed.id)}
+                            disabled={!commentInputs[parentFeed.id]?.trim()}
+                            style={{
+                              padding: '7px 12px',
+                              backgroundColor: commentInputs[parentFeed.id]?.trim() ? '#6366f1' : '#e2e8f0',
+                              color: commentInputs[parentFeed.id]?.trim() ? '#ffffff' : '#94a3b8',
+                              border: 'none',
+                              borderRadius: '10px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              cursor: commentInputs[parentFeed.id]?.trim() ? 'pointer' : 'not-allowed'
+                            }}
+                          >
+                            등록
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              });
+            })()
+          ) : (
+            /* '전체 피드' Tab: Render Full Mixed Feed Cards */
+            filteredFeeds.length === 0 ? (
             <div className="masonry-card" style={{
               backgroundColor: '#ffffff',
               border: '1px dashed #cbd5e1',
@@ -1566,7 +2171,7 @@ export default function Dashboard({
                 </article>
               );
             })
-          )}
+          ))}
         </section>
 
         {/* ════════ RIGHT: EXPANDED VERTICAL TEAM TIMELINE (SYNC WEEKLY/DAILY STYLE) ════════ */}

@@ -1381,8 +1381,7 @@ export default function Dashboard({
             { key: 'issue', label: '이슈' },
             { key: 'vacation', label: '요청' },
             { key: 'meeting', label: '미팅' },
-            { key: 'notice', label: '공지' },
-            { key: 'sync', label: '팀싱크' }
+            { key: 'notice', label: '공지' }
           ].map(tab => {
             const isActive = activeFilter === tab.key;
             return (

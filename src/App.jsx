@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, Fragment } from 'react';
 import './index.css';
 import { appwriteService, isConfigured } from './appwrite';
 import { parseMessageWithGemini } from './gemini';
+import Dashboard from './components/Dashboard';
+import LeftNavRail from './components/LeftNavRail';
 
 const TEAM = [
   { id: 'sh', name: '정윤희', role: '부장', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' },
@@ -192,17 +194,13 @@ function IssueWarningIcon({ size = 16, style = {} }) {
 function getApproverMember(sched, currentUserId = 'sh') {
   if (!sched) return { name: '조상무', role: '상무' };
   try {
+    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
+    if (isLeave) {
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    }
     if (sched.approverId) {
       const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo'));
       if (found) return found;
-    }
-
-    const applicantId = sched.requesterId || sched.memberId || currentUserId;
-    if (applicantId === 'sangmoo' || applicantId === 'sangmu') {
-      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
-    }
-    if (applicantId === 'daum') {
-      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
     return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
   } catch (e) {
@@ -748,11 +746,18 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     let memberId = myId;
     let isRequested = false;
     let approverId = null;
+    let isAll = false;
 
+    const isTeamWide = /팀\s*전체|전체\s*회식|전체\s*회의|전체\s*미팅|전체\s*워크숍|전원/i.test(raw);
     const isDelegatedToDaum = myId !== 'daum' && /정다음|정사원|정사인|다음/i.test(raw) && /한테|에게|맡기고|시키고|잡으라고|요청/i.test(raw);
     const isDelegatedToYoonhee = (myId !== 'sh' && myId !== 'yoonhee') && /정윤희|정부장/i.test(raw) && /한테|에게|맡기고|시키고|부탁|요청/i.test(raw) && !/정부장\s*브리핑|정부장이랑/i.test(raw);
 
-    if (isDelegatedToDaum) {
+    if (isTeamWide) {
+      isAll = true;
+      isRequested = true;
+      memberId = myId;
+      approverId = null;
+    } else if (isDelegatedToDaum) {
       memberId = 'daum';
       isRequested = true;
       approverId = 'daum';
@@ -763,13 +768,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     } else if (/반차|연차|휴가|병가/i.test(raw)) {
       memberId = myId;
       isRequested = true;
-      if (/조상무|상무님/i.test(raw)) {
-        approverId = 'sangmoo';
-      } else if (/정부장|정윤희/i.test(raw)) {
-        approverId = 'sh';
-      } else {
-        approverId = (myId === 'sh' || myId === 'yoonhee') ? 'sangmoo' : 'sh';
-      }
+      approverId = 'sangmoo'; // 모든 휴가는 항상 조상무 상무 결재
     } else {
       // Normal personal task of the current user
       memberId = myId;
@@ -842,7 +841,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       memberId,
       isRequested,
       approverId,
-      isAll: false,
+      isAll,
       isIssue: isItemIssue,
       description: ''
     });
@@ -1373,6 +1372,40 @@ const StyledSelect = ({ value, onChange, options = [], disabled = false, width =
 export default function App() {
   const slot = getTimeSlot();
 
+  // Page Routing View State ('dashboard' | 'sync')
+  const [currentView, setCurrentView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/sync' || hash === '#/sync' || hash === '#sync') {
+        return 'sync';
+      }
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/sync' || hash === '#/sync' || hash === '#sync') {
+        setCurrentView('sync');
+      } else {
+        setCurrentView('dashboard');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToView = (view) => {
+    setCurrentView(view);
+    if (typeof window !== 'undefined' && window.history) {
+      const newPath = view === 'sync' ? '/sync' : '/dashboard';
+      window.history.pushState({}, '', newPath);
+    }
+  };
+
   // Auth States
   const [user, setUser] = useState(null);
   const [authEmailId, setAuthEmailId] = useState('');
@@ -1562,23 +1595,12 @@ export default function App() {
     // An assigned worker cannot be the approver of their own task
     if (sched.memberId === ME.id || (sched.memberIds && sched.memberIds.includes(ME.id))) return false;
 
-    // Only formal leave/vacation/expense approval requests where someone else requested and ME is the manager
-    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|비용s*신청/i.test(sched.title || '');
+    // Only formal leave/vacation/expense approval requests
+    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|비용\s*신청/i.test(sched.title || '');
     if (!isLeaveOrFormalApproval) return false;
 
-    if (sched.approverId) {
-      return sched.approverId === ME.id || (ME.id === 'sh' && sched.approverId === 'yoonhee');
-    }
-
-    if (ME.id === 'sangmoo' || ME.name === '조상무') {
-      return (sched.requesterId === 'sh' || sched.requesterId === 'yoonhee' || sched.memberId === 'sh' || sched.memberId === 'yoonhee');
-    }
-
-    if (ME.id === 'sh' || ME.name === '정윤희') {
-      return sched.requesterId !== 'sh' && sched.requesterId !== 'yoonhee' && sched.memberId !== 'sh' && sched.memberId !== 'yoonhee';
-    }
-
-    return false;
+    // 모든 휴가는 조상무(sangmoo)만 결재!
+    return ME.id === 'sangmoo' || ME.name === '조상무';
   };
 
     const getRejecterMember = (sched) => {
@@ -3512,22 +3534,12 @@ export default function App() {
           let schedApproverId = null;
 
           if (isPersonalLeave) {
-            // 1) Personal Leave / Vacation (연차, 반차, 휴가)
+            // 1) Personal Leave / Vacation (연차, 반차, 휴가) - 모든 휴가는 항상 조상무 상무 결재
             assignedMemberId = ME.id;
             assignedMemberIds = [ME.id];
             isSelf = true;
             schedStatus = 'requested';
-            // Check explicit approver mention in original text or parsed result
-            if (/조상무|상무님/i.test(text)) {
-              schedApproverId = 'sangmoo';
-            } else if (/정부장|정윤희/i.test(text) && !/정부장\s*브리핑|정부장이랑/i.test(text)) {
-              schedApproverId = 'sh';
-            } else if (parsed.approverId && parsed.approverId !== ME.id) {
-              schedApproverId = parsed.approverId;
-            } else {
-              // Default by role: 사원(daum) → 부장(sh), 부장(sh) → 상무(sangmoo)
-              schedApproverId = (ME.id === 'daum') ? 'sh' : 'sangmoo';
-            }
+            schedApproverId = 'sangmoo';
           } else if (isDelegatedToDaum) {
             // 2) Task delegated to Jung Daeum (정다음 사원)
             assignedMemberId = 'daum';
@@ -3543,21 +3555,21 @@ export default function App() {
             schedStatus = 'requested';
             schedApproverId = 'sh';
           } else if (parsed.isAll) {
-            // 4) All team members
+            // 4) All team members (팀 전체 일정 / 회식 / 전체 회의 등 - 팀원들의 수락을 받도록 requested 상태로 생성)
             assignedMemberIds = activeTeam.map(m => m.id);
             assignedMemberId = ME.id;
-            isSelf = true;
-            schedStatus = 'accepted';
+            isSelf = false;
+            schedStatus = 'requested';
             schedApproverId = null;
           } else if (parsed.memberId && parsed.memberId !== ME.id) {
-            // 5) Explicitly delegated to another colleague
+            // 5) Explicitly delegated to another colleague (타인 배정 일정은 항상 수락 대기)
             assignedMemberId = parsed.memberId;
             assignedMemberIds = [parsed.memberId];
             isSelf = false;
-            schedStatus = parsed.isRequested ? 'requested' : 'accepted';
-            schedApproverId = parsed.isRequested ? parsed.memberId : null;
+            schedStatus = 'requested';
+            schedApproverId = parsed.memberId;
           } else {
-            // 6) Normal personal schedule of the logged-in user (확정 업무)
+            // 6) Normal personal schedule of the logged-in user (본인 개인 업무만 확정)
             assignedMemberId = ME.id;
             assignedMemberIds = [ME.id];
             isSelf = true;
@@ -3823,6 +3835,43 @@ export default function App() {
     if (ta) {
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+    }
+  };
+
+  const handleDashboardAddSchedule = (text, user) => {
+    const actingUser = user || ME;
+    const parsedList = parseMessageToSchedules(text, selectedDate, TEAM, currentYear, currentMonth, actingUser);
+    if (parsedList && parsedList.length > 0) {
+      const newItems = parsedList.map((p, idx) => {
+        const isVac = /반차|연차|휴가|병가/i.test(p.title || '');
+        const isIss = /이슈|에러|장애|오류|버그|디버깅/i.test(p.title || '') || p.isIssue;
+        return {
+          id: `sched_dash_${Date.now()}_${idx}`,
+          title: p.title,
+          date: p.date || selectedDate,
+          month: p.month || currentMonth,
+          year: p.year || currentYear,
+          startHour: p.startHour,
+          endHour: p.endHour,
+          memberId: p.memberId || actingUser.id,
+          memberIds: p.memberIds || [p.memberId || actingUser.id],
+          isRequested: p.isRequested || false,
+          approverId: p.approverId || (isVac ? 'sangmoo' : null),
+          status: p.isRequested ? 'requested' : 'accepted',
+          category: isVac ? '휴가' : isIss ? '이슈' : '일반',
+          color: isIss ? 'red' : isVac ? 'orange' : (p.color || 'purple'),
+          description: text,
+          createdAt: new Date().toISOString()
+        };
+      });
+
+      setSchedules(prev => {
+        const next = [...prev, ...newItems];
+        try {
+          localStorage.setItem('zal_schedules', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
     }
   };
 
@@ -4712,9 +4761,71 @@ export default function App() {
   }
 
   return (
-    <div className="app-layout">
-      {/* ──── LEFT COLLAPSIBLE AI DRAWER ─────────────────── */}
-      <div className={`chat-drawer ${isDrawerOpen ? '' : 'closed'}`}>
+    <div className="app-layout" style={{ display: 'flex', flexDirection: 'row', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#ffffff' }}>
+      
+      {/* ──── LEFT SLIM NAVIGATION RAIL (56px) ──── */}
+      <LeftNavRail currentView={currentView} onNavigate={navigateToView} />
+
+      {/* ──── MAIN VIEW AREA: DASHBOARD VIEW ──── */}
+      {currentView === 'dashboard' && (
+        <Dashboard
+          currentUser={ME}
+          displayUser={displayUser}
+          parsedUser={parsedUser}
+          teamMembers={TEAM}
+          headerSelectedProject={headerSelectedProject}
+          onSelectProject={setHeaderSelectedProject}
+          schedules={schedules}
+          onAddSchedule={handleDashboardAddSchedule}
+          onNavigateToSync={() => navigateToView('sync')}
+          onSwitchUser={(tm) => {
+            setVirtualUser(tm);
+            showLayerAlert(`${tm.name} ${tm.role || ''}(으)로 계정이 전환되었습니다.`, '계정 전환', 'success');
+          }}
+          onLogout={() => {
+            if (isConfigured) {
+              handleLogOut();
+            } else {
+              showLayerAlert('로그아웃 되었습니다.', '알림', 'info');
+            }
+          }}
+          onResetData={() => {
+            showLayerConfirm(
+              '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
+              '데이터 초기화 확인',
+              async () => {
+                const nowTs = Date.now().toString();
+                localStorage.setItem('zal_reset_timestamp', nowTs);
+                localStorage.setItem('zal_schedules', JSON.stringify([]));
+                Object.keys(localStorage).forEach(key => {
+                  if (key.startsWith('zal_messages')) {
+                    localStorage.removeItem(key);
+                  }
+                });
+                setSchedules([]);
+                setShowPreviousMessages(false);
+                setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+
+                if (isConfigured) {
+                  try {
+                    await appwriteService.setGlobalResetMarker();
+                    await appwriteService.clearSchedules();
+                    await appwriteService.clearMessages();
+                  } catch (err) {
+                    console.error("Remote clear error:", err);
+                  }
+                }
+                showLayerAlert('모든 데이터가 성공적으로 초기화되었습니다.', '초기화 완료', 'success');
+              }
+            );
+          }}
+        />
+      )}
+
+      {/* ──── MAIN VIEW AREA: TIMELINE & AI CHAT SYNC VIEW ──── */}
+      <div className="sync-view-container" style={{ display: currentView === 'sync' ? 'flex' : 'none', flex: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        {/* ──── LEFT COLLAPSIBLE AI DRAWER ─────────────────── */}
+        <div className={`chat-drawer ${isDrawerOpen ? '' : 'closed'}`}>
         <div className="chat-header">
           <div className="chat-header-title" style={{ overflow: 'hidden', height: '100%', display: 'flex', alignItems: 'flex-start', paddingTop: '6px' }}>
             <img src="/bi2.png" alt="BI Logo 2" style={{ height: '58px', width: 'auto', maxHeight: 'none', objectFit: 'contain', objectPosition: 'top left', flexShrink: 0, marginTop: '6px' }} />
@@ -4786,7 +4897,8 @@ export default function App() {
               const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(s.title || '');
               if (isLeave) return true;
               const isReqByMe = s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee');
-              const isAssignedToOther = s.memberId !== ME.id && !(ME.id === 'sh' && s.memberId === 'yoonhee');
+              const isAssignedToOther = (s.memberId !== ME.id && !(ME.id === 'sh' && s.memberId === 'yoonhee')) || 
+                (s.memberIds && s.memberIds.some(id => id !== ME.id && !(ME.id === 'sh' && id === 'yoonhee')));
               return isReqByMe && isAssignedToOther;
             };
 
@@ -4955,18 +5067,44 @@ export default function App() {
                               const isIssueCard = parsed.isIssue || (lines[0] && lines[0].includes('이슈')) || (parsed.rawText && parsed.rawText.includes('이슈'));
 
                               return (
-                                <div key={idx} style={{ 
-                                  padding: '12px 14px', 
-                                  backgroundColor: '#ffffff', 
-                                  borderRadius: '10px',
-                                  border: '1px solid var(--border-color)',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '4px',
-                                  width: '100%',
-                                  boxSizing: 'border-box',
-                                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-                                }}>
+                                <div 
+                                  key={idx} 
+                                  onClick={(e) => {
+                                    if (matchedSchedule) {
+                                      openDetailModal(matchedSchedule);
+                                    } else {
+                                      const found = schedules.find(s => 
+                                        normalizeStr(s.title) === normalizeStr(parsed.title) &&
+                                        (!parsed.dates || parsed.dates.length === 0 || parsed.dates.includes(s.date))
+                                      );
+                                      if (found) {
+                                        openDetailModal(found);
+                                      }
+                                    }
+                                  }}
+                                  style={{ 
+                                    padding: '12px 14px', 
+                                    backgroundColor: '#ffffff', 
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#94a3b8';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04)';
+                                  }}
+                                >
                                   <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', marginBottom: '2px' }}>
                                     {isIssueCard ? '이슈' : '일정'} {idx + 1}: "{parsed.title}"
                                   </div>
@@ -5112,7 +5250,10 @@ export default function App() {
                                                return (
                                                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
                                                    <button
-                                                     onClick={() => handleApproveSchedule(matchedSchedule.id)}
+                                                     onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       handleApproveSchedule(matchedSchedule.id);
+                                                     }}
                                                      style={{
                                                        flex: 1,
                                                        padding: '7px 12px',
@@ -5134,7 +5275,10 @@ export default function App() {
                                                      <span>💙 승인</span>
                                                    </button>
                                                    <button
-                                                     onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                                     onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       handleRejectSchedule(matchedSchedule.id);
+                                                     }}
                                                      style={{
                                                        flex: 1,
                                                        padding: '7px 12px',
@@ -5179,7 +5323,8 @@ export default function App() {
                                                         lineHeight: '1.2',
                                                         cursor: 'pointer'
                                                       }}
-                                                      onClick={async () => {
+                                                      onClick={async (e) => {
+                                                        e.stopPropagation();
                                                         if (isConfigured) {
                                                           await appwriteService.deleteSchedule(matchedSchedule.id);
                                                         }
@@ -5211,7 +5356,8 @@ export default function App() {
                                                          lineHeight: '1.2',
                                                          cursor: 'pointer'
                                                        }}
-                                                       onClick={async () => {
+                                                       onClick={async (e) => {
+                                                         e.stopPropagation();
                                                          if (isConfigured) {
                                                            await appwriteService.deleteSchedule(matchedSchedule.id);
                                                          }
@@ -5241,7 +5387,10 @@ export default function App() {
                                                        cursor: 'pointer',
                                                        marginLeft: 'auto'
                                                      }}
-                                                     onClick={() => handleRejectSchedule(matchedSchedule.id)}
+                                                     onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       handleRejectSchedule(matchedSchedule.id);
+                                                     }}
                                                    >
                                                      승인 취소
                                                    </button>
@@ -5257,7 +5406,8 @@ export default function App() {
                                                        fontWeight: '700',
                                                        cursor: 'pointer'
                                                      }}
-                                                     onClick={async () => {
+                                                     onClick={async (e) => {
+                                                       e.stopPropagation();
                                                        if (isConfigured) {
                                                          await appwriteService.deleteSchedule(matchedSchedule.id);
                                                        }
@@ -5568,6 +5718,22 @@ export default function App() {
                 )}
 
                                 {(() => {
+                  const formatCardTime = (ts) => {
+                    if (!ts) return formatTime(new Date());
+                    let d;
+                    if (typeof ts === 'number') {
+                      d = new Date(ts);
+                    } else if (typeof ts === 'string') {
+                      d = new Date(ts);
+                      if (isNaN(d.getTime())) {
+                        const num = parseInt(ts.replace(/\D/g, ''), 10);
+                        if (!isNaN(num) && num > 1000000000000) d = new Date(num);
+                      }
+                    }
+                    if (!d || isNaN(d.getTime()) || d.getTime() <= 0) return formatTime(new Date());
+                    return formatTime(d);
+                  };
+
                   const getSafeItemTs = (item) => {
                     if (!item) return 0;
 
@@ -5575,37 +5741,32 @@ export default function App() {
                     if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     if (item.data && item.data.statusUpdatedAt) return item.data.statusUpdatedAt;
 
-                    // 2) 실제 요청/생성 일시 (createdAt)
-                    const cAt = item.createdAt || item.data?.createdAt;
+                    // 2) 실제 요청/생성 일시 (createdAt / $createdAt)
+                    const cAt = item.createdAt || item.$createdAt || item.data?.createdAt || item.data?.$createdAt;
                     if (cAt) {
-                      const t = new Date(cAt).getTime();
+                      const t = typeof cAt === 'number' ? cAt : new Date(cAt).getTime();
                       if (!isNaN(t) && t > 0) return t;
                     }
 
-                    // 3) time 문자열 (예: "11:13" 또는 "09:30")
+                    // 3) ID에서 s_1740... 또는 13자리 밀리초 타임스탬프 추출
+                    const rawId = item.id || item.data?.id || item.$id || item.data?.$id;
+                    const idStr = String(rawId || '');
+                    const sMatch = idStr.match(/s_(\d{13})/);
+                    if (sMatch) {
+                      const parsedTs = parseInt(sMatch[1], 10);
+                      if (!isNaN(parsedTs) && parsedTs > 0) return parsedTs;
+                    }
+                    if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
+                    const numId = parseInt(idStr.replace(/\D/g, ''), 10);
+                    if (!isNaN(numId) && numId > 1000000000000) return numId;
+
+                    // 4) time 문자열 (예: "11:13" 또는 "09:30")
                     const timeStr = item.time || item.data?.time;
                     if (timeStr && /^\d{1,2}:\d{2}/.test(timeStr)) {
                       const [hh, mm] = timeStr.split(':').map(n => parseInt(n, 10));
                       const d = new Date();
                       d.setHours(hh, mm, 0, 0);
                       return d.getTime();
-                    }
-
-                    // 4) ID 기반 타임스탬프 (메시지 등의 13자리 밀리초 ID)
-                    const rawId = item.id || item.data?.id;
-                    if (typeof rawId === 'number' && rawId > 1000000000000) return rawId;
-                    const numId = parseInt(String(rawId || '').replace(/\D/g, ''), 10);
-                    if (!isNaN(numId) && numId > 1000000000000) return numId;
-
-                    // 5) 타임라인 startHour (createdAt 정보가 아예 없는 경우 최후 수단)
-                    const sHour = item.startHour !== undefined ? item.startHour : item.data?.startHour;
-                    if (sHour !== undefined && typeof sHour === 'number') {
-                      const y = item.year || item.data?.year || new Date().getFullYear();
-                      const m = item.month || item.data?.month || (new Date().getMonth() + 1);
-                      const dNum = item.date || item.data?.date || new Date().getDate();
-                      const hr = Math.floor(sHour);
-                      const min = Math.round((sHour % 1) * 60);
-                      return new Date(y, m - 1, dNum, hr, min, 0, 0).getTime();
                     }
 
                     return 0;
@@ -5643,14 +5804,8 @@ export default function App() {
 
                   const getCardTs = (item) => {
                     if (!item) return 0;
-                    const id = String(item.id || item.$id || '');
+                    const id = String(item.id || item.$id || item.data?.id || item.data?.$id || '');
                     if (scheduleToMsgTs[id]) return scheduleToMsgTs[id];
-                    const cAt = item.createdAt || item.data?.createdAt;
-                    if (cAt) {
-                      const t = new Date(cAt).getTime();
-                      if (!isNaN(t) && t > 0) return t;
-                    }
-                    if (item.statusUpdatedAt) return item.statusUpdatedAt;
                     return getSafeItemTs(item);
                   };
 
@@ -5723,6 +5878,7 @@ export default function App() {
                             <div 
                               id={'card_' + pItem.id}
                               data-card-title={pItem.title}
+                              onClick={() => openDetailModal(pItem)}
                               style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid var(--border-color)',
@@ -5733,7 +5889,17 @@ export default function App() {
                                 gap: '4px',
                                 width: '100%',
                                 boxSizing: 'border-box',
-                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#94a3b8';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04)';
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
@@ -5780,7 +5946,10 @@ export default function App() {
                                 {pItem.status === 'requested' ? (
                                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
-                                      onClick={() => handleRejectSchedule(pItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectSchedule(pItem.id);
+                                      }}
                                       style={{
                                         padding: '7px 14px',
                                         fontSize: '12.5px',
@@ -5800,7 +5969,10 @@ export default function App() {
                                       요청반려
                                     </button>
                                     <button
-                                      onClick={() => handleApproveSchedule(pItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleApproveSchedule(pItem.id);
+                                      }}
                                       style={{
                                         padding: '7px 14px',
                                         fontSize: '12.5px',
@@ -5821,7 +5993,7 @@ export default function App() {
                                     </button>
                                   </div>
                                 ) : pItem.status === 'accepted' ? (
-                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'gap', gap: '6px' }}>
                                     <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
                                       🎉 승인하였습니다
                                     </span>
@@ -5838,7 +6010,10 @@ export default function App() {
                                         cursor: 'pointer',
                                         lineHeight: '1.2'
                                       }}
-                                      onClick={() => handleRejectSchedule(pItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectSchedule(pItem.id);
+                                      }}
                                     >
                                       승인 취소
                                     </button>
@@ -5862,7 +6037,10 @@ export default function App() {
                                         lineHeight: '1.2',
                                         transition: 'all 0.15s ease'
                                       }}
-                                      onClick={() => handleApproveSchedule(pItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleApproveSchedule(pItem.id);
+                                      }}
                                     >
                                       재승인
                                     </button>
@@ -5873,7 +6051,7 @@ export default function App() {
                           </div>
                           <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
                             <span className="chat-meta-sender">AI 잘됨이</span>
-                            <span className="chat-meta-time">{formatTime(new Date(item.createdAt))}</span>
+                            <span className="chat-meta-time">{formatCardTime(item.createdAt)}</span>
                           </div>
                         </div>
                       );
@@ -5895,6 +6073,7 @@ export default function App() {
                             <div 
                               id={'card_' + tItem.id}
                               data-card-title={tItem.title}
+                              onClick={() => openDetailModal(tItem)}
                               style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid var(--border-color)',
@@ -5905,7 +6084,17 @@ export default function App() {
                                 gap: '4px',
                                 width: '100%',
                                 boxSizing: 'border-box',
-                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#94a3b8';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04)';
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
@@ -5952,7 +6141,10 @@ export default function App() {
                                 {tItem.status === 'requested' ? (
                                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
-                                      onClick={() => handleRejectSchedule(tItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectSchedule(tItem.id);
+                                      }}
                                       style={{
                                         padding: '7px 14px',
                                         fontSize: '12.5px',
@@ -5972,7 +6164,10 @@ export default function App() {
                                       요청반려
                                     </button>
                                     <button
-                                      onClick={() => handleAcceptSchedule(tItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAcceptSchedule(tItem.id);
+                                      }}
                                       style={{
                                         padding: '7px 14px',
                                         fontSize: '12.5px',
@@ -6009,7 +6204,10 @@ export default function App() {
                                         marginLeft: 'auto',
                                         cursor: 'pointer'
                                       }}
-                                      onClick={() => handleRejectSchedule(tItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectSchedule(tItem.id);
+                                      }}
                                     >
                                       수락 취소
                                     </button>
@@ -6032,7 +6230,10 @@ export default function App() {
                                         cursor: 'pointer',
                                         transition: 'all 0.15s ease'
                                       }}
-                                      onClick={() => handleAcceptSchedule(tItem.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAcceptSchedule(tItem.id);
+                                      }}
                                     >
                                       재수락
                                     </button>
@@ -6043,7 +6244,7 @@ export default function App() {
                           </div>
                           <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
                             <span className="chat-meta-sender">AI 잘됨이</span>
-                            <span className="chat-meta-time">{formatTime(new Date(item.createdAt))}</span>
+                            <span className="chat-meta-time">{formatCardTime(item.createdAt)}</span>
                           </div>
                         </div>
                       );
@@ -6065,6 +6266,9 @@ export default function App() {
                               {rejecterMember.name}님이 {isLeave ? '결재를' : '업무 요청을'} 반려하셨습니다.{reasonText && ` (사유: ${reasonText})`}
                             </div>
                             <div 
+                              id={'card_' + rItem.id}
+                              data-card-title={rItem.title}
+                              onClick={() => openDetailModal(rItem)}
                               style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid var(--border-color)',
@@ -6075,7 +6279,17 @@ export default function App() {
                                 gap: '4px',
                                 width: '100%',
                                 boxSizing: 'border-box',
-                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#94a3b8';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04)';
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
@@ -6132,7 +6346,10 @@ export default function App() {
                                 </span>
                                 <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
                                   <button
-                                    onClick={() => handleCancelSchedule(rItem.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCancelSchedule(rItem.id);
+                                    }}
                                     style={{
                                       padding: '5px 12px',
                                       fontSize: '12px',
@@ -6147,7 +6364,10 @@ export default function App() {
                                     {isLeave ? '신청취소' : '요청취소'}
                                   </button>
                                   <button
-                                    onClick={() => handleResubmitSchedule(rItem.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleResubmitSchedule(rItem.id);
+                                    }}
                                     style={{
                                       padding: '5px 12px',
                                       fontSize: '12px',
@@ -6167,7 +6387,7 @@ export default function App() {
                           </div>
                           <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
                             <span className="chat-meta-sender">AI 잘됨이</span>
-                            <span className="chat-meta-time">{formatTime(new Date(item.createdAt))}</span>
+                            <span className="chat-meta-time">{formatCardTime(item.createdAt)}</span>
                           </div>
                         </div>
                       );
@@ -6190,6 +6410,9 @@ export default function App() {
                               {actualAcceptor.name}님이 {isLeave ? '결재를' : '업무 요청을'} 수락하셨습니다.
                             </div>
                             <div 
+                              id={'card_' + aItem.id}
+                              data-card-title={aItem.title}
+                              onClick={() => openDetailModal(aItem)}
                               style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid #a7f3d0',
@@ -6200,7 +6423,17 @@ export default function App() {
                                 gap: '4px',
                                 width: '100%',
                                 boxSizing: 'border-box',
-                                boxShadow: '0 1px 3px rgba(16, 185, 129, 0.04)'
+                                boxShadow: '0 1px 3px rgba(16, 185, 129, 0.04)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#34d399';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.12)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#a7f3d0';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(16, 185, 129, 0.04)';
                               }}
                             >
                               <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a', marginBottom: '2px' }}>
@@ -6238,7 +6471,10 @@ export default function App() {
                                   🎉 {isLeave ? `승인 완료 (${approverMember.name} ${approverMember.role} 승인)` : `수락 완료 (${actualAcceptor.name} ${actualAcceptor.role || '사원'} 수락)`}
                                 </span>
                                 <button
-                                  onClick={() => handleCancelSchedule(aItem.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelSchedule(aItem.id);
+                                  }}
                                   style={{
                                     padding: '7px 14px',
                                     fontSize: '12.5px',
@@ -6259,7 +6495,7 @@ export default function App() {
                           </div>
                           <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
                             <span className="chat-meta-sender">AI 잘됨이</span>
-                            <span className="chat-meta-time">{formatTime(new Date(item.createdAt))}</span>
+                            <span className="chat-meta-time">{formatCardTime(item.createdAt)}</span>
                           </div>
                         </div>
                       );
@@ -8083,6 +8319,7 @@ export default function App() {
           </div>
         </div>
       </main>
+      </div>
 
       {/* ──── ADD SCHEDULE MODAL ─────────────────── */}
       {isModalOpen && (

@@ -147,7 +147,7 @@ export const appwriteService = {
         requesterId: schedule.requesterId || '',
       };
       const response = await databases.createDocument(databaseId, schedulesCollectionId, ID.unique(), data, ['read("any")', 'write("any")']);
-      return { ...schedule, id: response.$id };
+      return { ...schedule, id: response.$id, createdAt: response.$createdAt || schedule.createdAt || new Date().toISOString() };
     } catch (e) {
       console.error('Appwrite failed to create schedule', e);
       return null;

@@ -1613,3 +1613,39 @@ select:disabled, .modal-select:disabled, .custom-select:disabled {
     transform: translateY(0) scale(1);
   }
 }
+
+/* ===========================
+   Dashboard Specific Styles
+========================== */
+.global-top-header {
+  user-select: none;
+}
+
+.dashboard-root {
+  background-color: #ffffff;
+}
+
+.dashboard-root::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-root::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.dashboard-root::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+.dashboard-root::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-container {
+    grid-template-columns: 1fr !important;
+    padding: 16px 20px !important;
+    gap: 24px !important;
+  }
+}

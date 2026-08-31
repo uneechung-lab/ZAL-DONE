@@ -128,20 +128,7 @@ Values for "schedules" fields:
       1) Look up the EXACT date from the Calendar Cheat Sheet above for that month.
       2) Find the N-th date that falls on that specific [요일].
       3) FOR EXAMPLE: In 2026년 9월, 1일 is 화요일. So "9월 첫번째 화요일" is 9월 1일 (date: 1)! Do NOT calculate 9월 2일 (which is 수요일)!
-      4) For "9월 첫번째 수요일": 9월 2일 (date: 2).
-      5) For "9월 두번째 화요일": 9월 8일 (date: 8).
-    - "다음주 [요일]" (next week [weekday]) or "[요일]" (weekday): Verify relative day calculations strictly based on today (${year}.${monthStr}.${todayDate}).
-- "startHour" (number): Start time (24h format, e.g. 9.0).
-  * CRITICAL HALF-DAY & LEAVE TIME & ASSIGNEE RULES (MUST FOLLOW STRICTLY):
-    1) "오후 반차" (Afternoon Half-day Leave): MUST set startHour: 14.0, endHour: 18.0 (14:00 ~ 18:00).
-    2) "오전 반차" (Morning Half-day Leave): MUST set startHour: 9.0, endHour: 14.0 (09:00 ~ 14:00).
-    3) "반차" (unspecified half-day): Default to startHour: 14.0, endHour: 18.0 unless "오전" is explicitly specified.
-    4) "연차", "휴가", "병가" (Full-day leave): MUST set startHour: 9.0, endHour: 18.0 (09:00 ~ 18:00).
-    5) LEAVE & EXPENSE / APPROVAL REQUEST RULES:
-       For any leave/vacation ("연차", "반차", "휴가", "병가") or approval request ("신청", "식대 신청", "야근 신청", "승인 요청", "비용 신청", "보고서 결재"):
-       - "memberId" MUST ALWAYS BE the applicant user "${currentUser?.id || 'sh'}"!
-       - The schedule belongs to the applicant's calendar, NEVER to the manager/approver!
-       - "approverId" MUST BE the target approver (e.g. if requesting to 정윤희/정부장 -> "sh", if requesting to 조상무/상무님 -> "sangmoo", if unspecified and applicant is "daum" -> "sh", if applicant is "sh" -> "sangmoo").
+      4) For "9월 첫번째 수요일": 9월 2일 (        - "approverId" MUST ALWAYS BE "sangmoo" (조상무 상무) for all leaves ("연차", "오후 반차", "오전 반차", "반차", "휴가", "병가"). All leave approvals are exclusively handled by 조상무 상무.
 - "endHour" (number): End time (24h format, e.g. 18.0).
 - "memberId" (string): Assigned member ID. CRITICAL MEMBER ASSIGNMENT & ALIAS RULES:
   1) For approval/leave requests ("신청", "승인", "반차", "연차"), ALWAYS set memberId to "${currentUser?.id || 'sh'}".
@@ -151,11 +138,24 @@ Values for "schedules" fields:
      - "정다음", "정사원", "정사인", "다음", "정사원한테", "정사인한테", "정다음한테" -> "daum"
      - "정윤희", "정부장", "윤희", "정부장한테" -> "sh" (정윤희 부장)
      - "조상무", "상무님", "조상무님", "상무님한테" -> "sangmoo" (조상무 상무)
-- "isAll" (boolean): true if for all members.
+- "isAll" (boolean): true if for all team members (e.g. "팀 전체 회식", "전체 회의", "전체 워크숍").
 - "isRequested" (boolean): Set to true if:
   1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청", "신청", "식대 신청").
-  2) The current user is assigning/delegating a task or meeting request to another colleague (e.g. "정사원한테 로그 분석 맡기고" -> isRequested: true, assigned to "daum").
-  3) Otherwise, for personal work tasks performed by the logged-in user, set "isRequested": false.
+  2) The current user is assigning/delegating a task, meeting, dinner, or schedule to another colleague or team-wide (e.g. "정사원한테 로그 분석 맡기고", "팀 전체 회식", "전체 미팅" -> isRequested: true).
+  3) ANY schedule that involves other members (delegation or team-wide) MUST require recipient acceptance, so set "isRequested": true.
+  4) ONLY for strictly personal solo tasks performed alone by the logged-in user, set "isRequested": false.
+- "approverId" (string): Target approver ID. For ALL leave/vacation requests ("연차", "반차", "휴가", "병가"), approverId MUST ALWAYS BE "sangmoo". For delegated tasks, approverId is the assigned colleague.�/정다음한테 로그 분석 맡기고" -> memberId: "daum"), set "memberId" to that target team member's ID!
+  3) Otherwise, default "memberId" to the current user "${currentUser?.name || '현재 사용자'}" (ID: "${currentUser?.id || 'sh'}").
+  4) Korean Team Aliases & IDs:
+     - "정다음", "정사원", "정사인", "다음", "정사원한테", "정사인한테", "정다음한테" -> "daum"
+     - "정윤희", "정부장", "윤희", "정부장한테" -> "sh" (정윤희 부장)
+     - "조상무", "상무님", "조상무님", "상무님한테" -> "sangmoo" (조상무 상무)
+- "isAll" (boolean): true if for all team members (e.g. "팀 전체 회식", "전체 회의", "전체 워크숍").
+- "isRequested" (boolean): Set to true if:
+  1) The schedule explicitly requires manager approval ("연차", "오후 반차", "휴가", "병가", "승인 요청", "신청", "식대 신청").
+  2) The current user is assigning/delegating a task, meeting, dinner, or schedule to another colleague or team-wide (e.g. "정사원한테 로그 분석 맡기고", "팀 전체 회식", "전체 미팅" -> isRequested: true).
+  3) ANY schedule that involves other members (delegation or team-wide) MUST require recipient acceptance, so set "isRequested": true.
+  4) ONLY for strictly personal solo tasks performed alone by the logged-in user, set "isRequested": false.
 - "approverId" (string): Target approver ID (e.g. if applicant requests to 정윤희/정부장 -> "sh", if applicant requests to 조상무/상무님 -> "sangmoo"). Default: for "daum" -> "sh", for "sh" -> "sangmoo".
 - "isIssue" (boolean): CRITICAL ISSUE CLASSIFICATION RULE:
   Set to true ONLY if the specific task itself is an unexpected incident, system error, bug, or emergency debugging ("긴급 디버깅", "장애 파기", "이슈 처리", "버그 수정").

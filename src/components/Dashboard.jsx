@@ -881,14 +881,14 @@ export default function Dashboard({
           gap: '24px',
           flexWrap: 'wrap'
         }}>
-          {/* Left Greeting, Avatar, Subtext & Quick Action Tags */}
-          <div style={{ minWidth: '320px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Left Greeting, Avatar, Inline Input & Quick Action Tags */}
+          <div style={{ minWidth: '380px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
             {/* Top: Avatar + Name Greeting */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                width: '38px',
-                height: '38px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: currentUser?.color || '#000000',
@@ -903,7 +903,7 @@ export default function Dashboard({
                 />
               </div>
               <h2 style={{
-                fontSize: '20px',
+                fontSize: '19px',
                 fontWeight: '800',
                 color: '#0f172a',
                 letterSpacing: '-0.4px',
@@ -913,12 +913,67 @@ export default function Dashboard({
               </h2>
             </div>
 
-            {/* Subtext Prompt */}
-            <div style={{ fontSize: '13.5px', color: '#475569', fontWeight: '600', letterSpacing: '-0.2px' }}>
-              오늘의 모닝싱크를 작성하세요!
+            {/* Middle: Integrated Quick Sync Input Box */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              border: '1.5px solid #cbd5e1',
+              padding: '4px 6px 4px 16px',
+              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+              transition: 'border-color 0.15s ease',
+              maxWidth: '520px'
+            }}>
+              <input
+                ref={composerTextareaRef}
+                type="text"
+                value={composerText}
+                onChange={(e) => setComposerText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleComposerSubmit(e);
+                  }
+                }}
+                placeholder="오늘의 모닝싱크를 작성하세요!"
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '13.5px',
+                  fontWeight: '500',
+                  color: '#0f172a',
+                  backgroundColor: 'transparent'
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleComposerSubmit}
+                disabled={!composerText.trim() || isSubmitting}
+                style={{
+                  padding: '6px 14px',
+                  backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
+                  color: composerText.trim() ? '#ffffff' : '#94a3b8',
+                  border: 'none',
+                  borderRadius: '18px',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  cursor: composerText.trim() ? 'pointer' : 'not-allowed',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>등록</span>
+              </button>
             </div>
 
-            {/* Quick Hashtag Buttons */}
+            {/* Bottom: Quick Hashtag Buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               {[
                 { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
@@ -934,11 +989,11 @@ export default function Dashboard({
                     composerTextareaRef.current?.focus();
                   }}
                   style={{
-                    padding: '4px 10px',
+                    padding: '3px 9px',
                     backgroundColor: '#ffffff',
                     border: '1px solid #cbd5e1',
-                    borderRadius: '14px',
-                    fontSize: '12px',
+                    borderRadius: '12px',
+                    fontSize: '11.5px',
                     fontWeight: '700',
                     color: '#334155',
                     cursor: 'pointer',
@@ -1130,156 +1185,9 @@ export default function Dashboard({
         boxSizing: 'border-box'
       }}>
         {/* ════════ LEFT COLUMN: FEED STREAM ════════ */}
-        <section className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <section className="dashboard-feed-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          {/* 1. Quick Sync Composer (Threads / Instagram Style) */}
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
-            padding: '18px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '14px',
-            transition: 'border-color 0.2s ease'
-          }}>
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              {/* User Avatar */}
-              <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                backgroundColor: currentUser?.color || '#000000',
-                flexShrink: 0,
-                border: '1.5px solid #f1f5f9'
-              }}>
-                <img
-                  src={currentUser?.avatarPic || '/pic1_thumb.png'}
-                  alt={currentUser?.name || 'User'}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-
-              {/* Text Input Area */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a' }}>
-                    {currentUser?.name || '사용자'} {currentUser?.role || ''}
-                  </span>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#6366f1',
-                    backgroundColor: '#eef2ff',
-                    padding: '2px 7px',
-                    borderRadius: '10px'
-                  }}>
-                    모닝 싱크 작성
-                  </span>
-                </div>
-
-                <textarea
-                  ref={composerTextareaRef}
-                  value={composerText}
-                  onChange={(e) => setComposerText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      handleComposerSubmit(e);
-                    }
-                  }}
-                  placeholder="오늘 하루 일정을 편하게 적어보세요 (예: 10시 배포 미팅하고 오후 반차 신청)"
-                  rows={2}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    resize: 'none',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    color: '#1e293b',
-                    fontFamily: 'inherit',
-                    padding: '4px 0'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Quick Action Tag Suggestions & Submit Button */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '10px',
-              borderTop: '1px solid #f1f5f9'
-            }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {[
-                  { label: '#🚨 긴급이슈', tag: '긴급 이슈 대응' },
-                  { label: '#🤝 배포미팅', tag: '배포 미팅 14:00' },
-                  { label: '#🏖️ 오전반차', tag: '오전 반차 신청' },
-                  { label: '#🏖️ 오후반차', tag: '오후 반차 신청' }
-                ].map(item => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => addTagToComposer(item.tag)}
-                    style={{
-                      padding: '3px 9px',
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      fontSize: '11.5px',
-                      fontWeight: '600',
-                      color: '#475569',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f1f5f9';
-                      e.currentTarget.style.borderColor = '#cbd5e1';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleComposerSubmit}
-                disabled={!composerText.trim() || isSubmitting}
-                style={{
-                  padding: '7px 18px',
-                  backgroundColor: composerText.trim() ? '#6366f1' : '#e2e8f0',
-                  color: composerText.trim() ? '#ffffff' : '#94a3b8',
-                  border: 'none',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: composerText.trim() ? 'pointer' : 'not-allowed',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: composerText.trim() ? '0 2px 8px rgba(99, 102, 241, 0.25)' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-                <span>등록</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 3. Feed Cards Stream (Reverse chronological) */}
+          {/* Feed Cards Stream (Reverse chronological) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredFeeds.length === 0 ? (
               <div style={{

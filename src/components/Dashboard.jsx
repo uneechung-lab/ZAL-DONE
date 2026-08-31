@@ -489,9 +489,9 @@ export default function Dashboard({
         });
       }
 
-      // 3. Meetings
+      // 3. Meetings / Conferences
       if (categoryKey === 'all' || categoryKey === 'meeting') {
-        const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.type === 'meeting');
+        const meetingBadges = (feed.aiBadges || []).filter(b => b.category === '미팅' || b.category === '회의' || b.type === 'meeting');
         if (meetingBadges.length > 0) {
           meetingBadges.forEach((b, bIdx) => {
             const snippet = getRelevantSnippet(feed.content, '미팅');
@@ -505,10 +505,10 @@ export default function Dashboard({
               authorColor: feed.authorColor,
               timeDisplay: feed.timeDisplay,
               createdAt: feed.createdAt,
-              category: '미팅',
+              category: '회의',
               title: b.label,
               description: snippet && snippet !== b.label ? snippet : '',
-              badgeText: '🤝 미팅',
+              badgeText: '🤝 회의',
               badgeColor: '#4338ca',
               badgeBg: '#eef2ff',
               badgeBorder: '#c7d2fe',
@@ -527,10 +527,10 @@ export default function Dashboard({
             authorColor: feed.authorColor,
             timeDisplay: feed.timeDisplay,
             createdAt: feed.createdAt,
-            category: '미팅',
+            category: '회의',
             title: snippet,
             description: '',
-            badgeText: '🤝 미팅',
+            badgeText: '🤝 회의',
             badgeColor: '#4338ca',
             badgeBg: '#eef2ff',
             badgeBorder: '#c7d2fe',
@@ -1391,7 +1391,7 @@ export default function Dashboard({
             { key: 'all', label: '전체 피드' },
             { key: 'issue', label: '이슈' },
             { key: 'vacation', label: '요청' },
-            { key: 'meeting', label: '미팅' },
+            { key: 'meeting', label: '회의' },
             { key: 'notice', label: '공지' }
           ].map(tab => {
             const isActive = activeFilter === tab.key;

@@ -1514,20 +1514,48 @@ export default function Dashboard({
               justifyContent: 'space-between',
               backgroundColor: '#ffffff'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '15.5px', fontWeight: '800', color: '#0f172a' }}>
-                  금일 팀 타임라인
-                </span>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: '#6366f1',
-                  backgroundColor: '#eef2ff',
-                  padding: '2px 7px',
-                  borderRadius: '10px'
-                }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    padding: '2px 6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px'
+                  }}
+                  title="이전 날짜"
+                >
+                  &lt;
+                </button>
+                <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
                   8월 31일 (월)
                 </span>
+                <button
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    padding: '2px 6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px'
+                  }}
+                  title="다음 날짜"
+                >
+                  &gt;
+                </button>
               </div>
 
               <button
@@ -1537,7 +1565,7 @@ export default function Dashboard({
                   background: 'none',
                   border: 'none',
                   color: '#6366f1',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: '700',
                   cursor: 'pointer',
                   padding: 0,
@@ -1550,7 +1578,7 @@ export default function Dashboard({
                 onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
                 title="상세 싱크 간트 화면으로 이동"
               >
-                <span>싱크 화면</span>
+                <span>총 7개 일정 등록됨</span>
                 <span>&gt;</span>
               </button>
             </div>
@@ -1723,21 +1751,6 @@ export default function Dashboard({
                   })}
                 </tbody>
               </table>
-            </div>
-
-            {/* Footer Summary Info */}
-            <div style={{
-              padding: '12px 16px',
-              backgroundColor: '#f8fafc',
-              borderTop: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '11.5px',
-              color: '#64748b'
-            }}>
-              <span>총 7개 일정 등록됨</span>
-              <span style={{ fontWeight: '700', color: '#0f172a' }}>점심 12:00 ~ 13:00</span>
             </div>
           </div>
         </aside>

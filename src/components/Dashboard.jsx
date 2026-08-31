@@ -555,7 +555,7 @@ export default function Dashboard({
                 margin: 0,
                 lineHeight: '1.25'
               }}>
-                {(displayUser || currentUser)?.name || '정윤희'}님, 오늘도 좋은 하루되세요.
+                {(displayUser || currentUser)?.name || '정윤희'}님, 잘됨이와 잘되는 하루 :-)
               </h2>
 
               {/* Quick Hashtag Buttons */}

@@ -168,10 +168,15 @@ export default function Dashboard({
       }
       
       const shareUrl = url.toString();
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('🔗 카카오톡/메신저 공유 링크가 복사되었습니다! 카카오톡에 붙여넣으세요.');
+      const authorRoleText = item.authorRole ? ` ${item.authorRole}` : '';
+      const badgeClean = item.badgeText ? ` [${item.badgeText}]` : '';
+      const shareMessage = `[잘먹이] ${item.authorName}${authorRoleText}님의${badgeClean} 항목 공유\n📌 ${item.title}\n👉 바로가기: ${shareUrl}`;
+
+      navigator.clipboard.writeText(shareMessage).then(() => {
+        showToast('🔗 카카오톡/메신저 공유 메시지 및 링크가 복사되었습니다!');
       }).catch(() => {
-        showToast('🔗 공유 링크가 복사되었습니다: ' + shareUrl);
+        navigator.clipboard.writeText(shareUrl);
+        showToast('🔗 공유 링크가 복사되었습니다!');
       });
     } catch (err) {
       console.error('Failed to copy share link:', err);

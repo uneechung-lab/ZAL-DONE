@@ -753,11 +753,11 @@ export default function Dashboard({
                 }}
                 style={{
                   height: '32px',
-                  backgroundColor: '#ffffff',
-                  border: isProjectMenuOpen ? '1.5px solid #000000' : '1.5px solid #cbd5e1',
-                  borderRadius: '10px',
-                  padding: '0 10px 0 12px',
-                  fontSize: '12.5px',
+                  backgroundColor: isProjectMenuOpen ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0 8px 0 6px',
+                  fontSize: '13px',
                   fontWeight: '800',
                   color: '#0f172a',
                   cursor: 'pointer',
@@ -765,20 +765,17 @@ export default function Dashboard({
                   alignItems: 'center',
                   gap: '6px',
                   boxSizing: 'border-box',
-                  transition: 'all 0.15s ease',
-                  userSelect: 'none',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                  transition: 'background-color 0.15s ease',
+                  userSelect: 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (!isProjectMenuOpen) {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                    e.currentTarget.style.borderColor = '#94a3b8';
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isProjectMenuOpen) {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
                 title="프로젝트 선택"

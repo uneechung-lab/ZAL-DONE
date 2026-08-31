@@ -23,87 +23,13 @@ export default function Dashboard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
-  const sanitizeFeeds = (feedList) => {
-    if (!Array.isArray(feedList)) return INITIAL_FEEDS;
-    return feedList.map(f => {
-      const text = f.content || '';
-      const hasRequest = /요청|부탁|신청|컨펌|검토/i.test(text);
-      const hasVacation = /반차|연차|휴가|병가|조퇴/i.test(text);
-      const hasMeeting = /회의|미팅|리뷰|브리핑/i.test(text);
-
-      if ((hasRequest || hasVacation) && (!f.vacationInfo || f.aiBadges?.some(b => b.category === '회의' && b.label?.includes('요청')))) {
-        let targetUserId = 'sh';
-        let targetUserName = '정윤희';
-        let targetUserRole = '부장';
-        if (/조상무|상무/i.test(text)) {
-          targetUserId = 'sangmoo';
-          targetUserName = '조상무';
-          targetUserRole = '상무';
-        } else if (/정다음|다음/i.test(text)) {
-          targetUserId = 'daeum';
-          targetUserName = '정다음';
-          targetUserRole = '사원';
-        } else if (hasVacation) {
-          targetUserId = 'sangmoo';
-          targetUserName = '조상무';
-          targetUserRole = '상무';
-        }
-
-        const reqType = hasVacation 
-          ? (/오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가') 
-          : (hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청'));
-
-        let newAuthorId = f.authorId;
-        let newAuthorName = f.authorName;
-        let newAuthorRole = f.authorRole;
-        let newAvatar = f.authorAvatarPic;
-
-        // If author was mistakenly set as the target, set requester as colleague
-        if (f.authorId === targetUserId && text.includes('한테') || text.includes('에게')) {
-          newAuthorId = targetUserId === 'sh' ? 'daeum' : 'sh';
-          newAuthorName = targetUserId === 'sh' ? '정다음' : '정윤희';
-          newAuthorRole = targetUserId === 'sh' ? '사원' : '부장';
-          newAvatar = targetUserId === 'sh' ? '/pic3_thumb.png' : '/pic1_thumb.png';
-        }
-
-        return {
-          ...f,
-          authorId: newAuthorId,
-          authorName: newAuthorName,
-          authorRole: newAuthorRole,
-          authorAvatarPic: newAvatar,
-          type: 'vacation',
-          aiBadges: [
-            {
-              id: `b_${Date.now()}_mig`,
-              type: 'vacation',
-              label: `📋 ${reqType} (${targetUserName} ${targetUserRole})`,
-              category: '요청'
-            }
-          ],
-          vacationInfo: {
-            type: reqType,
-            date: '2026.08.31',
-            status: f.vacationInfo?.status || 'pending',
-            approverName: targetUserName,
-            approverRole: targetUserRole,
-            targetUserId: targetUserId,
-            requesterId: newAuthorId,
-            requesterName: newAuthorName,
-            approvedAt: f.vacationInfo?.approvedAt || null
-          }
-        };
-      }
-      return f;
-    });
-  };
-
   const [feeds, setFeeds] = useState(() => {
     try {
-      const saved = localStorage.getItem('zal_feeds');
-      return saved ? sanitizeFeeds(JSON.parse(saved)) : INITIAL_FEEDS;
+      localStorage.removeItem('zal_feeds'); // purge old cache
+      const saved = localStorage.getItem('zal_feeds_v2');
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      return INITIAL_FEEDS;
+      return [];
     }
   });
 
@@ -214,7 +140,9 @@ export default function Dashboard({
 
   // Sync feeds to localStorage
   useEffect(() => {
-    localStorage.setItem('zal_feeds', JSON.stringify(feeds));
+    try {
+      localStorage.setItem('zal_feeds_v2', JSON.stringify(feeds));
+    } catch (e) {}
   }, [feeds]);
 
   // Current logged in user is executive approver (조상무)
@@ -562,7 +490,7 @@ export default function Dashboard({
     setFeeds(prev => {
       const next = prev.filter(f => f.id !== feedId);
       try {
-        localStorage.setItem('zal_feeds', JSON.stringify(next));
+        localStorage.setItem('zal_feeds_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });

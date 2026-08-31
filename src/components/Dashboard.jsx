@@ -1981,7 +1981,7 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {/* Right: Badge & Share / Link Copy Button + Edit/Delete if My Post */}
+                    {/* Right: Category Status Badge */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       {item.badgeText && (
                         <span style={{
@@ -1997,224 +1997,48 @@ export default function Dashboard({
                           {item.badgeText}
                         </span>
                       )}
-
-                      {/* Edit Button (Only for My Posts) */}
-                      {(parentFeed.authorId === (currentUser?.id || 'sh') || (currentUser?.name && parentFeed.authorName?.includes(currentUser.name))) && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(parentFeed)}
-                            title="내 글 수정"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '4px 8px',
-                              backgroundColor: '#f8fafc',
-                              color: '#64748b',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#eff6ff';
-                              e.currentTarget.style.color = '#2563eb';
-                              e.currentTarget.style.borderColor = '#bfdbfe';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#f8fafc';
-                              e.currentTarget.style.color = '#64748b';
-                              e.currentTarget.style.borderColor = '#e2e8f0';
-                            }}
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            <span>수정</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteFeed(parentFeed.id)}
-                            title="내 글 삭제"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '4px 8px',
-                              backgroundColor: '#f8fafc',
-                              color: '#ef4444',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#fef2f2';
-                              e.currentTarget.style.color = '#dc2626';
-                              e.currentTarget.style.borderColor = '#fca5a5';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#f8fafc';
-                              e.currentTarget.style.color = '#ef4444';
-                              e.currentTarget.style.borderColor = '#e2e8f0';
-                            }}
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            <span>삭제</span>
-                          </button>
-                        </>
-                      )}
-
-                      {/* Share Link Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleShareCard(item)}
-                        title="카카오톡/메신저 공유 링크 복사"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '4px 8px',
-                          backgroundColor: '#f8fafc',
-                          color: '#64748b',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                          e.currentTarget.style.color = '#2563eb';
-                          e.currentTarget.style.borderColor = '#bfdbfe';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f8fafc';
-                          e.currentTarget.style.color = '#64748b';
-                          e.currentTarget.style.borderColor = '#e2e8f0';
-                        }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="18" cy="5" r="3"></circle>
-                          <circle cx="6" cy="12" r="3"></circle>
-                          <circle cx="18" cy="19" r="3"></circle>
-                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                        </svg>
-                        <span>공유</span>
-                      </button>
                     </div>
                   </div>
 
-                  {/* Main Content Title or Inline Editor */}
-                  {editingFeedId === parentFeed.id ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                      <textarea
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        rows={3}
-                        placeholder="일정/업무 내용을 수정하세요"
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          border: '1.5px solid #2563eb',
-                          fontSize: '13.5px',
-                          fontFamily: 'inherit',
-                          outline: 'none',
-                          resize: 'vertical',
-                          boxSizing: 'border-box',
-                          lineHeight: '1.5',
-                          color: '#0f172a'
-                        }}
-                        autoFocus
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            backgroundColor: '#ffffff',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            color: '#64748b',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          취소
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEdit(parentFeed.id)}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            backgroundColor: '#0f172a',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            color: '#ffffff',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          저장
-                        </button>
-                      </div>
+                  {/* Main Content Title (Click to open Schedule Detail & Edit modal) */}
+                  <div
+                    onClick={() => {
+                      if (onOpenScheduleDetail) {
+                        onOpenScheduleDetail(item);
+                      }
+                    }}
+                    style={{
+                      cursor: onOpenScheduleDetail ? 'pointer' : 'default',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      borderRadius: '8px',
+                      transition: 'opacity 0.15s ease'
+                    }}
+                    title="클릭하여 일정 상세 및 수정 열기"
+                  >
+                    <div style={{
+                      fontSize: '14.5px',
+                      color: '#0f172a',
+                      lineHeight: '1.6',
+                      fontWeight: '700',
+                      letterSpacing: '-0.2px'
+                    }}>
+                      {item.title}
                     </div>
-                  ) : (
-                    <div
-                      onClick={() => {
-                        if (editingFeedId !== parentFeed.id && onOpenScheduleDetail) {
-                          onOpenScheduleDetail(item);
-                        }
-                      }}
-                      style={{
-                        cursor: onOpenScheduleDetail ? 'pointer' : 'default',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        borderRadius: '8px',
-                        transition: 'opacity 0.15s ease'
-                      }}
-                      title="클릭하여 일정 상세 및 수정 열기"
-                    >
-                      <div style={{
-                        fontSize: '14.5px',
-                        color: '#0f172a',
-                        lineHeight: '1.6',
-                        fontWeight: '700',
-                        letterSpacing: '-0.2px'
-                      }}>
-                        {item.title}
-                      </div>
 
-                      {item.description && item.description !== item.title && (
-                        <div style={{
-                          fontSize: '13.5px',
-                          color: '#475569',
-                          lineHeight: '1.55',
-                          whiteSpace: 'pre-wrap',
-                          fontWeight: '500'
-                        }}>
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {item.description && item.description !== item.title && (
+                      <div style={{
+                        fontSize: '13.5px',
+                        color: '#475569',
+                        lineHeight: '1.55',
+                        whiteSpace: 'pre-wrap',
+                        fontWeight: '500'
+                      }}>
+                        {item.description}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
@@ -2418,6 +2242,49 @@ export default function Dashboard({
                       >
                         <span>🔥</span>
                         <span>{parentFeed.cheers}</span>
+                      </button>
+
+                      {/* Share Link Button Placed Next to Like/Cheer */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareCard(item);
+                        }}
+                        title="카카오톡/메신저 공유 링크 복사"
+                        style={{
+                          padding: '5px 10px',
+                          backgroundColor: '#f8fafc',
+                          color: '#64748b',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                          e.currentTarget.style.color = '#2563eb';
+                          e.currentTarget.style.borderColor = '#bfdbfe';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                          e.currentTarget.style.color = '#64748b';
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="18" cy="5" r="3"></circle>
+                          <circle cx="6" cy="12" r="3"></circle>
+                          <circle cx="18" cy="19" r="3"></circle>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>공유</span>
                       </button>
                     </div>
 

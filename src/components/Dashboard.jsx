@@ -1182,13 +1182,11 @@ export default function Dashboard({
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                            {feed.authorId === (currentUser?.id || 'sh') ? `나(${feed.authorRole || '부장'})` : feed.authorName}
+                            {feed.authorId === (currentUser?.id || 'sh') ? '나' : feed.authorName}
                           </span>
-                          {feed.authorId !== (currentUser?.id || 'sh') && (
-                            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
-                              {feed.authorRole}
-                            </span>
-                          )}
+                          <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
+                            {feed.authorRole}
+                          </span>
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '1px', fontWeight: '500' }}>
                           {feed.timeDisplay}
@@ -1477,7 +1475,7 @@ export default function Dashboard({
                                 <img src={c.authorAvatarPic || '/pic2_thumb.png'} alt={c.authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               </div>
                               <span style={{ fontSize: '12px', fontWeight: '800', color: '#0f172a' }}>
-                                {c.authorName}
+                                {c.authorId === (currentUser?.id || 'sh') ? '나' : c.authorName}
                               </span>
                               <span style={{ fontSize: '11px', color: '#64748b' }}>
                                 {c.authorRole}
@@ -1698,11 +1696,8 @@ export default function Dashboard({
                             <img src={m.avatar} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                           <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#1e293b' }}>
-                            {m.id === (currentUser?.id || 'sh') ? (
-                              `나(${m.role})`
-                            ) : (
-                              <>{m.name} <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span></>
-                            )}
+                            {m.id === (currentUser?.id || 'sh') ? '나' : m.name}{' '}
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span>
                           </span>
                         </div>
                       </th>

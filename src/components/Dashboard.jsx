@@ -1526,9 +1526,9 @@ export default function Dashboard({
               borderRadius: '20px',
               fontSize: '12.5px',
               fontWeight: selectedMemberId === 'all' ? '800' : '600',
-              backgroundColor: selectedMemberId === 'all' ? '#f1f5f9' : '#ffffff',
-              color: selectedMemberId === 'all' ? '#000000' : '#64748b',
-              border: selectedMemberId === 'all' ? '1.5px solid #000000' : '1px solid #e2e8f0',
+              backgroundColor: selectedMemberId === 'all' ? '#0f172a' : '#ffffff',
+              color: selectedMemberId === 'all' ? '#ffffff' : '#64748b',
+              border: selectedMemberId === 'all' ? '1px solid #0f172a' : '1px solid #e2e8f0',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
@@ -1567,9 +1567,9 @@ export default function Dashboard({
                   borderRadius: '20px',
                   fontSize: '12.5px',
                   fontWeight: isSelected ? '800' : '600',
-                  backgroundColor: isSelected ? '#f1f5f9' : '#ffffff',
-                  color: isSelected ? '#000000' : '#64748b',
-                  border: isSelected ? '1.5px solid #000000' : '1px solid #e2e8f0',
+                  backgroundColor: isSelected ? '#0f172a' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#64748b',
+                  border: isSelected ? '1px solid #0f172a' : '1px solid #e2e8f0',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}

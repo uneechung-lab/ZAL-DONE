@@ -555,7 +555,7 @@ export default function Dashboard({
                 margin: 0,
                 lineHeight: '1.25'
               }}>
-                {(displayUser || currentUser)?.name || '정윤희'}님, 잘됨이와 잘되는 하루 :-)
+                나(${(displayUser || currentUser)?.role || parsedUser.role || '부장'})님, 잘됨이와 잘되는 하루 :-)
               </h2>
 
               {/* Quick Hashtag Buttons */}
@@ -654,7 +654,7 @@ export default function Dashboard({
                   <img src={(currentUser || displayUser)?.avatarPic || '/pic1_thumb.png'} alt={(currentUser || displayUser)?.name || '정윤희'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
-                  {(currentUser || displayUser)?.name || parsedUser.name || '정윤희'} {(currentUser || displayUser)?.role || parsedUser.role || '부장'}
+                  나(${(currentUser || displayUser)?.role || parsedUser.role || '부장'})
                 </span>
                 <svg
                   width="12"
@@ -721,7 +721,7 @@ export default function Dashboard({
                       }}
                     >
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tm.color || '#6366f1' }}></span>
-                      <span>{tm.name} ({tm.role || '팀원'})</span>
+                      <span>{(currentUser?.id || 'sh') === tm.id ? `나 (${tm.role || '팀원'})` : `${tm.name} (${tm.role || '팀원'})`}</span>
                       {(currentUser?.id || 'sh') === tm.id && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
                     </div>
                   ))}
@@ -1182,11 +1182,13 @@ export default function Dashboard({
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                            {feed.authorName}
+                            {feed.authorId === (currentUser?.id || 'sh') ? `나(${feed.authorRole || '부장'})` : feed.authorName}
                           </span>
-                          <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
-                            {feed.authorRole}
-                          </span>
+                          {feed.authorId !== (currentUser?.id || 'sh') && (
+                            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
+                              {feed.authorRole}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '1px', fontWeight: '500' }}>
                           {feed.timeDisplay}
@@ -1696,7 +1698,11 @@ export default function Dashboard({
                             <img src={m.avatar} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                           <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#1e293b' }}>
-                            {m.name} <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span>
+                            {m.id === (currentUser?.id || 'sh') ? (
+                              `나(${m.role})`
+                            ) : (
+                              <>{m.name} <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span></>
+                            )}
                           </span>
                         </div>
                       </th>

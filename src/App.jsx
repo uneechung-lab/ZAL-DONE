@@ -6974,7 +6974,7 @@ export default function App() {
                   
                   {/* User Name & Role */}
                   <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap' }}>
-                    {displayUser.name}{displayUser.role ? ` ${displayUser.role}` : ''}
+                    나({displayUser.role || ME.role || '부장'})
                   </span>
 
                   {/* Chevron Arrow */}
@@ -7044,7 +7044,7 @@ export default function App() {
                         }}
                       >
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tm.color || '#6366f1' }}></span>
-                        <span>{tm.name} ({tm.role || '팀원'})</span>
+                        <span>{ME.id === tm.id ? `나 (${tm.role || '팀원'})` : `${tm.name} (${tm.role || '팀원'})`}</span>
                         {ME.id === tm.id && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
                       </div>
                     ))}

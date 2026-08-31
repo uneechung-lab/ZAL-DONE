@@ -449,6 +449,40 @@ input:-webkit-autofill:active {
   z-index: 30;
 }
 
+/* ──── Dashboard Masonry Grid Layout ──── */
+.dashboard-masonry-grid {
+  column-count: 3;
+  column-gap: 24px;
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 32px 64px 32px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-masonry-grid {
+    column-count: 2;
+    column-gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-masonry-grid {
+    column-count: 1;
+    padding: 16px 20px 48px 20px;
+  }
+}
+
+.masonry-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 24px;
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Filter Row */
 .filter-row {
   display: flex;

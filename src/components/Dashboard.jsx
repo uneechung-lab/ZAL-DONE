@@ -122,6 +122,18 @@ export default function Dashboard({
   const [expandedCommentFeedIds, setExpandedCommentFeedIds] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [reportModalType, setReportModalType] = useState(null); // 'daily' | 'weekly' | null
+  const [timelineDate, setTimelineDate] = useState(new Date(2026, 7, 31)); // 2026-08-31
+
+  const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일 (${timelineDayNames[timelineDate.getDay()]})`;
+
+  const handlePrevTimelineDate = () => {
+    setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 1));
+  };
+
+  const handleNextTimelineDate = () => {
+    setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1));
+  };
   const [copiedReport, setCopiedReport] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
@@ -361,7 +373,7 @@ export default function Dashboard({
 
   // Mini Gantt Helper: Get timeline blocks for each member for today (08:00 ~ 19:00 = 11 hours)
   // Mini Gantt Helper: Get timeline blocks for each member for today (Soft pastel theme)
-  const memberScheduleMap = {
+  const baseMemberScheduleMap = {
     sh: [
       { title: '주간 기획 회의', start: 10, end: 11.5, bg: '#eef2ff', border: '#c7d2fe', text: '#3730a3', accent: '#6366f1' },
       { title: '화면 퍼블리싱 리뷰', start: 14, end: 15, bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', accent: '#0ea5e9' },
@@ -377,6 +389,40 @@ export default function Dashboard({
       { title: '로그인 핫픽스 배포', start: 16, end: 18, bg: '#fef2f2', border: '#fecaca', text: '#991b1b', accent: '#ef4444' }
     ]
   };
+
+  const getEventsForMemberAndDate = (memberId, dateObj) => {
+    const isBaseDemoDay = dateObj.getFullYear() === 2026 && dateObj.getMonth() === 7 && dateObj.getDate() === 31;
+    const baseEvents = isBaseDemoDay ? (baseMemberScheduleMap[memberId] || []) : [];
+
+    const dynamicEvents = (schedules || []).filter(s => {
+      const matchesMember = s.memberIds ? s.memberIds.includes(memberId) : s.memberId === memberId;
+      const matchesDate = s.date === dateObj.getDate();
+      return matchesMember && matchesDate;
+    }).map(s => {
+      let bg = '#eef2ff', border = '#c7d2fe', text = '#3730a3', accent = '#6366f1';
+      if (s.type === 'vacation' || s.title?.includes('반차') || s.title?.includes('휴가')) {
+        bg = '#fffbeb'; border = '#fde68a'; text = '#92400e'; accent = '#f59e0b';
+      } else if (s.type === 'issue' || s.title?.includes('에러') || s.title?.includes('장애')) {
+        bg = '#fef2f2'; border = '#fecaca'; text = '#991b1b'; accent = '#ef4444';
+      } else if (s.title?.includes('리뷰') || s.title?.includes('퍼블리싱')) {
+        bg = '#f0f9ff'; border = '#bae6fd'; text = '#0369a1'; accent = '#0ea5e9';
+      } else if (s.title?.includes('브리핑') || s.title?.includes('배포')) {
+        bg = '#ecfdf5'; border = '#a7f3d0'; text = '#065f46'; accent = '#10b981';
+      }
+      return {
+        title: s.title,
+        start: s.startHour || 9,
+        end: s.endHour || 11,
+        bg, border, text, accent
+      };
+    });
+
+    return [...baseEvents, ...dynamicEvents];
+  };
+
+  const totalTimelineEventsCount = ['sh', 'sangmoo', 'daum'].reduce((acc, mId) => {
+    return acc + getEventsForMemberAndDate(mId, timelineDate).length;
+  }, 0);
 
   // Generate Report Content
   const getDailyReportContent = () => {
@@ -1537,6 +1583,7 @@ export default function Dashboard({
                     e.currentTarget.style.backgroundColor = 'transparent';
                     e.currentTarget.style.color = '#64748b';
                   }}
+                  onClick={handlePrevTimelineDate}
                   title="이전 날짜"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1545,7 +1592,7 @@ export default function Dashboard({
                 </button>
 
                 <span style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px', padding: '0 2px' }}>
-                  8월 31일 (월)
+                  {formattedTimelineDate}
                 </span>
 
                 <button
@@ -1570,6 +1617,7 @@ export default function Dashboard({
                     e.currentTarget.style.backgroundColor = 'transparent';
                     e.currentTarget.style.color = '#64748b';
                   }}
+                  onClick={handleNextTimelineDate}
                   title="다음 날짜"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1598,7 +1646,7 @@ export default function Dashboard({
                 onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
                 title="상세 싱크 간트 화면으로 이동"
               >
-                <span>총 7개 일정 등록됨</span>
+                <span>총 {totalTimelineEventsCount}개 일정 등록됨</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -1685,7 +1733,7 @@ export default function Dashboard({
                         {/* 3 Members Hour Grid Cells */}
                         {membersList.map((m, mIdx) => {
                           // Find any event starting at this exact hour for this member
-                          const events = memberScheduleMap[m.id] || [];
+                          const events = getEventsForMemberAndDate(m.id, timelineDate);
                           const startingEvt = events.find(e => Math.floor(e.start) === hour);
 
                           return (

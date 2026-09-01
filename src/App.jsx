@@ -192,19 +192,28 @@ function IssueWarningIcon({ size = 16, style = {} }) {
 
 
 function getApproverMember(sched, currentUserId = 'sh') {
-  if (!sched) return { name: '조상무', role: '상무' };
+  if (!sched) return { name: '정윤희', role: '부장' };
   try {
-    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
-    if (isLeave) {
-      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
-    }
     if (sched.approverId) {
-      const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo'));
+      const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo') || (sched.approverId === 'daeum' && m.id === 'daum'));
       if (found) return found;
+    }
+    const requester = sched.requesterId || sched.memberId || currentUserId;
+    // If it has multiple assignees (e.g. daum and sh), the other member is the target/approver
+    if (sched.memberIds && sched.memberIds.length > 0) {
+      const otherId = sched.memberIds.find(id => id !== requester && !(requester === 'sh' && id === 'yoonhee') && !(requester === 'daum' && id === 'daeum') && !(requester === 'sangmoo' && id === 'sangmu'));
+      if (otherId) {
+        const found = TEAM.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'sangmu' && m.id === 'sangmoo') || (otherId === 'daeum' && m.id === 'daum'));
+        if (found) return found;
+      }
+    }
+    // If requester is daum, direct manager is 정윤희 부장 (sh)
+    if (requester === 'daum' || requester === 'daeum') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
     return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
   } catch (e) {
-    return { name: '조상무', role: '상무' };
+    return { name: '정윤희', role: '부장' };
   }
 }
 
@@ -1601,17 +1610,51 @@ export default function App() {
 
   const isApproverForItem = (sched) => {
     if (!sched) return false;
-    if (/복귀|스프린트|미팅|브리핑|업무|회의|점검/i.test(sched.title || '')) return false;
-    if (sched.requesterId && (sched.requesterId === ME.id || (ME.id === 'sh' && sched.requesterId === 'yoonhee'))) return false;
-    // An assigned worker cannot be the approver of their own task
-    if (sched.memberId === ME.id || (sched.memberIds && sched.memberIds.includes(ME.id))) return false;
+    if (sched.status !== 'requested') return false;
 
-    // Only formal leave/vacation/expense approval requests
-    const isLeaveOrFormalApproval = /반차|연차|휴가|병가|결재|비용\s*신청/i.test(sched.title || '');
-    if (!isLeaveOrFormalApproval) return false;
+    // The requester themselves is never the approver of their own outgoing request
+    const isMyOutgoingReq = sched.requesterId && (
+      sched.requesterId === ME.id ||
+      (ME.id === 'sh' && sched.requesterId === 'yoonhee') ||
+      (ME.id === 'daum' && sched.requesterId === 'daeum') ||
+      (ME.id === 'sangmoo' && sched.requesterId === 'sangmu')
+    );
+    if (isMyOutgoingReq) return false;
 
-    // 모든 휴가는 조상무(sangmoo)만 결재!
-    return ME.id === 'sangmoo' || ME.name === '조상무';
+    // 1) Explicit approverId match
+    if (sched.approverId) {
+      if (sched.approverId === ME.id ||
+          (ME.id === 'sh' && sched.approverId === 'yoonhee') ||
+          (ME.id === 'sangmoo' && sched.approverId === 'sangmu') ||
+          (ME.id === 'daum' && sched.approverId === 'daeum')) {
+        return true;
+      }
+    }
+
+    // 2) Co-assigned / Collaborative Meeting or Task request (e.g. daum created meeting with sh)
+    if (sched.memberIds && sched.memberIds.length > 0) {
+      if (sched.memberIds.includes(ME.id) ||
+          (ME.id === 'sh' && sched.memberIds.includes('yoonhee')) ||
+          (ME.id === 'sangmoo' && sched.memberIds.includes('sangmu')) ||
+          (ME.id === 'daum' && sched.memberIds.includes('daeum'))) {
+        return true;
+      }
+    }
+    if (sched.memberId === ME.id ||
+        (ME.id === 'sh' && sched.memberId === 'yoonhee') ||
+        (ME.id === 'sangmoo' && sched.memberId === 'sangmu') ||
+        (ME.id === 'daum' && sched.memberId === 'daeum')) {
+      return true;
+    }
+
+    // 3) Vacation / leave request default to direct manager
+    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
+    if (isLeave) {
+      const approver = getApproverMember(sched, ME.id);
+      return approver.id === ME.id || (ME.id === 'sh' && approver.id === 'yoonhee') || (ME.id === 'sangmoo' && approver.id === 'sangmu');
+    }
+
+    return false;
   };
 
     const getRejecterMember = (sched) => {
@@ -2465,6 +2508,9 @@ export default function App() {
         const item = dateList[idx];
         const newDesc = formatScheduleDescription(newGroupId, editDetail.trim(), editMemo.trim(), item.year, item.month, editProgress, editCategory);
 
+        const otherMemberId = editMemberIds.find(id => id !== newRequesterId && !(newRequesterId === 'sh' && id === 'yoonhee') && !(newRequesterId === 'daum' && id === 'daeum') && !(newRequesterId === 'sangmoo' && id === 'sangmu'));
+        const newApproverId = selectedDetailEvent.approverId || otherMemberId || (editCategory === '휴가' ? (newRequesterId === 'daum' ? 'sh' : 'sangmoo') : otherMemberId);
+
         const schedObj = {
           id: `s_${Date.now()}_${idx}`,
           year: item.year,
@@ -2482,6 +2528,7 @@ export default function App() {
           progress: editProgress,
           status: newStatus,
           requesterId: newRequesterId,
+          approverId: newApproverId || null
         };
 
         if (isConfigured) {
@@ -2490,6 +2537,9 @@ export default function App() {
             dbSched.memberId = schedObj.memberId === 'sh' ? 'yoonhee' : (schedObj.memberId === 'yoonhee' ? 'sh' : schedObj.memberId);
             dbSched.memberIds = schedObj.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
             dbSched.requesterId = schedObj.requesterId === 'sh' ? 'yoonhee' : (schedObj.requesterId === 'yoonhee' ? 'sh' : schedObj.requesterId);
+            if (schedObj.approverId) {
+              dbSched.approverId = schedObj.approverId === 'sh' ? 'yoonhee' : (schedObj.approverId === 'yoonhee' ? 'sh' : schedObj.approverId);
+            }
           }
           try {
             const result = await appwriteService.createSchedule(dbSched);
@@ -2504,7 +2554,46 @@ export default function App() {
       }
 
       const oldIds = oldTargets.map(t => t.id);
-      setSchedules(prev => [...prev.filter(s => !oldIds.includes(s.id)), ...createdSchedules]);
+      setSchedules(prev => {
+        const next = [...prev.filter(s => !oldIds.includes(s.id)), ...createdSchedules];
+        try { localStorage.setItem('zal_schedules', JSON.stringify(next)); } catch (_) {}
+        return next;
+      });
+
+      // Also sync to feeds in Dashboard
+      if (setFeeds && createdSchedules.length > 0) {
+        const firstSched = createdSchedules[0];
+        const otherMemberId = editMemberIds.find(id => id !== newRequesterId && !(newRequesterId === 'sh' && id === 'yoonhee') && !(newRequesterId === 'daum' && id === 'daeum') && !(newRequesterId === 'sangmoo' && id === 'sangmu'));
+        const otherMember = TEAM.find(m => m.id === otherMemberId) || { name: '정윤희', role: '부장' };
+        setFeeds(prev => {
+          const next = prev.map(f => {
+            const isMatch = f.id === dashboardFeedId || f.id === selectedDetailEvent.feedId || (f.content && f.content.includes(selectedDetailEvent.title));
+            if (isMatch) {
+              return {
+                ...f,
+                vacationInfo: newStatus === 'requested' ? {
+                  type: editCategory === '이슈' ? '이슈' : (editCategory === '휴가' ? '휴가' : '미팅 요청'),
+                  date: `${firstSched.year}.${String(firstSched.month).padStart(2, '0')}.${String(firstSched.date).padStart(2, '0')}`,
+                  status: 'pending',
+                  approverName: otherMember.name,
+                  approverRole: otherMember.role,
+                  targetUserId: otherMember.id,
+                  requesterId: newRequesterId,
+                  requesterName: ME.name
+                } : (newStatus === 'accepted' && f.vacationInfo ? {
+                  ...f.vacationInfo,
+                  status: 'approved',
+                  approverName: otherMember.name
+                } : f.vacationInfo)
+              };
+            }
+            return f;
+          });
+          try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+          return next;
+        });
+      }
+
       setIsDetailModalOpen(false);
     } finally {
       setIsSavingEvent(false);

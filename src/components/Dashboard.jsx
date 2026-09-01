@@ -1961,8 +1961,16 @@ export default function Dashboard({
 
               let assigneeName = item.authorName || '정다음';
               if (matchedSched) {
-                const member = displayMembers.find(m => m.id === matchedSched.memberId || (matchedSched.memberIds && matchedSched.memberIds.includes(m.id)));
-                if (member) assigneeName = member.name;
+                if (matchedSched.memberIds && matchedSched.memberIds.length > 0) {
+                  const names = matchedSched.memberIds.map(id => {
+                    const m = displayMembers.find(member => member.id === id || (id === 'yoonhee' && member.id === 'sh') || (id === 'daeum' && member.id === 'daum') || (id === 'sangmu' && member.id === 'sangmoo'));
+                    return m ? m.name : id;
+                  });
+                  assigneeName = [...new Set(names)].join(', ');
+                } else {
+                  const member = displayMembers.find(m => m.id === matchedSched.memberId || (matchedSched.memberId === 'yoonhee' && m.id === 'sh') || (matchedSched.memberId === 'daeum' && m.id === 'daum') || (matchedSched.memberId === 'sangmu' && m.id === 'sangmoo'));
+                  if (member) assigneeName = member.name;
+                }
               } else if (item.vacationInfo?.requesterName) {
                 assigneeName = item.vacationInfo.requesterName;
               }
@@ -2207,8 +2215,23 @@ export default function Dashboard({
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
-                    if (!item.vacationInfo) return null;
-                    const vInfo = item.vacationInfo;
+                    let vInfo = item.vacationInfo;
+                    if (!vInfo && matchedSched && (matchedSched.status === 'requested' || matchedSched.status === 'accepted' || matchedSched.status === 'rejected')) {
+                      const otherId = matchedSched.approverId || (matchedSched.memberIds && matchedSched.memberIds.find(id => id !== matchedSched.requesterId));
+                      const otherMember = displayMembers.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'daeum' && m.id === 'daum') || (otherId === 'sangmu' && m.id === 'sangmoo'));
+                      vInfo = {
+                        type: matchedSched.category || '회의',
+                        date: dateStr,
+                        status: matchedSched.status === 'accepted' ? 'approved' : (matchedSched.status === 'rejected' ? 'rejected' : 'pending'),
+                        approverName: otherMember ? otherMember.name : (matchedSched.requesterId === 'daum' ? '정윤희' : '조상무'),
+                        approverRole: otherMember ? otherMember.role : (matchedSched.requesterId === 'daum' ? '부장' : '상무'),
+                        targetUserId: otherMember ? otherMember.id : (matchedSched.requesterId === 'daum' ? 'sh' : 'sangmoo'),
+                        requesterId: matchedSched.requesterId || item.authorId,
+                        requesterName: item.authorName
+                      };
+                    }
+
+                    if (!vInfo) return null;
                     const isPending = vInfo.status === 'pending';
                     const isApproved = vInfo.status === 'approved';
                     const isRejected = vInfo.status === 'rejected';
@@ -2217,6 +2240,13 @@ export default function Dashboard({
                     let targetUserId = vInfo.targetUserId;
                     let targetName = vInfo.approverName;
                     let targetRole = vInfo.approverRole;
+
+                    if (matchedSched && matchedSched.approverId) {
+                      targetUserId = matchedSched.approverId;
+                    } else if (matchedSched && matchedSched.memberIds && matchedSched.memberIds.length > 1) {
+                      const otherId = matchedSched.memberIds.find(id => id !== matchedSched.requesterId && !(matchedSched.requesterId === 'sh' && id === 'yoonhee') && !(matchedSched.requesterId === 'daum' && id === 'daeum'));
+                      if (otherId) targetUserId = otherId;
+                    }
 
                     if (/조상무|상무님|조상무님/i.test(item.content || '')) {
                       targetUserId = 'sangmoo';
@@ -2243,9 +2273,12 @@ export default function Dashboard({
                       }
                     }
 
-                    if (!targetRole) {
-                      const member = displayMembers.find(m => m.id === targetUserId || m.name === targetName);
-                      if (member) targetRole = member.role;
+                    if (!targetName || !targetRole) {
+                      const member = displayMembers.find(m => m.id === targetUserId || (targetUserId === 'sh' && m.id === 'sh') || (targetUserId === 'daum' && m.id === 'daum') || (targetUserId === 'sangmoo' && m.id === 'sangmoo'));
+                      if (member) {
+                        targetName = member.name;
+                        targetRole = member.role;
+                      }
                     }
 
                     const targetDisplay = `${targetName || ''} ${targetRole || ''}`.trim();
@@ -2327,19 +2360,19 @@ export default function Dashboard({
                       } else {
                         return (
                           <div style={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #e2e8f0',
+                            backgroundColor: '#fffbeb',
+                            border: '1px solid #fde68a',
                             borderRadius: '10px',
                             padding: '10px 14px',
                             fontSize: '12px',
-                            color: '#64748b',
+                            color: '#b45309',
                             fontWeight: '600',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px'
                           }}>
                             <span>⏳</span>
-                            <span>{targetDisplay ? `승인 대기중 (${targetDisplay})` : '승인 대기중'}</span>
+                            <span>{targetDisplay ? `요청 대기중 (${targetDisplay}에게 요청)` : '요청 대기중'}</span>
                           </div>
                         );
                       }

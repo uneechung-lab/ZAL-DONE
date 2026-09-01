@@ -1537,22 +1537,23 @@ export default function Dashboard({
               ref={composerTextareaRef}
               type="text"
               value={composerText}
+              disabled={isSubmitting}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
               onChange={(e) => setComposerText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !isSubmitting) {
                   handleComposerSubmit(e);
                 }
               }}
-              placeholder="오늘 진행할 주요 업무, 미팅, 긴급 이슈나 휴가 일정을 공유해 주세요"
+              placeholder={isSubmitting ? "✨ AI가 일정을 분석하여 등록하는 중입니다..." : "오늘 진행할 주요 업무, 미팅, 긴급 이슈나 휴가 일정을 공유해 주세요"}
               style={{
                 flex: 1,
                 border: 'none',
                 outline: 'none',
                 fontSize: '15.5px',
                 fontWeight: '500',
-                color: '#0f172a',
+                color: isSubmitting ? '#64748b' : '#0f172a',
                 backgroundColor: 'transparent',
                 height: '40px',
                 lineHeight: '40px',
@@ -1560,7 +1561,7 @@ export default function Dashboard({
               }}
             />
             {/* Clear (Delete) button when text is inputted */}
-            {composerText.length > 0 && (
+            {composerText.length > 0 && !isSubmitting && (
               <button
                 type="button"
                 onClick={() => {
@@ -1600,43 +1601,103 @@ export default function Dashboard({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={handleComposerSubmit}
-              disabled={!composerText.trim() || isSubmitting}
-              title="등록 (Enter)"
-              style={{
-                width: '42px',
-                height: '42px',
-                padding: '0',
-                backgroundColor: 'transparent',
-                color: composerText.trim() ? '#000000' : '#cbd5e1',
-                border: 'none',
-                borderRadius: '50%',
-                cursor: composerText.trim() ? 'pointer' : 'not-allowed',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s ease',
-                flexShrink: 0
-              }}
-              onMouseEnter={(e) => {
-                if (composerText.trim()) {
-                  e.currentTarget.style.color = '#000000';
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = composerText.trim() ? '#000000' : '#cbd5e1';
-              }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
+            {isSubmitting ? (
+              <div
+                title="AI 분석 중..."
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                  flexShrink: 0
+                }}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="2.5"
+                  style={{ animation: 'spin 0.8s linear infinite' }}
+                >
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeLinecap="round" />
+                </svg>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleComposerSubmit}
+                disabled={!composerText.trim() || isSubmitting}
+                title="등록 (Enter)"
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  padding: '0',
+                  backgroundColor: 'transparent',
+                  color: composerText.trim() ? '#000000' : '#cbd5e1',
+                  border: 'none',
+                  borderRadius: '50%',
+                  cursor: composerText.trim() ? 'pointer' : 'not-allowed',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0
+                }}
+                onMouseEnter={(e) => {
+                  if (composerText.trim()) {
+                    e.currentTarget.style.color = '#000000';
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = composerText.trim() ? '#000000' : '#cbd5e1';
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            )}
           </div>
+
+          {/* AI Analyzing Feedback Banner */}
+          {isSubmitting && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '12px 20px',
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '16px',
+              color: '#0369a1',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              boxShadow: '0 2px 8px rgba(14, 165, 233, 0.08)'
+            }}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0284c7"
+                strokeWidth="2.5"
+                style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}
+              >
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeLinecap="round" />
+              </svg>
+              <span>AI 잘됨이가 메시지를 분석하여 일정을 등록하고 있습니다...</span>
+            </div>
+          )}
 
         </div>
       </div>

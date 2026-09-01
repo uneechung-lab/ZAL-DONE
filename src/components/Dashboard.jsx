@@ -1515,18 +1515,24 @@ export default function Dashboard({
           gap: '10px'
         }}>
           {/* Middle: Integrated Quick Sync Input Box (Enlarged & Clear Placeholder) */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#ffffff',
-            borderRadius: '26px',
-            border: isInputFocused ? '2px solid #0f172a' : '1.5px solid #cbd5e1',
-            padding: isInputFocused ? '5.5px 7.5px 5.5px 21.5px' : '6px 8px 6px 22px',
-            minHeight: '52px',
-            transition: 'border-color 0.15s ease, border-width 0.15s ease',
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
+          <div 
+            onClick={() => composerTextareaRef.current?.focus()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#ffffff',
+              borderRadius: '26px',
+              border: '1.5px solid',
+              borderColor: isInputFocused ? '#0f172a' : '#cbd5e1',
+              boxShadow: isInputFocused ? '0 0 0 1px #0f172a' : 'none',
+              padding: '6px 8px 6px 22px',
+              minHeight: '52px',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+              width: '100%',
+              boxSizing: 'border-box',
+              cursor: 'text'
+            }}
+          >
             <input
               ref={composerTextareaRef}
               type="text"
@@ -1547,7 +1553,10 @@ export default function Dashboard({
                 fontSize: '15.5px',
                 fontWeight: '500',
                 color: '#0f172a',
-                backgroundColor: 'transparent'
+                backgroundColor: 'transparent',
+                height: '40px',
+                lineHeight: '40px',
+                padding: '0'
               }}
             />
             {/* Clear (Delete) button when text is inputted */}

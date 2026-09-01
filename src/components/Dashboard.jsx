@@ -890,11 +890,23 @@ export default function Dashboard({
       });
     }
 
+    // Filter out cancelled requests so they disappear from Dashboard feeds
+    const activeItems = items.filter(item => {
+      if (item.status === 'cancelled' || item.isCancelled) return false;
+      if (item.vacationInfo && item.vacationInfo.status === 'cancelled') return false;
+      const matched = item.matchedSchedule || (schedules || []).find(s => 
+        (item.feed && (s.id === item.feed.scheduleId || s.id === item.feed.id)) ||
+        (item.title && s.title && item.title.includes(s.title))
+      );
+      if (matched && (matched.status === 'cancelled' || matched.isCancelled)) return false;
+      return true;
+    });
+
     if (selectedMemberId && selectedMemberId !== 'all') {
-      return items.filter(item => item.authorId === selectedMemberId);
+      return activeItems.filter(item => item.authorId === selectedMemberId);
     }
 
-    return items;
+    return activeItems;
   };
 
 
@@ -940,6 +952,7 @@ export default function Dashboard({
     const baseEvents = baseMemberScheduleMap[memberId] || [];
 
     const dynamicEvents = (schedules || []).filter(s => {
+      if (s.status === 'cancelled' || s.isCancelled) return false;
       const matchesMember = s.memberIds ? s.memberIds.includes(memberId) : s.memberId === memberId;
       const sYear = s.year || dateObj.getFullYear();
       const sMonth = s.month || (dateObj.getMonth() + 1);

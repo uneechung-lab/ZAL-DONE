@@ -3654,19 +3654,130 @@ export default function App() {
     }
 
     const targetIds = targetItems.map(s => s.id);
+    const nowIso = new Date().toISOString();
+    const nowTime = formatTime(new Date());
+    const nowTs = Date.now();
+
+    // 1. Update schedules state to status: 'cancelled'
+    const updatedSchedules = schedules.map(s => {
+      if (targetIds.includes(s.id)) {
+        return {
+          ...s,
+          status: 'cancelled',
+          isCancelled: true,
+          cancelledAt: nowIso,
+          description: `${s.description || ''}\n[요청 취소] ${ME.name}님이 일정을 취소함`
+        };
+      }
+      return s;
+    });
 
     if (isConfigured) {
       try {
-        for (const item of targetItems) {
-          await appwriteService.deleteSchedule(item.id);
+        for (const item of updatedSchedules.filter(s => targetIds.includes(s.id))) {
+          await appwriteService.updateSchedule(item.id, item);
         }
       } catch (e) {
-        console.error("Failed to delete schedule:", e);
+        console.error("Failed to update schedule status to cancelled:", e);
+      }
+    }
+    setSchedules(updatedSchedules);
+
+    // 2. Update Dashboard feeds (mark as cancelled so Dashboard hides them)
+    setFeeds(prev => {
+      const nextFeeds = prev.map(f => {
+        const isMatched = targetIds.includes(f.scheduleId) || 
+                          targetIds.includes(f.id) || 
+                          (f.schedule && targetIds.includes(f.schedule.id)) ||
+                          (f.content && f.content.includes(target.title));
+        if (isMatched) {
+          return {
+            ...f,
+            status: 'cancelled',
+            isCancelled: true,
+            vacationInfo: f.vacationInfo ? { ...f.vacationInfo, status: 'cancelled' } : undefined
+          };
+        }
+        return f;
+      });
+      try {
+        localStorage.setItem('zal_feeds_v2', JSON.stringify(nextFeeds));
+      } catch (err) {}
+      return nextFeeds;
+    });
+
+    // 3. Post Speech Bubble messages in Calendar chat
+    const approverId = target.approverId || (target.memberId !== ME.id ? target.memberId : 'sangmoo');
+
+    // (a) Requester's (나/정다음) messages
+    const myUserChatMsg = {
+      id: nowTs + 1,
+      from: `user_${ME.id}`,
+      text: `[취소] "${target.title}" (${target.date || ''}일) 요청을 취소합니다.`,
+      time: nowTime,
+      createdAt: nowIso
+    };
+
+    const myAiNoticeMsg = {
+      id: nowTs + 2,
+      from: `ai_${ME.id}`,
+      text: `${ME.name}님의 [${target.title}] 요청이 정상적으로 취소되었습니다.\n필요 시 일정 카드의 '다시요청' 버튼을 통해 언제든 다시 신청하실 수 있습니다.`,
+      targetTitle: target.title,
+      time: nowTime,
+      createdAt: new Date(nowTs + 50).toISOString()
+    };
+
+    // (b) Approver's (조상무) messages
+    const approverAiNoticeMsg = {
+      id: nowTs + 3,
+      from: `ai_${approverId}`,
+      text: `🔔 [알림] ${ME.name}님이 [${target.title}] (${target.date || ''}일) 결재 요청을 취소하였습니다.`,
+      targetTitle: target.title,
+      time: nowTime,
+      createdAt: new Date(nowTs + 100).toISOString()
+    };
+
+    // Save to localStorage for both requester and approver
+    try {
+      const myKeys = [ME.id];
+      if (ME.id === 'sh') myKeys.push('yoonhee');
+      if (ME.id === 'yoonhee') myKeys.push('sh');
+      if (ME.id === 'daum') myKeys.push('daeum');
+
+      const approverKeys = [approverId];
+      if (approverId === 'sangmoo') approverKeys.push('sangmu');
+      if (approverId === 'sangmu') approverKeys.push('sangmoo');
+      if (approverId === 'sh') approverKeys.push('yoonhee');
+      if (approverId === 'yoonhee') approverKeys.push('sh');
+
+      myKeys.forEach(k => {
+        const saved = localStorage.getItem(`zal_messages_${k}`);
+        const list = saved ? JSON.parse(saved) : [];
+        list.push(myUserChatMsg, myAiNoticeMsg);
+        localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+      });
+
+      approverKeys.forEach(k => {
+        const saved = localStorage.getItem(`zal_messages_${k}`);
+        const list = saved ? JSON.parse(saved) : [];
+        list.push(approverAiNoticeMsg);
+        localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+      });
+    } catch (e) {}
+
+    if (isConfigured) {
+      try {
+        await appwriteService.createMessage(myUserChatMsg);
+        await appwriteService.createMessage(myAiNoticeMsg);
+        await appwriteService.createMessage(approverAiNoticeMsg);
+      } catch (e) {
+        console.error("Failed to save cancel messages to DB:", e);
       }
     }
 
-    setSchedules(prev => prev.filter(s => !targetIds.includes(s.id)));
-    showLayerAlert(`"${target.title}" 일정 요청이 취소되었습니다.`, '요청취소 완료', 'info');
+    setMessages(prev => [...prev, myUserChatMsg, myAiNoticeMsg]);
+
+    showLayerAlert(`"${target.title}" 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };
 
   const processMessageAndCreateSchedule = (textInput, actingUser = ME, skipDashboardFeed = false) => {
@@ -5724,7 +5835,7 @@ export default function App() {
                                                  </div>
                                                );
                                              } else {
-                                                                                               const isDelegatedTask = (matchedSchedule.requesterId === ME.id || (ME.id === 'sh' && matchedSchedule.requesterId === 'yoonhee')) && (matchedSchedule.memberId !== ME.id && !(ME.id === 'sh' && matchedSchedule.memberId === 'yoonhee'));
+                                                const isDelegatedTask = (matchedSchedule.requesterId === ME.id || (ME.id === 'sh' && matchedSchedule.requesterId === 'yoonhee')) && (matchedSchedule.memberId !== ME.id && !(ME.id === 'sh' && matchedSchedule.memberId === 'yoonhee'));
                                                 const reqTargetMember = TEAM.find(m => m.id === (matchedSchedule.approverId || matchedSchedule.memberId)) || approverMember;
 
                                                 return (
@@ -5746,12 +5857,9 @@ export default function App() {
                                                         lineHeight: '1.2',
                                                         cursor: 'pointer'
                                                       }}
-                                                      onClick={async (e) => {
+                                                      onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (isConfigured) {
-                                                          await appwriteService.deleteSchedule(matchedSchedule.id);
-                                                        }
-                                                        setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
+                                                        handleCancelSchedule(matchedSchedule.id);
                                                       }}
                                                     >
                                                       {isDelegatedTask ? '요청취소' : '신청취소'}
@@ -7897,6 +8005,7 @@ export default function App() {
                               const isPersonalLeave1 = /반차|연차|휴가|병가/i.test(currentEvent.title || '');
                               const isRequested = currentEvent.status === 'requested' && (isPersonalLeave1 ? true : member.id !== reqId1);
                               const isRejected = currentEvent.status === 'rejected' || currentEvent.status === `rejected_${member.id}`;
+                              const isCancelled = currentEvent.status === 'cancelled' || currentEvent.isCancelled;
                               const displayStart = currentEvent.startHour < 8 ? 8 : currentEvent.startHour;
                               const displayEnd = currentEvent.endHour > 19.5 ? 19.5 : currentEvent.endHour;
                               const eventProgress = currentEvent.progress !== undefined ? currentEvent.progress : (parseScheduleDescription(currentEvent.description || '').progress);
@@ -7917,7 +8026,13 @@ export default function App() {
                                     borderLeftColor: isIssue ? '#FF0000' : undefined,
                                     borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                     borderLeftStyle: isIssue ? 'solid' : undefined,
-                                    ...getDayCardProgressStyle(currentEvent.color, eventProgress)
+                                    borderColor: isCancelled ? '#cbd5e1' : undefined,
+                                    borderLeftColor: isCancelled ? '#94a3b8' : undefined,
+                                    backgroundColor: isCancelled ? '#f1f5f9' : undefined,
+                                    color: isCancelled ? '#94a3b8' : undefined,
+                                    opacity: isCancelled ? 0.75 : 1,
+                                    textDecoration: isCancelled ? 'line-through' : undefined,
+                                    ...(!isCancelled ? getDayCardProgressStyle(currentEvent.color, eventProgress) : {})
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -7926,8 +8041,9 @@ export default function App() {
                                   title={`${currentEvent.title} (클릭시 상세 보기)`}
                                 >
                                   {isIssue && <IssueWarningIcon size={16} />}
-                                  {isRequested && !isIssue && '⏳ '}
-                                  {isRejected && !isIssue && '❌ '}
+                                  {isCancelled && '🚫 '}
+                                  {isRequested && !isIssue && !isCancelled && '⏳ '}
+                                  {isRejected && !isIssue && !isCancelled && '❌ '}
                                   {currentEvent.title}
                                 </div>
                               );
@@ -8129,6 +8245,7 @@ export default function App() {
                                  const isLeaveOrApprove2 = /반차|연차|휴가|병가|신청|승인/i.test(event.title || '') || Boolean(event.approverId && event.status === 'requested');
                                  const isRequested = event.status === 'requested' && (isLeaveOrApprove2 || member.id !== reqId2);
                                 const isRejected = event.status === 'rejected' || event.status === `rejected_${member.id}`;
+                                const isCancelled = event.status === 'cancelled' || event.isCancelled;
                                 const displayStart = event.startHour < 8 ? 8 : event.startHour;
                                 const displayEnd = event.endHour > 19.5 ? 19.5 : event.endHour;
                                 const duration = displayEnd - displayStart;
@@ -8163,7 +8280,13 @@ export default function App() {
                                       borderLeftColor: isIssue ? '#FF0000' : undefined,
                                       borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                       borderLeftStyle: isIssue ? 'solid' : undefined,
-                                      ...getWeekCardProgressStyle(event, currentYear, info.month, info.dayNum, schedules)
+                                      borderColor: isCancelled ? '#cbd5e1' : undefined,
+                                      borderLeftColor: isCancelled ? '#94a3b8' : undefined,
+                                      backgroundColor: isCancelled ? '#f1f5f9' : undefined,
+                                      color: isCancelled ? '#94a3b8' : undefined,
+                                      opacity: isCancelled ? 0.75 : 1,
+                                      textDecoration: isCancelled ? 'line-through' : undefined,
+                                      ...(!isCancelled ? getWeekCardProgressStyle(event, currentYear, info.month, info.dayNum, schedules) : {})
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -8176,8 +8299,9 @@ export default function App() {
                                     </div>
                                     <div style={{ wordBreak: 'break-all', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: duration > 0.5 ? 2 : 1, WebkitBoxOrient: 'vertical' }}>
                                       {isIssue && <IssueWarningIcon size={15} />}
-                                      {isRequested && !isIssue && '⏳ '}
-                                      {isRejected && !isIssue && '❌ '}
+                                      {isCancelled && '🚫 '}
+                                      {isRequested && !isIssue && !isCancelled && '⏳ '}
+                                      {isRejected && !isIssue && !isCancelled && '❌ '}
                                       {event.title}
                                     </div>
                                   </div>
@@ -8405,6 +8529,7 @@ export default function App() {
                           const isIssue = isIssueSchedule(sample) || isIssueSchedule(evt);
                           const isRequested = (sample && sample.status === 'requested') || evt.status === 'requested';
                           const isRejected = (sample && (sample.status === 'rejected' || (sample.status && sample.status.startsWith('rejected_')))) || evt.status === 'rejected';
+                          const isCancelled = (sample && (sample.status === 'cancelled' || sample.isCancelled)) || evt.status === 'cancelled';
 
                           return (
                             <div
@@ -8430,7 +8555,13 @@ export default function App() {
                                 borderLeftColor: isIssue ? '#FF0000' : undefined,
                                 borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
                                 borderLeftStyle: isIssue ? 'solid' : undefined,
-                                ...getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules)
+                                borderColor: isCancelled ? '#cbd5e1' : undefined,
+                                borderLeftColor: isCancelled ? '#94a3b8' : undefined,
+                                backgroundColor: isCancelled ? '#f1f5f9' : undefined,
+                                color: isCancelled ? '#94a3b8' : undefined,
+                                opacity: isCancelled ? 0.75 : 1,
+                                textDecoration: isCancelled ? 'line-through' : undefined,
+                                ...(!isCancelled ? getMonthSegmentProgressStyle(evt, currentYear, currentMonth, schedules) : {})
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -8441,7 +8572,8 @@ export default function App() {
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '6px' }}>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                   {isIssue && <IssueWarningIcon size={15} />}
-                                  {isRequested && !isIssue && '⏳ '}
+                                  {isCancelled && '🚫 '}
+                                  {isRequested && !isIssue && !isCancelled && '⏳ '}
                                   {evt.title}
                                 </span>
                                 <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
@@ -8573,6 +8705,7 @@ export default function App() {
                             : [];
                           const isRequested = event.status === 'requested';
                           const isRejected = event.status === 'rejected' || (event.status && event.status.startsWith('rejected_'));
+                          const isCancelled = event.status === 'cancelled' || event.isCancelled;
                           const parsedDesc = parseScheduleDescription(event.description || '');
                           const eventProgress = event.progress !== undefined ? event.progress : (parsedDesc.progress || 0);
                           const isCompleted = eventProgress === 100;
@@ -8603,16 +8736,18 @@ export default function App() {
                                 flexDirection: 'column',
                                 gap: '6px',
                                 boxShadow: 'var(--shadow-sm)',
-                                border: isIssue ? '1px solid var(--border-color)' : '1px solid var(--border-light)',
-                                borderLeft: isIssue ? '4px solid #FF0000' : undefined,
-                                borderColor: isIssue ? 'var(--border-color)' : undefined,
-                                borderLeftColor: isIssue ? '#FF0000' : undefined,
-                                borderStyle: isRequested ? 'dashed' : (isIssue ? 'solid' : undefined),
-                                borderLeftStyle: isIssue ? 'solid' : undefined,
+                                border: isCancelled ? '1px dashed #cbd5e1' : (isIssue ? '1px solid var(--border-color)' : '1px solid var(--border-light)'),
+                                borderLeft: isIssue ? '4px solid #FF0000' : (isCancelled ? '4px solid #94a3b8' : undefined),
+                                borderColor: isCancelled ? '#cbd5e1' : (isIssue ? 'var(--border-color)' : undefined),
+                                borderLeftColor: isCancelled ? '#94a3b8' : (isIssue ? '#FF0000' : undefined),
+                                borderStyle: (isCancelled || isRequested) ? 'dashed' : (isIssue ? 'solid' : undefined),
+                                borderLeftStyle: (isIssue || isCancelled) ? 'solid' : undefined,
                                 transition: 'all 0.2s ease',
                                 textAlign: 'left',
-                                background: '#ffffff',
-                                backgroundColor: '#ffffff'
+                                opacity: isCancelled ? 0.75 : 1,
+                                textDecoration: isCancelled ? 'line-through' : undefined,
+                                background: isCancelled ? '#f8fafc' : '#ffffff',
+                                backgroundColor: isCancelled ? '#f8fafc' : '#ffffff'
                               }}
                               onClick={() => openDetailModal(event)}
                             >

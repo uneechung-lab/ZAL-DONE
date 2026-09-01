@@ -2092,24 +2092,33 @@ export default function Dashboard({
                   </div>
 
                   {/* Main Content Area (Title + '원문보기' Button + Calendar-style Details) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div
+                    onClick={(e) => {
+                      if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea')) {
+                        return;
+                      }
+                      if (onOpenScheduleDetail) {
+                        onOpenScheduleDetail(item);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      cursor: onOpenScheduleDetail ? 'pointer' : 'default'
+                    }}
+                    title="클릭하여 일정 상세 및 수정 열기"
+                  >
                     {/* Title Row & '원문보기' Button (제목 우측에 바로 붙여서 배치) */}
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <div
-                        onClick={() => {
-                          if (onOpenScheduleDetail) {
-                            onOpenScheduleDetail(item);
-                          }
-                        }}
                         style={{
-                          cursor: onOpenScheduleDetail ? 'pointer' : 'default',
                           fontSize: '14.5px',
                           color: '#0f172a',
                           lineHeight: '1.5',
                           fontWeight: '700',
                           letterSpacing: '-0.2px'
                         }}
-                        title="클릭하여 일정 상세 및 수정 열기"
                       >
                         {item.title}
                       </div>

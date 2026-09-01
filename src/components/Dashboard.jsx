@@ -2215,19 +2215,25 @@ export default function Dashboard({
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
-                    let vInfo = item.vacationInfo;
-                    const allContent = `${item.feed?.content || ''} ${item.content || ''} ${item.description || ''} ${item.title || ''} ${matchedSched?.title || ''} ${matchedSched?.description || ''}`;
+                    const itemTitleText = `${item.title || ''} ${matchedSched?.title || ''}`;
+                    const isItemLeave = /반차|연차|휴가|병가/i.test(itemTitleText) || item.category === '휴가';
+                    const isItemRequest = item.category === '요청' || (matchedSched && matchedSched.status === 'requested');
 
+                    // If this item is NOT a leave request and NOT a requested task/meeting, NEVER show request action box!
+                    if (!isItemLeave && !isItemRequest && (!matchedSched || matchedSched.status !== 'requested')) {
+                      return null;
+                    }
+
+                    let vInfo = item.vacationInfo;
                     if (!vInfo && matchedSched) {
-                      const isLeave = /반차|연차|휴가|병가/i.test(allContent);
                       const isMultiAssigneeRequest = matchedSched.memberIds && matchedSched.memberIds.length > 1 && matchedSched.status === 'requested';
                       const isPendingRequest = matchedSched.status === 'requested' || (matchedSched.isRequested && matchedSched.status !== 'accepted');
                       const isExplicitApprovedRequest = (matchedSched.description || '').includes('[수락메시지]') || (matchedSched.description || '').includes('[승인 완료]');
-                      const isExplicitRejectedRequest = (matchedSched.status === 'rejected' || (matchedSched.status && matchedSched.status.startsWith('rejected'))) && (isLeave || isMultiAssigneeRequest || (matchedSched.description || '').includes('[반려사유]'));
+                      const isExplicitRejectedRequest = (matchedSched.status === 'rejected' || (matchedSched.status && matchedSched.status.startsWith('rejected'))) && (isItemLeave || isMultiAssigneeRequest || (matchedSched.description || '').includes('[반려사유]'));
 
-                      if (isPendingRequest || isExplicitApprovedRequest || isExplicitRejectedRequest || (isLeave && matchedSched.status === 'accepted')) {
+                      if (isPendingRequest || isExplicitApprovedRequest || isExplicitRejectedRequest || (isItemLeave && matchedSched.status === 'accepted')) {
                         vInfo = {
-                          type: isLeave ? '휴가' : (matchedSched.category || '요청'),
+                          type: isItemLeave ? '휴가' : (matchedSched.category || '요청'),
                           date: dateStr,
                           status: matchedSched.status === 'accepted' ? 'approved' : (matchedSched.status === 'rejected' ? 'rejected' : 'pending'),
                           requesterId: matchedSched.requesterId || item.authorId,
@@ -2246,6 +2252,8 @@ export default function Dashboard({
                     let targetName = '조상무';
                     let targetRole = '상무';
 
+                    const allContent = `${item.feed?.content || ''} ${item.content || ''} ${item.description || ''} ${item.title || ''} ${matchedSched?.title || ''} ${matchedSched?.description || ''}`;
+
                     if (/조상무|상무님|상무/i.test(allContent)) {
                       targetUserId = 'sangmoo';
                       targetName = '조상무';
@@ -2262,7 +2270,7 @@ export default function Dashboard({
                       targetUserId = matchedSched.approverId;
                     } else if (vInfo.targetUserId) {
                       targetUserId = vInfo.targetUserId;
-                    } else if (/반차|연차|휴가|병가/i.test(allContent)) {
+                    } else if (isItemLeave) {
                       targetUserId = 'sangmoo';
                       targetName = '조상무';
                       targetRole = '상무';

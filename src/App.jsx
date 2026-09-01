@@ -5293,6 +5293,10 @@ export default function App() {
           setSchedules={setSchedules}
           feeds={feeds}
           setFeeds={setFeeds}
+          selectedDate={selectedDate}
+          currentMonth={currentMonth}
+          currentYear={currentYear}
+          calendarSelectedDate={new Date(currentYear, currentMonth - 1, selectedDate)}
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onCancelSchedule={handleCancelSchedule}

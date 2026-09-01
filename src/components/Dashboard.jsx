@@ -14,6 +14,10 @@ export default function Dashboard({
   setSchedules,
   feeds: feedsProp,
   setFeeds: setFeedsProp,
+  selectedDate,
+  currentMonth,
+  currentYear,
+  calendarSelectedDate,
   onAddSchedule,
   onOpenScheduleDetail,
   onCancelSchedule,
@@ -45,7 +49,26 @@ export default function Dashboard({
   const [expandedCommentFeedIds, setExpandedCommentFeedIds] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [reportModalType, setReportModalType] = useState(null); // 'daily' | 'weekly' | null
-  const [timelineDate, setTimelineDate] = useState(() => new Date());
+
+  const targetCalendarDate = React.useMemo(() => {
+    if (calendarSelectedDate instanceof Date && !isNaN(calendarSelectedDate.getTime())) {
+      return calendarSelectedDate;
+    }
+    if (selectedDate) {
+      const yr = currentYear || new Date().getFullYear();
+      const mo = (currentMonth !== undefined && currentMonth !== null) ? (currentMonth - 1) : new Date().getMonth();
+      return new Date(yr, mo, selectedDate);
+    }
+    return new Date();
+  }, [calendarSelectedDate, selectedDate, currentMonth, currentYear]);
+
+  const [timelineDate, setTimelineDate] = useState(() => targetCalendarDate);
+
+  useEffect(() => {
+    if (targetCalendarDate) {
+      setTimelineDate(targetCalendarDate);
+    }
+  }, [targetCalendarDate]);
   const [selectedMemberId, setSelectedMemberId] = useState('all');
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];

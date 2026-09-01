@@ -2216,19 +2216,28 @@ export default function Dashboard({
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
                     let vInfo = item.vacationInfo;
-                    if (!vInfo && matchedSched && (matchedSched.status === 'requested' || matchedSched.status === 'accepted' || matchedSched.status === 'rejected')) {
-                      const otherId = matchedSched.approverId || (matchedSched.memberIds && matchedSched.memberIds.find(id => id !== matchedSched.requesterId));
-                      const otherMember = displayMembers.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'daeum' && m.id === 'daum') || (otherId === 'sangmu' && m.id === 'sangmoo'));
-                      vInfo = {
-                        type: matchedSched.category || '회의',
-                        date: dateStr,
-                        status: matchedSched.status === 'accepted' ? 'approved' : (matchedSched.status === 'rejected' ? 'rejected' : 'pending'),
-                        approverName: otherMember ? otherMember.name : (matchedSched.requesterId === 'daum' ? '정윤희' : '조상무'),
-                        approverRole: otherMember ? otherMember.role : (matchedSched.requesterId === 'daum' ? '부장' : '상무'),
-                        targetUserId: otherMember ? otherMember.id : (matchedSched.requesterId === 'daum' ? 'sh' : 'sangmoo'),
-                        requesterId: matchedSched.requesterId || item.authorId,
-                        requesterName: item.authorName
-                      };
+                    if (!vInfo && matchedSched) {
+                      // Only synthesize vInfo if this schedule is genuinely an approval/request schedule!
+                      const isLeave = /반차|연차|휴가|병가/i.test(matchedSched.title || '');
+                      const isMultiAssigneeRequest = matchedSched.memberIds && matchedSched.memberIds.length > 1 && matchedSched.status === 'requested';
+                      const isPendingRequest = matchedSched.status === 'requested' || (matchedSched.isRequested && matchedSched.status !== 'accepted');
+                      const isExplicitApprovedRequest = (matchedSched.description || '').includes('[수락메시지]') || (matchedSched.description || '').includes('[승인 완료]');
+                      const isExplicitRejectedRequest = (matchedSched.status === 'rejected' || (matchedSched.status && matchedSched.status.startsWith('rejected'))) && (isLeave || isMultiAssigneeRequest || (matchedSched.description || '').includes('[반려사유]'));
+
+                      if (isPendingRequest || isExplicitApprovedRequest || isExplicitRejectedRequest || (isLeave && matchedSched.status === 'accepted')) {
+                        const otherId = matchedSched.approverId || (matchedSched.memberIds && matchedSched.memberIds.find(id => id !== matchedSched.requesterId));
+                        const otherMember = displayMembers.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'daeum' && m.id === 'daum') || (otherId === 'sangmu' && m.id === 'sangmoo'));
+                        vInfo = {
+                          type: isLeave ? '휴가' : (matchedSched.category || '요청'),
+                          date: dateStr,
+                          status: matchedSched.status === 'accepted' ? 'approved' : (matchedSched.status === 'rejected' ? 'rejected' : 'pending'),
+                          approverName: otherMember ? otherMember.name : (matchedSched.requesterId === 'daum' ? '정윤희' : '조상무'),
+                          approverRole: otherMember ? otherMember.role : (matchedSched.requesterId === 'daum' ? '부장' : '상무'),
+                          targetUserId: otherMember ? otherMember.id : (matchedSched.requesterId === 'daum' ? 'sh' : 'sangmoo'),
+                          requesterId: matchedSched.requesterId || item.authorId,
+                          requesterName: item.authorName
+                        };
+                      }
                     }
 
                     if (!vInfo) return null;

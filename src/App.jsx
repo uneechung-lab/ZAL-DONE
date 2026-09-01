@@ -6039,7 +6039,7 @@ export default function App() {
                                                          handleResubmitSchedule(matchedSchedule.id);
                                                        }}
                                                      >
-                                                       🔄 재요청
+                                                       재요청
                                                      </button>
                                                    )}
                                                  </div>

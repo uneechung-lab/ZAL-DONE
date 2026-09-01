@@ -4199,16 +4199,14 @@ export default function App() {
     };
 
     if (isConfigured) {
-      appwriteService.createMessage(userMsg)
-        .then(() => {
-          proceedWithAI();
-        })
+      return appwriteService.createMessage(userMsg)
+        .then(() => proceedWithAI())
         .catch((err) => {
           console.error("Appwrite failed to create user message:", err);
-          proceedWithAI();
+          return proceedWithAI();
         });
     } else {
-      proceedWithAI();
+      return proceedWithAI();
     }
   };
 
@@ -4233,8 +4231,8 @@ export default function App() {
     }
   };
 
-  const handleDashboardAddSchedule = (text, user) => {
-    processMessageAndCreateSchedule(text, user || ME, false);
+  const handleDashboardAddSchedule = async (text, user) => {
+    return await processMessageAndCreateSchedule(text, user || ME, false);
   };
 
   const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {

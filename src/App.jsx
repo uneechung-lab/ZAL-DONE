@@ -3465,7 +3465,7 @@ export default function App() {
     );
   };
 
-  const handleResubmitSchedule = (schedId) => {
+  const handleResubmitSchedule = (schedId, optionalDirectMsg = null) => {
     const target = schedules.find(s => 
       s.id === schedId || 
       s.$id === schedId || 
@@ -3477,165 +3477,151 @@ export default function App() {
     const targetMember = getRejecterMember(target);
     const roleSuffix = targetMember.role ? `${targetMember.role}님` : '님';
 
-    showLayerPrompt(
-      `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하시겠습니까?\n전달할 메시지나 변경 사항을 입력해 주세요.`,
-      '일정 다시요청',
-      '다시 요청 메시지를 입력하세요 (선택 사항)',
-      '다시요청',
-      async (userMsg) => {
-        const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
-        const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
+    const performResubmit = async (userMsg) => {
+      const groupMatch = (target.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+      const groupId = target.groupId || (groupMatch ? groupMatch[1] : null);
 
-        let targetItems = [target];
-        if (groupId) {
-          targetItems = schedules.filter(s => {
-            const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
-            return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
-          });
-        }
+      let targetItems = [target];
+      if (groupId) {
+        targetItems = schedules.filter(s => {
+          const gMatch = (s.description || '').match(/\[그룹 ID\]\s*(g_[\w_]+)/);
+          return s.groupId === groupId || (gMatch && gMatch[1] === groupId);
+        });
+      }
 
-        const targetIdStrings = targetItems.map(s => String(s.id || s.$id || ''));
-        const cleanMsg = (userMsg || '').trim();
+      const targetIdStrings = targetItems.map(s => String(s.id || s.$id || ''));
+      const cleanMsg = (userMsg || '').trim();
 
-        const isMatchingItem = (s) => {
-          const sId = String(s.id || s.$id || '');
-          if (sId && targetIdStrings.includes(sId)) return true;
-          return targetItems.some(t => 
-            t.title === s.title && 
-            t.date === s.date && 
-            (!t.month || !s.month || t.month === s.month) && 
-            (!t.year || !s.year || t.year === s.year) &&
-            t.startHour === s.startHour
-          );
-        };
+      const isMatchingItem = (s) => {
+        const sId = String(s.id || s.$id || '');
+        if (sId && targetIdStrings.includes(sId)) return true;
+        return targetItems.some(t => 
+          t.title === s.title && 
+          t.date === s.date && 
+          (!t.month || !s.month || t.month === s.month) && 
+          (!t.year || !s.year || t.year === s.year) &&
+          t.startHour === s.startHour
+        );
+      };
 
-        if (isConfigured) {
-          try {
-            for (const item of targetItems) {
-              let updatedDesc = item.description || '';
-              if (cleanMsg) {
-                updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
-                updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
-              }
-              let dbSched = { ...item, status: 'requested', description: updatedDesc };
-              if (isCurrentUserYoonhee) {
-                dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
-                dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-                dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
-              }
-              await appwriteService.updateSchedule(item.id || item.$id, dbSched);
-            }
-          } catch (e) {
-            console.error("Failed to resubmit schedule:", e);
-          }
-        }
-
-        setSchedules(prev => {
-          const next = prev.map(s => {
-            if (!isMatchingItem(s)) return s;
-            let updatedDesc = s.description || '';
+      if (isConfigured) {
+        try {
+          for (const item of targetItems) {
+            let updatedDesc = item.description || '';
             if (cleanMsg) {
               updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
             }
-            return { ...s, status: 'requested', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
-          });
-          try {
-            localStorage.setItem('zal_schedules', JSON.stringify(next));
-          } catch (e) {}
-          return next;
+            let dbSched = { ...item, status: 'requested', description: updatedDesc };
+            if (isCurrentUserYoonhee) {
+              dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
+              dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+              dbSched.requesterId = item.requesterId === 'sh' ? 'yoonhee' : (item.requesterId === 'yoonhee' ? 'sh' : item.requesterId);
+            }
+            await appwriteService.updateSchedule(item.id || item.$id, dbSched);
+          }
+        } catch (e) {
+          console.error("Failed to resubmit schedule:", e);
+        }
+      }
+
+      setSchedules(prev => {
+        const next = prev.map(s => {
+          if (!isMatchingItem(s)) return s;
+          let updatedDesc = s.description || '';
+          if (cleanMsg) {
+            updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
+            updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
+          }
+          return { ...s, status: 'requested', isCancelled: false, description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
+        });
+        try {
+          localStorage.setItem('zal_schedules', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+
+      const nowTs = Date.now();
+      const nowIso = new Date().toISOString();
+      const nowTime = formatTime(new Date());
+
+      const userSuffix = user ? user.$id : 'local';
+      const reasonSuffix = cleanMsg ? `\n사유 : ${cleanMsg}` : '';
+
+      // AI confirmation bubble in current user's chat (사유 포함)
+      const myAiNoticeMsg = {
+        id: nowTs + 1,
+        from: `ai_${userSuffix}_${ME.id}`,
+        text: `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.${reasonSuffix}`,
+        time: nowTime,
+        createdAt: new Date(nowTs + 100).toISOString()
+      };
+
+      // Recipient's chat: AI notice bubble
+      const targetUserId = targetMember.id;
+      const recipientAiNoticeMsg = {
+        id: nowTs + 2,
+        from: `ai_${targetUserId}`,
+        text: `🔄 ${ME.name} ${ME.role || '부장'}님이 "${target.title}" 일정을 다시 요청하셨습니다.${reasonSuffix}`,
+        time: nowTime,
+        createdAt: new Date(nowTs + 100).toISOString()
+      };
+
+      // Save to localStorage for both sender and recipient
+      try {
+        const myKeys = [ME.id];
+        if (ME.id === 'sh') myKeys.push('yoonhee');
+        if (ME.id === 'yoonhee') myKeys.push('sh');
+        if (ME.id === 'sangmoo') myKeys.push('sangmu');
+        if (ME.id === 'sangmu') myKeys.push('sangmoo');
+        if (ME.id === 'daum') myKeys.push('daeum');
+
+        const targetKeys = [targetUserId];
+        if (targetUserId === 'sh') targetKeys.push('yoonhee');
+        if (targetUserId === 'yoonhee') targetKeys.push('sh');
+        if (targetUserId === 'sangmoo') targetKeys.push('sangmu');
+        if (targetUserId === 'sangmu') targetKeys.push('sangmoo');
+        if (targetUserId === 'daum') targetKeys.push('daeum');
+
+        myKeys.forEach(k => {
+          const saved = localStorage.getItem(`zal_messages_${k}`);
+          const list = saved ? JSON.parse(saved) : [];
+          list.push(myAiNoticeMsg);
+          localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
         });
 
-        const nowTs = Date.now();
-        const nowIso = new Date().toISOString();
-        const nowTime = formatTime(new Date());
+        targetKeys.forEach(k => {
+          const saved = localStorage.getItem(`zal_messages_${k}`);
+          const list = saved ? JSON.parse(saved) : [];
+          list.push(recipientAiNoticeMsg);
+          localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
+        });
+      } catch (e) {}
 
-        const userChatText = cleanMsg || `"${target.title}" 일정 다시 요청합니다.`;
-
-        // 1) User chat bubble sent by current user (ME)
-        const myUserChatMsg = {
-          id: nowTs,
-          from: `user_${userSuffix}_${ME.id}`,
-          text: userChatText,
-          time: nowTime,
-          createdAt: nowIso
-        };
-
-        // 2) AI confirmation bubble in current user's chat
-        const myAiNoticeMsg = {
-          id: nowTs + 1,
-          from: `ai_${userSuffix}_${ME.id}`,
-          text: `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`,
-          time: nowTime,
-          createdAt: new Date(nowTs + 100).toISOString()
-        };
-
-        // 3) Recipient's chat: Message bubble from sender (ME)
-        const targetUserId = targetMember.id;
-        const recipientUserChatMsg = {
-          id: nowTs + 2,
-          from: `user_${targetUserId}`,
-          isFromOtherUser: true,
-          otherUserName: `${ME.name} ${ME.role || '부장'}`,
-          text: `💬 ${ME.name} ${ME.role || '부장'}: "${userChatText}"`,
-          time: nowTime,
-          createdAt: nowIso
-        };
-
-        // 4) Recipient's chat: AI notice bubble
-        const recipientAiNoticeMsg = {
-          id: nowTs + 3,
-          from: `ai_${targetUserId}`,
-          text: `🔄 ${ME.name} ${ME.role || '부장'}님이 "${target.title}" 일정을 다시 요청하셨습니다.`,
-          time: nowTime,
-          createdAt: new Date(nowTs + 100).toISOString()
-        };
-
-        // Save to localStorage for both sender and recipient
+      if (isConfigured) {
         try {
-          const myKeys = [ME.id];
-          if (ME.id === 'sh') myKeys.push('yoonhee');
-          if (ME.id === 'yoonhee') myKeys.push('sh');
-          if (ME.id === 'sangmoo') myKeys.push('sangmu');
-          if (ME.id === 'sangmu') myKeys.push('sangmoo');
-
-          const targetKeys = [targetUserId];
-          if (targetUserId === 'sh') targetKeys.push('yoonhee');
-          if (targetUserId === 'yoonhee') targetKeys.push('sh');
-          if (targetUserId === 'sangmoo') targetKeys.push('sangmu');
-          if (targetUserId === 'sangmu') targetKeys.push('sangmoo');
-          if (targetUserId === 'daum') targetKeys.push('daum');
-
-          myKeys.forEach(k => {
-            const saved = localStorage.getItem(`zal_messages_${k}`);
-            const list = saved ? JSON.parse(saved) : [];
-            list.push(myUserChatMsg, myAiNoticeMsg);
-            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
-          });
-
-          targetKeys.forEach(k => {
-            const saved = localStorage.getItem(`zal_messages_${k}`);
-            const list = saved ? JSON.parse(saved) : [];
-            list.push(recipientUserChatMsg, recipientAiNoticeMsg);
-            localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
-          });
-        } catch (e) {}
-
-        if (isConfigured) {
-          try {
-            await appwriteService.createMessage(myUserChatMsg);
-            await appwriteService.createMessage(myAiNoticeMsg);
-            await appwriteService.createMessage(recipientUserChatMsg);
-            await appwriteService.createMessage(recipientAiNoticeMsg);
-          } catch (e) {
-            console.error("Failed to save re-request messages to DB:", e);
-          }
+          await appwriteService.createMessage(myAiNoticeMsg);
+          await appwriteService.createMessage(recipientAiNoticeMsg);
+        } catch (e) {
+          console.error("Failed to save re-request messages to DB:", e);
         }
-        setMessages(prev => [...prev, myUserChatMsg, myAiNoticeMsg]);
-
-        showLayerAlert(`"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`, '다시요청 완료', 'success');
       }
-    );
+      setMessages(prev => [...prev, myAiNoticeMsg]);
+
+      showLayerAlert(`"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하였습니다.`, '다시요청 완료', 'success');
+    };
+
+    if (optionalDirectMsg !== null && optionalDirectMsg !== undefined) {
+      performResubmit(optionalDirectMsg);
+    } else {
+      showLayerPrompt(
+        `"${target.title}" 일정을 ${targetMember.name} ${roleSuffix}에게 다시 요청하시겠습니까?\n전달할 메시지나 변경 사항을 입력해 주세요.`,
+        '일정 다시요청',
+        '다시 요청 메시지를 입력하세요 (선택 사항)',
+        '다시요청',
+        (userMsg) => performResubmit(userMsg)
+      );
+    }
   };
 
   const handleCancelSchedule = async (schedId) => {
@@ -3706,22 +3692,14 @@ export default function App() {
       return nextFeeds;
     });
 
-    // 3. Post Speech Bubble messages in Calendar chat
+    // 3. Post Speech Bubble messages in Calendar chat (Only AI confirmation bubble, no fake user speech bubble)
     const approverId = target.approverId || (target.memberId !== ME.id ? target.memberId : 'sangmoo');
 
-    // (a) Requester's (나/정다음) messages
-    const myUserChatMsg = {
-      id: nowTs + 1,
-      from: `user_${ME.id}`,
-      text: `[취소] "${target.title}" (${target.date || ''}일) 요청을 취소합니다.`,
-      time: nowTime,
-      createdAt: nowIso
-    };
-
+    // (a) Requester's (나/정다음) AI confirmation message
     const myAiNoticeMsg = {
-      id: nowTs + 2,
+      id: nowTs + 1,
       from: `ai_${ME.id}`,
-      text: `${ME.name}님의 [${target.title}] 요청이 정상적으로 취소되었습니다.\n필요 시 일정 카드의 '다시요청' 버튼을 통해 언제든 다시 신청하실 수 있습니다.`,
+      text: `${ME.name}님의 [${target.title}] 요청이 정상적으로 취소되었습니다.\n필요 시 일정 카드의 '재요청' 버튼을 통해 언제든 다시 신청하실 수 있습니다.`,
       targetTitle: target.title,
       time: nowTime,
       createdAt: new Date(nowTs + 50).toISOString()
@@ -3729,7 +3707,7 @@ export default function App() {
 
     // (b) Approver's (조상무) messages
     const approverAiNoticeMsg = {
-      id: nowTs + 3,
+      id: nowTs + 2,
       from: `ai_${approverId}`,
       text: `🔔 [알림] ${ME.name}님이 [${target.title}] (${target.date || ''}일) 결재 요청을 취소하였습니다.`,
       targetTitle: target.title,
@@ -3753,7 +3731,7 @@ export default function App() {
       myKeys.forEach(k => {
         const saved = localStorage.getItem(`zal_messages_${k}`);
         const list = saved ? JSON.parse(saved) : [];
-        list.push(myUserChatMsg, myAiNoticeMsg);
+        list.push(myAiNoticeMsg);
         localStorage.setItem(`zal_messages_${k}`, JSON.stringify(list));
       });
 
@@ -3767,7 +3745,6 @@ export default function App() {
 
     if (isConfigured) {
       try {
-        await appwriteService.createMessage(myUserChatMsg);
         await appwriteService.createMessage(myAiNoticeMsg);
         await appwriteService.createMessage(approverAiNoticeMsg);
       } catch (e) {
@@ -3775,7 +3752,7 @@ export default function App() {
       }
     }
 
-    setMessages(prev => [...prev, myUserChatMsg, myAiNoticeMsg]);
+    setMessages(prev => [...prev, myAiNoticeMsg]);
 
     showLayerAlert(`"${target.title}" 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };

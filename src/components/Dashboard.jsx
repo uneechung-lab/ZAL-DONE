@@ -44,16 +44,23 @@ export default function Dashboard({
   const [expandedCommentFeedIds, setExpandedCommentFeedIds] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
   const [reportModalType, setReportModalType] = useState(null); // 'daily' | 'weekly' | null
-  const [timelineDate, setTimelineDate] = useState(new Date(2026, 7, 31)); // 2026-08-31
+  const [timelineDate, setTimelineDate] = useState(() => new Date());
   const [selectedMemberId, setSelectedMemberId] = useState('all');
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일 (${timelineDayNames[timelineDate.getDay()]})`;
 
+  const today = new Date();
+  const formattedTodayHeader = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 ${timelineDayNames[today.getDay()]}요일`;
+  const getTodayFormatted = () => {
+    const d = new Date();
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   const displayMembers = (teamMembers && teamMembers.length > 0) ? teamMembers : [
     { id: 'sh', name: '정윤희', role: '부장', avatarPic: '/pic1_thumb.png', color: '#6366f1' },
     { id: 'sangmoo', name: '조상무', role: '상무', avatarPic: '/pic2_thumb.png', color: '#10b981' },
-    { id: 'daeum', name: '정다음', role: '사원', avatarPic: '/pic3_thumb.png', color: '#f59e0b' }
+    { id: 'daum', name: '정다음', role: '사원', avatarPic: '/pic3_thumb.png', color: '#f59e0b' }
   ];
 
   const handlePrevTimelineDate = () => {
@@ -70,9 +77,39 @@ export default function Dashboard({
   const [toastMessage, setToastMessage] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [expandedRawCardIds, setExpandedRawCardIds] = useState({});
   const userMenuRef = useRef(null);
   const projectMenuRef = useRef(null);
   const composerTextareaRef = useRef(null);
+
+  const toggleRawText = (cardId, e) => {
+    e?.stopPropagation();
+    setExpandedRawCardIds(prev => ({ ...prev, [cardId]: !prev[cardId] }));
+  };
+
+  const formatHour = (hour) => {
+    if (hour === undefined || hour === null) return '09:00';
+    const h = Math.floor(hour);
+    const m = Math.round((hour - h) * 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  const findMatchingSchedule = (item) => {
+    if (!schedules || schedules.length === 0) return null;
+    let match = schedules.find(s => s.id === item.id || s.id === item.feedId || s.feedId === item.feedId || s.feedId === item.id);
+    if (match) return match;
+
+    const itemTitle = (item.title || '').replace(/^[🚨🏖️📋🤝📢\s\[\]]+/g, '').trim();
+    match = schedules.find(s => {
+      if (!s.title) return false;
+      const sTitle = s.title.replace(/^[🚨🏖️📋🤝📢\s\[\]]+/g, '').trim();
+      if (itemTitle && (sTitle.includes(itemTitle) || itemTitle.includes(sTitle))) {
+        return true;
+      }
+      return false;
+    });
+    return match;
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -86,7 +123,9 @@ export default function Dashboard({
       const url = new URL(window.location.href);
       url.searchParams.set('cardId', item.id);
       url.searchParams.set('feedId', item.feedId);
-      url.searchParams.set('date', '2026-08-31');
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      url.searchParams.set('date', dateStr);
       if (item.category) {
         url.searchParams.set('category', item.category);
       }
@@ -173,27 +212,33 @@ export default function Dashboard({
     const hasRequest = /요청|부탁|신청|컨펌|검토|확인\s*바랍니다|수락|면담/i.test(text);
     const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업/i.test(text);
 
-    // Detect target assignee / approver from text
-    let targetUserId = 'sh';
-    let targetUserName = '정윤희';
-    let targetUserRole = '부장';
+    // Detect target assignee / approver from text (Vacation is ALWAYS approved by Cho Sangmoo)
+    let targetUserId = 'sangmoo';
+    let targetUserName = '조상무';
+    let targetUserRole = '상무';
 
-    if (/조상무|상무님|상무/i.test(text)) {
+    if (hasVacation || /조상무|상무님|상무/i.test(text)) {
       targetUserId = 'sangmoo';
       targetUserName = '조상무';
       targetUserRole = '상무';
-    } else if (/정다음|다음사원|다음/i.test(text)) {
-      targetUserId = 'daeum';
-      targetUserName = '정다음';
-      targetUserRole = '사원';
     } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
       targetUserId = 'sh';
       targetUserName = '정윤희';
       targetUserRole = '부장';
-    } else if (hasVacation) {
-      targetUserId = 'sangmoo';
-      targetUserName = '조상무';
-      targetUserRole = '상무';
+    } else if (/정다음|다음사원|다음/i.test(text)) {
+      targetUserId = 'daum';
+      targetUserName = '정다음';
+      targetUserRole = '사원';
+    } else {
+      if (currentUser?.id === 'daum' || currentUser?.id === 'daeum') {
+        targetUserId = hasVacation ? 'sangmoo' : 'sh';
+        targetUserName = hasVacation ? '조상무' : '정윤희';
+        targetUserRole = hasVacation ? '상무' : '부장';
+      } else {
+        targetUserId = 'sangmoo';
+        targetUserName = '조상무';
+        targetUserRole = '상무';
+      }
     }
 
     let primaryType = 'all';
@@ -253,7 +298,7 @@ export default function Dashboard({
     if (hasVacation) {
       vacInfo = {
         type: /오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가',
-        date: '2026.08.31',
+        date: getTodayFormatted(),
         status: 'pending',
         approverName: targetUserName,
         approverRole: targetUserRole,
@@ -266,7 +311,7 @@ export default function Dashboard({
       const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
       vacInfo = {
         type: reqType,
-        date: '2026.08.31',
+        date: getTodayFormatted(),
         status: 'pending',
         approverName: targetUserName,
         approverRole: targetUserRole,
@@ -339,21 +384,52 @@ export default function Dashboard({
 
   // Vacation & Colleague Request Approval Action
   const handleApproveVacation = (feedId, approve = true) => {
-    setFeeds(prev => prev.map(f => {
-      if (f.id === feedId && f.vacationInfo) {
-        const approverDisplay = `${currentUser?.name || '담당자'} ${currentUser?.role || ''}`.trim();
-        return {
-          ...f,
-          vacationInfo: {
-            ...f.vacationInfo,
-            status: approve ? 'approved' : 'rejected',
-            approverName: approverDisplay,
-            approvedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    const approverDisplay = `${currentUser?.name || '담당자'} ${currentUser?.role || ''}`.trim();
+    let targetFeed = null;
+    setFeeds(prev => {
+      const next = prev.map(f => {
+        if (f.id === feedId && f.vacationInfo) {
+          targetFeed = f;
+          return {
+            ...f,
+            vacationInfo: {
+              ...f.vacationInfo,
+              status: approve ? 'approved' : 'rejected',
+              approverName: approverDisplay,
+              approvedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            }
+          };
+        }
+        return f;
+      });
+      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+
+    // Also sync status with Calendar schedules so Dashboard and Calendar share unified state
+    if (setSchedules) {
+      setSchedules(prev => {
+        const next = prev.map(s => {
+          const isMatch = targetFeed && (
+            (targetFeed.content && targetFeed.content.includes(s.title)) ||
+            (targetFeed.vacationInfo?.type && s.title && s.title.includes(targetFeed.vacationInfo.type)) ||
+            (/반차|휴가|연차/i.test(s.title || '') && /반차|휴가|연차/i.test(targetFeed.vacationInfo?.type || '')) ||
+            (s.status === 'requested' && (s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId))
+          );
+          if (isMatch) {
+            return {
+              ...s,
+              status: approve ? 'accepted' : 'rejected',
+              statusUpdatedAt: Date.now(),
+              updatedAt: new Date().toISOString()
+            };
           }
-        };
-      }
-      return f;
-    }));
+          return s;
+        });
+        try { localStorage.setItem('zal_schedules', JSON.stringify(next)); } catch (_) {}
+        return next;
+      });
+    }
   };
 
   // Start Editing Feed
@@ -379,26 +455,32 @@ export default function Dashboard({
     const hasRequest = /요청|부탁|신청|컨펌|검토|확인\s*바랍니다|수락|면담/i.test(text);
     const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업/i.test(text);
 
-    let targetUserId = 'sh';
-    let targetUserName = '정윤희';
-    let targetUserRole = '부장';
+    let targetUserId = 'sangmoo';
+    let targetUserName = '조상무';
+    let targetUserRole = '상무';
 
-    if (/조상무|상무님|상무/i.test(text)) {
+    if (hasVacation || /조상무|상무님|상무/i.test(text)) {
       targetUserId = 'sangmoo';
       targetUserName = '조상무';
       targetUserRole = '상무';
-    } else if (/정다음|다음사원|다음/i.test(text)) {
-      targetUserId = 'daeum';
-      targetUserName = '정다음';
-      targetUserRole = '사원';
     } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
       targetUserId = 'sh';
       targetUserName = '정윤희';
       targetUserRole = '부장';
-    } else if (hasVacation) {
-      targetUserId = 'sangmoo';
-      targetUserName = '조상무';
-      targetUserRole = '상무';
+    } else if (/정다음|다음사원|다음/i.test(text)) {
+      targetUserId = 'daum';
+      targetUserName = '정다음';
+      targetUserRole = '사원';
+    } else {
+      if (currentUser?.id === 'daum' || currentUser?.id === 'daeum') {
+        targetUserId = hasVacation ? 'sangmoo' : 'sh';
+        targetUserName = hasVacation ? '조상무' : '정윤희';
+        targetUserRole = hasVacation ? '상무' : '부장';
+      } else {
+        targetUserId = 'sangmoo';
+        targetUserName = '조상무';
+        targetUserRole = '상무';
+      }
     }
 
     let primaryType = 'all';
@@ -463,7 +545,7 @@ export default function Dashboard({
             : (hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청'));
           updatedVacInfo = {
             type: reqType,
-            date: '2026.08.31',
+            date: getTodayFormatted(),
             status: f.vacationInfo?.status || 'pending',
             approverName: targetUserName,
             approverRole: targetUserRole,
@@ -628,22 +710,26 @@ export default function Dashboard({
         let vInfo = feed.vacationInfo;
         // Auto-detect meeting/work requests in feed content if missing
         if (!vInfo && (feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁'))) {
-          let targetUserId = 'sh';
-          let targetUserName = '정윤희';
-          let targetUserRole = '부장';
-          if (/조상무|상무/i.test(feed.content)) {
+          let targetUserId = 'sangmoo';
+          let targetUserName = '조상무';
+          let targetUserRole = '상무';
+          if (/반차|휴가|연차/i.test(feed.content) || /조상무|상무/i.test(feed.content)) {
             targetUserId = 'sangmoo';
             targetUserName = '조상무';
             targetUserRole = '상무';
           } else if (/정다음|다음/i.test(feed.content)) {
-            targetUserId = 'daeum';
+            targetUserId = 'daum';
             targetUserName = '정다음';
             targetUserRole = '사원';
+          } else if (/정윤희|정부장|부장/i.test(feed.content)) {
+            targetUserId = 'sh';
+            targetUserName = '정윤희';
+            targetUserRole = '부장';
           }
           const reqType = /미팅|회의|면담/i.test(feed.content) ? '미팅 요청' : (/반차|휴가/i.test(feed.content) ? '휴가 신청' : '업무 요청');
           vInfo = {
             type: reqType,
-            date: '2026.08.31',
+            date: getTodayFormatted(),
             status: 'pending',
             approverName: targetUserName,
             approverRole: targetUserRole,
@@ -655,13 +741,23 @@ export default function Dashboard({
         }
 
         if (vInfo) {
-          const isVac = vInfo.type?.includes('반차') || vInfo.type?.includes('휴가');
-          const approverName = vInfo.approverName || '조상무';
-          const approverRole = vInfo.approverRole || '';
-          const targetStr = `${approverName} ${approverRole}`.trim();
+          const isVac = vInfo.type?.includes('반차') || vInfo.type?.includes('휴가') || /반차|휴가|연차/i.test(feed.content || '');
+          let approverName = vInfo.approverName;
+          let approverRole = vInfo.approverRole || '';
+          if (/조상무|상무님|조상무님/i.test(feed.content || '')) {
+            approverName = '조상무';
+            approverRole = '상무';
+          } else if (/정윤희|정부장|부장님|윤희/i.test(feed.content || '')) {
+            approverName = '정윤희';
+            approverRole = '부장';
+          } else if (/정다음|정사원|다음/i.test(feed.content || '')) {
+            approverName = '정다음';
+            approverRole = '사원';
+          }
+          const targetStr = `${approverName || '담당자'} ${approverRole || ''}`.trim();
           
           let title = isVac 
-            ? `🏖️ ${vInfo.type} 신청 (${vInfo.date})` 
+            ? `🏖️ ${vInfo.type || '휴가'} 신청 (${vInfo.date})` 
             : `📋 ${vInfo.type} (${targetStr} 수락 요청)`;
           
           let badgeText = vInfo.status === 'approved' 
@@ -900,12 +996,13 @@ export default function Dashboard({
   };
 
   const getEventsForMemberAndDate = (memberId, dateObj) => {
-    const isBaseDemoDay = dateObj.getFullYear() === 2026 && dateObj.getMonth() === 7 && dateObj.getDate() === 31;
-    const baseEvents = isBaseDemoDay ? (baseMemberScheduleMap[memberId] || []) : [];
+    const baseEvents = baseMemberScheduleMap[memberId] || [];
 
     const dynamicEvents = (schedules || []).filter(s => {
       const matchesMember = s.memberIds ? s.memberIds.includes(memberId) : s.memberId === memberId;
-      const matchesDate = s.date === dateObj.getDate();
+      const sYear = s.year || dateObj.getFullYear();
+      const sMonth = s.month || (dateObj.getMonth() + 1);
+      const matchesDate = sYear === dateObj.getFullYear() && sMonth === (dateObj.getMonth() + 1) && s.date === dateObj.getDate();
       return matchesMember && matchesDate;
     }).map(s => {
       let bg = '#eef2ff', border = '#c7d2fe', text = '#3730a3', accent = '#6366f1';
@@ -935,9 +1032,16 @@ export default function Dashboard({
 
   // Generate Report Content
   const getDailyReportContent = () => {
-    return `# 📋 [ZAL 모닝 데일리] 2026.08.31 (월) 팀 업무 보고서
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const dayStr = timelineDayNames[now.getDay()];
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-**작성 일시:** 2026.08.31 10:15
+    return `# 📋 [ZAL 모닝 데일리] ${y}.${m}.${d} (${dayStr}) 팀 업무 보고서
+
+**작성 일시:** ${y}.${m}.${d} ${timeStr}
 **작성자:** ${currentUser?.name || '정윤희'} ${currentUser?.role || '부장'}
 
 ---
@@ -953,7 +1057,7 @@ export default function Dashboard({
 - **15:00 ~ 17:00** 임원 주간 경영 회의 (참석: 조상무 상무)
 
 ## 3. 🏖️ 휴가 및 근태 신청 현황
-- 정다음 사원: **9/1(화) 오전 반차** (${feeds.find(f => f.vacationInfo)?.vacationInfo?.status === 'approved' ? '✅ 조상무 상무 승인 완료' : '⏳ 결재 대기 중'})
+- 정다음 사원: **휴가 / 반차 신청** (${feeds.find(f => f.vacationInfo)?.vacationInfo?.status === 'approved' ? '✅ 조상무 상무 승인 완료' : '⏳ 결재 대기 중'})
 
 ## 4. 📌 중점 추진 업무
 - 대신증권 연금 경쟁력 강화 시스템 연동 브리핑 자료 작성 (정윤희 부장)
@@ -962,22 +1066,36 @@ export default function Dashboard({
   };
 
   const getWeeklyReportContent = () => {
-    return `# 📊 [ZAL 위클리] 2026년 9월 1주차 주간 업무 계획 보고서
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const day = now.getDate();
+    const weekNum = Math.ceil(day / 7);
 
-**작성 기준:** 2026.08.31 (월) ~ 2026.09.04 (금)
+    const dayOfWeek = now.getDay();
+    const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const mon = new Date(y, now.getMonth(), day + distToMon);
+    const fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4);
+
+    const monStr = `${mon.getFullYear()}.${String(mon.getMonth() + 1).padStart(2, '0')}.${String(mon.getDate()).padStart(2, '0')}`;
+    const friStr = `${fri.getFullYear()}.${String(fri.getMonth() + 1).padStart(2, '0')}.${String(fri.getDate()).padStart(2, '0')}`;
+
+    return `# 📊 [ZAL 위클리] ${y}년 ${m}월 ${weekNum}주차 주간 업무 계획 보고서
+
+**작성 기준:** ${monStr} (월) ~ ${friStr} (금)
 **보고 부서:** 디지털 기획 / 개발 본부
 
 ---
 
 ### [팀별 주간 마일스톤]
 1. **대신증권 연금 경쟁력 강화 프로젝트**
-   - 08.31(월): 시스템 인터페이스 브리핑
-   - 09.02(수): 1차 개발 통합 테스트 및 QA 세션
+   - ${monStr}(월): 시스템 인터페이스 브리핑
+   - 1차 개발 통합 테스트 및 QA 세션
 2. **서비스 안정화 및 장애 제로화**
-   - 로그인 인증 세션 핫픽스 적용 (08.31 완료 목표)
+   - 로그인 인증 세션 핫픽스 적용
    - 모니터링 경보 체계 고도화
 3. **팀 근태 및 휴가 계획**
-   - 09.01(화): 정다음 사원 (오전 반차)
+   - 근태 및 휴가 일정 사전 조율 완료
 
 ### [임원 지시 및 협조 사항]
 - 배포 전 회귀 테스트 철저 검증 요망 (조상무 상무)
@@ -1053,7 +1171,7 @@ export default function Dashboard({
               letterSpacing: '-0.2px',
               lineHeight: '1.2'
             }}>
-              2026년 8월 31일 월요일
+              {formattedTodayHeader}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
               <h2 style={{
@@ -1064,7 +1182,7 @@ export default function Dashboard({
                 margin: 0,
                 lineHeight: '1.25'
               }}>
-                {(displayUser || currentUser)?.name || '정윤희'}님, 잘됨이와 잘되는 하루 :-)
+                {(displayUser || currentUser)?.name || '정윤희'}님, 잘됨이와 뭐든 잘되는 하루 :-)
               </h2>
 
               {/* Quick Hashtag Buttons */}
@@ -1831,6 +1949,51 @@ export default function Dashboard({
               const isPendingVacation = item.vacationInfo && item.vacationInfo.status === 'pending';
               const isApprovedVacation = item.vacationInfo && item.vacationInfo.status === 'approved';
 
+              const isAuthor = item.authorId === (currentUser?.id || 'sh') ||
+                               (currentUser?.id === 'sh' && item.authorId === 'yoonhee') ||
+                               (currentUser?.id === 'sangmoo' && item.authorId === 'sangmu') ||
+                               (currentUser?.id === 'daum' && (item.authorId === 'daeum' || item.authorId === 'daum'));
+
+              const isRawExpanded = !!expandedRawCardIds[item.id];
+              const rawContent = item.feed?.content || item.content || item.description;
+
+              const matchedSched = findMatchingSchedule(item);
+
+              let assigneeName = item.authorName || '정다음';
+              if (matchedSched) {
+                const member = displayMembers.find(m => m.id === matchedSched.memberId || (matchedSched.memberIds && matchedSched.memberIds.includes(m.id)));
+                if (member) assigneeName = member.name;
+              } else if (item.vacationInfo?.requesterName) {
+                assigneeName = item.vacationInfo.requesterName;
+              }
+
+              let dateStr = getTodayFormatted();
+              if (matchedSched && matchedSched.date) {
+                const y = matchedSched.year || today.getFullYear();
+                const m = String(matchedSched.month || (today.getMonth() + 1)).padStart(2, '0');
+                const d = String(matchedSched.date).padStart(2, '0');
+                dateStr = `${y}.${m}.${d}`;
+              } else if (item.vacationInfo?.date) {
+                dateStr = item.vacationInfo.date;
+              }
+
+              let timeStr = '09:00 ~ 12:00';
+              if (matchedSched && matchedSched.startHour !== undefined && matchedSched.endHour !== undefined) {
+                timeStr = `${formatHour(matchedSched.startHour)} ~ ${formatHour(matchedSched.endHour)}`;
+              } else if (item.vacationInfo) {
+                if (/오후/i.test(item.vacationInfo.type || item.title || '')) {
+                  timeStr = '14:00 ~ 18:00';
+                } else if (/오전/i.test(item.vacationInfo.type || item.title || '')) {
+                  timeStr = '09:00 ~ 14:00';
+                } else {
+                  timeStr = '09:00 ~ 18:00';
+                }
+              } else if (/리뷰|미팅|회의/i.test(item.title || '')) {
+                timeStr = '14:00 ~ 15:00';
+              } else if (/API|연동|개발/i.test(item.title || '')) {
+                timeStr = '15:00 ~ 17:00';
+              }
+
               return (
                 <article
                   id={`card_${item.id}`}
@@ -1912,44 +2075,134 @@ export default function Dashboard({
                     </div>
                   </div>
 
-                  {/* Main Content Title (Click to open Schedule Detail & Edit modal) */}
-                  <div
-                    onClick={() => {
-                      if (onOpenScheduleDetail) {
-                        onOpenScheduleDetail(item);
-                      }
-                    }}
-                    style={{
-                      cursor: onOpenScheduleDetail ? 'pointer' : 'default',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px',
-                      borderRadius: '8px',
-                      transition: 'opacity 0.15s ease'
-                    }}
-                    title="클릭하여 일정 상세 및 수정 열기"
-                  >
-                    <div style={{
-                      fontSize: '14.5px',
-                      color: '#0f172a',
-                      lineHeight: '1.6',
-                      fontWeight: '700',
-                      letterSpacing: '-0.2px'
-                    }}>
-                      {item.title}
+                  {/* Main Content Area (Title + '원문보기' Button + Calendar-style Details) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Title Row & '원문보기' Button (제목 우측에 바로 붙여서 배치) */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div
+                        onClick={() => {
+                          if (onOpenScheduleDetail) {
+                            onOpenScheduleDetail(item);
+                          }
+                        }}
+                        style={{
+                          cursor: onOpenScheduleDetail ? 'pointer' : 'default',
+                          fontSize: '14.5px',
+                          color: '#0f172a',
+                          lineHeight: '1.5',
+                          fontWeight: '700',
+                          letterSpacing: '-0.2px'
+                        }}
+                        title="클릭하여 일정 상세 및 수정 열기"
+                      >
+                        {item.title}
+                      </div>
+
+                      {/* '원문보기' 버튼 (자기가 작성한 카드에만 제목 바로 우측에 표시) */}
+                      {isAuthor && rawContent && (
+                        <button
+                          type="button"
+                          onClick={(e) => toggleRawText(item.id, e)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            padding: '0 4px',
+                            fontSize: '11.5px',
+                            fontWeight: '600',
+                            color: isRawExpanded ? '#2563eb' : '#64748b',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'color 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#1e293b';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = isRawExpanded ? '#2563eb' : '#64748b';
+                          }}
+                        >
+                          <span>원문보기</span>
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{
+                              transform: isRawExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.2s ease'
+                            }}
+                          >
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+                      )}
                     </div>
 
-                    {item.description && item.description !== item.title && (
+                    {/* 작성자만 볼 수 있는 펼침 원문 박스 */}
+                    {isAuthor && isRawExpanded && rawContent && (
                       <div style={{
-                        fontSize: '13.5px',
-                        color: '#475569',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        fontSize: '12.5px',
+                        color: '#334155',
                         lineHeight: '1.55',
                         whiteSpace: 'pre-wrap',
-                        fontWeight: '500'
+                        fontWeight: '400'
                       }}>
-                        {item.description}
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', marginBottom: '4px' }}>
+                          💬 작성 원문
+                        </div>
+                        {rawContent}
                       </div>
                     )}
+
+                    {/* 캘린더 카드 형식의 상세 정보 (담당, 날짜, 시간) */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      fontSize: '12.5px',
+                      color: '#334155',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #f1f5f9',
+                      borderRadius: '8px',
+                      padding: '8px 10px',
+                      marginTop: '2px'
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', alignItems: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <span>담당</span>
+                        </div>
+                        <div style={{ fontWeight: '700', color: '#0f172a' }}>{assigneeName}</div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', alignItems: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          <span>날짜</span>
+                        </div>
+                        <div style={{ fontWeight: '500', color: '#334155' }}>{dateStr}</div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', alignItems: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#64748b' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <span>시간</span>
+                        </div>
+                        <div style={{ fontWeight: '500', color: '#334155' }}>{timeStr}</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
@@ -1960,15 +2213,47 @@ export default function Dashboard({
                     const isApproved = vInfo.status === 'approved';
                     const isRejected = vInfo.status === 'rejected';
 
-                    const targetUserId = vInfo.targetUserId || 'sangmoo';
-                    const targetName = vInfo.approverName || '조상무';
-                    const targetRole = vInfo.approverRole || '';
-                    const targetDisplay = `${targetName} ${targetRole}`.trim();
+                    // Extract who the user requested approval from in the content, or use vInfo's assigned approver
+                    let targetUserId = vInfo.targetUserId;
+                    let targetName = vInfo.approverName;
+                    let targetRole = vInfo.approverRole;
+
+                    if (/조상무|상무님|조상무님/i.test(item.content || '')) {
+                      targetUserId = 'sangmoo';
+                      targetName = '조상무';
+                      targetRole = '상무';
+                    } else if (/정윤희|정부장|부장님|윤희/i.test(item.content || '')) {
+                      targetUserId = 'sh';
+                      targetName = '정윤희';
+                      targetRole = '부장';
+                    } else if (/정다음|정사원|다음사원/i.test(item.content || '')) {
+                      targetUserId = 'daum';
+                      targetName = '정다음';
+                      targetRole = '사원';
+                    } else if (!targetUserId) {
+                      const reqId = vInfo.requesterId || item.authorId || 'daum';
+                      if (reqId === 'daum') {
+                        targetUserId = 'sh';
+                        targetName = '정윤희';
+                        targetRole = '부장';
+                      } else {
+                        targetUserId = 'sangmoo';
+                        targetName = '조상무';
+                        targetRole = '상무';
+                      }
+                    }
+
+                    if (!targetRole) {
+                      const member = displayMembers.find(m => m.id === targetUserId || m.name === targetName);
+                      if (member) targetRole = member.role;
+                    }
+
+                    const targetDisplay = `${targetName || ''} ${targetRole || ''}`.trim();
 
                     const canApprove = (currentUser?.id === targetUserId) ||
-                                       (targetUserId === 'sangmoo' && isApprover) ||
+                                       (targetUserId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.name === '조상무' || currentUser?.role === '상무')) ||
                                        (targetUserId === 'sh' && (currentUser?.id === 'sh' || currentUser?.name?.includes('정윤희') || currentUser?.role?.includes('부장'))) ||
-                                       (targetUserId === 'daeum' && (currentUser?.id === 'daeum' || currentUser?.name?.includes('정다음') || currentUser?.role?.includes('사원')));
+                                       ((targetUserId === 'daum' || targetUserId === 'daeum') && (currentUser?.id === 'daum' || currentUser?.id === 'daeum' || currentUser?.name?.includes('정다음') || currentUser?.role?.includes('사원')));
 
                     if (isPending) {
                       if (canApprove) {

@@ -771,7 +771,15 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
     } else if (/반차|연차|휴가|병가/i.test(raw)) {
       memberId = myId;
       isRequested = true;
-      approverId = 'sangmoo'; // 모든 휴가는 항상 조상무 상무 결재
+      if (/조상무|상무님|상무/i.test(raw)) {
+        approverId = 'sangmoo';
+      } else if (/정윤희|정부장|부장님|윤희/i.test(raw)) {
+        approverId = 'sh';
+      } else if (/정다음|다음/i.test(raw)) {
+        approverId = 'daum';
+      } else {
+        approverId = myId === 'daum' ? 'sh' : 'sangmoo';
+      }
     } else {
       // Normal personal task of the current user
       memberId = myId;
@@ -3069,6 +3077,33 @@ export default function App() {
           return next;
         });
 
+        // Sync with Dashboard feeds
+        setFeeds(prev => {
+          const next = prev.map(f => {
+            if (!f.vacationInfo) return f;
+            const isMatch = targetItems.some(t => {
+              const tTitle = (t.title || '').trim();
+              return (f.content && f.content.includes(tTitle)) || 
+                     (f.vacationInfo?.type && tTitle.includes(f.vacationInfo.type)) ||
+                     (/반차|휴가|연차/i.test(t.title || '') && /반차|휴가|연차/i.test(f.vacationInfo?.type || ''));
+            });
+            if (isMatch) {
+              return {
+                ...f,
+                vacationInfo: {
+                  ...f.vacationInfo,
+                  status: 'approved',
+                  approverName: `${ME.name} ${ME.role || ''}`.trim(),
+                  approvedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                }
+              };
+            }
+            return f;
+          });
+          try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+          return next;
+        });
+
         // Notify requester
         const requesterId = target.requesterId || target.memberId || 'sh';
         const reqKeys = [requesterId];
@@ -3192,6 +3227,33 @@ export default function App() {
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
           } catch (e) {}
+          return next;
+        });
+
+        // Sync with Dashboard feeds
+        setFeeds(prev => {
+          const next = prev.map(f => {
+            if (!f.vacationInfo) return f;
+            const isMatch = targetItems.some(t => {
+              const tTitle = (t.title || '').trim();
+              return (f.content && f.content.includes(tTitle)) || 
+                     (f.vacationInfo?.type && tTitle.includes(f.vacationInfo.type)) ||
+                     (/반차|휴가|연차/i.test(t.title || '') && /반차|휴가|연차/i.test(f.vacationInfo?.type || ''));
+            });
+            if (isMatch) {
+              return {
+                ...f,
+                vacationInfo: {
+                  ...f.vacationInfo,
+                  status: 'rejected',
+                  approverName: `${ME.name} ${ME.role || ''}`.trim(),
+                  approvedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                }
+              };
+            }
+            return f;
+          });
+          try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
           return next;
         });
 
@@ -3861,6 +3923,42 @@ export default function App() {
             category: s.isIssue ? '이슈' : (s.status === 'requested' ? '요청' : '회의')
           }));
 
+          let targetUserId = 'sangmoo';
+          let targetUserName = '조상무';
+          let targetUserRole = '상무';
+
+          const reqSchedule = savedSchedules.find(s => s.status === 'requested' || s.isRequested);
+          if (reqSchedule && reqSchedule.approverId) {
+            const approverMember = TEAM.find(m => m.id === reqSchedule.approverId || (reqSchedule.approverId === 'sangmu' && m.id === 'sangmoo') || (reqSchedule.approverId === 'yoonhee' && m.id === 'sh') || (reqSchedule.approverId === 'daeum' && m.id === 'daum'));
+            if (approverMember) {
+              targetUserId = approverMember.id;
+              targetUserName = approverMember.name;
+              targetUserRole = approverMember.role;
+            }
+          } else if (hasVacation || /조상무|상무님|상무/i.test(text)) {
+            targetUserId = 'sangmoo';
+            targetUserName = '조상무';
+            targetUserRole = '상무';
+          } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
+            targetUserId = 'sh';
+            targetUserName = '정윤희';
+            targetUserRole = '부장';
+          } else if (/정다음|다음/i.test(text)) {
+            targetUserId = 'daum';
+            targetUserName = '정다음';
+            targetUserRole = '사원';
+          } else {
+            if (actingUser.id === 'daum') {
+              targetUserId = hasVacation ? 'sangmoo' : 'sh';
+              targetUserName = hasVacation ? '조상무' : '정윤희';
+              targetUserRole = hasVacation ? '상무' : '부장';
+            } else {
+              targetUserId = 'sangmoo';
+              targetUserName = '조상무';
+              targetUserRole = '상무';
+            }
+          }
+
           const newFeed = {
             id: `feed_${Date.now()}`,
             authorId: actingUser.id,
@@ -3877,9 +3975,9 @@ export default function App() {
               type: hasVacation ? (text.includes('오전') ? '오전 반차' : text.includes('오후') ? '오후 반차' : '휴가') : '업무 요청',
               date: `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`,
               status: 'pending',
-              approverName: '정윤희',
-              approverRole: '부장',
-              targetUserId: 'sh',
+              approverName: targetUserName,
+              approverRole: targetUserRole,
+              targetUserId: targetUserId,
               requesterId: actingUser.id,
               requesterName: actingUser.name,
               approvedAt: null

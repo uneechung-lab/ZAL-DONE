@@ -7424,44 +7424,6 @@ export default function App() {
                       </div>
                     ))}
                     <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '4px 0' }}></div>
-                    {/* Logout Menu Item */}
-                    <div
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsUserMenuOpen(false);
-                        if (isConfigured) {
-                          handleLogOut();
-                        } else {
-                          showLayerAlert('로그아웃 되었습니다.', '알림', 'info');
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: '700',
-                        color: '#334155',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        boxSizing: 'border-box',
-                        transition: 'background-color 0.12s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                      </svg>
-                      <span>로그아웃</span>
-                    </div>
-
                     {/* Reset Data Menu Item */}
                     <div
                       onClick={(e) => {
@@ -7522,7 +7484,45 @@ export default function App() {
                         <polyline points="23 20 23 14 17 14"></polyline>
                         <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
                       </svg>
-                      <span>데이터 초기화</span>
+                      <span>시연 데이터 초기화</span>
+                    </div>
+
+                    {/* Logout Menu Item */}
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsUserMenuOpen(false);
+                        if (isConfigured) {
+                          handleLogOut();
+                        } else {
+                          showLayerAlert('로그아웃 되었습니다.', '알림', 'info');
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#334155',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'background-color 0.12s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      <span>로그아웃</span>
                     </div>
                   </div>
                 )}

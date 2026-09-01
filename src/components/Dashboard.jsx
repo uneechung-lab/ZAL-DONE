@@ -2216,24 +2216,20 @@ export default function Dashboard({
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
                     let vInfo = item.vacationInfo;
+                    const allContent = `${item.feed?.content || ''} ${item.content || ''} ${item.description || ''} ${item.title || ''} ${matchedSched?.title || ''} ${matchedSched?.description || ''}`;
+
                     if (!vInfo && matchedSched) {
-                      // Only synthesize vInfo if this schedule is genuinely an approval/request schedule!
-                      const isLeave = /반차|연차|휴가|병가/i.test(matchedSched.title || '');
+                      const isLeave = /반차|연차|휴가|병가/i.test(allContent);
                       const isMultiAssigneeRequest = matchedSched.memberIds && matchedSched.memberIds.length > 1 && matchedSched.status === 'requested';
                       const isPendingRequest = matchedSched.status === 'requested' || (matchedSched.isRequested && matchedSched.status !== 'accepted');
                       const isExplicitApprovedRequest = (matchedSched.description || '').includes('[수락메시지]') || (matchedSched.description || '').includes('[승인 완료]');
                       const isExplicitRejectedRequest = (matchedSched.status === 'rejected' || (matchedSched.status && matchedSched.status.startsWith('rejected'))) && (isLeave || isMultiAssigneeRequest || (matchedSched.description || '').includes('[반려사유]'));
 
                       if (isPendingRequest || isExplicitApprovedRequest || isExplicitRejectedRequest || (isLeave && matchedSched.status === 'accepted')) {
-                        const otherId = matchedSched.approverId || (matchedSched.memberIds && matchedSched.memberIds.find(id => id !== matchedSched.requesterId));
-                        const otherMember = displayMembers.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'daeum' && m.id === 'daum') || (otherId === 'sangmu' && m.id === 'sangmoo'));
                         vInfo = {
                           type: isLeave ? '휴가' : (matchedSched.category || '요청'),
                           date: dateStr,
                           status: matchedSched.status === 'accepted' ? 'approved' : (matchedSched.status === 'rejected' ? 'rejected' : 'pending'),
-                          approverName: otherMember ? otherMember.name : (matchedSched.requesterId === 'daum' ? '정윤희' : '조상무'),
-                          approverRole: otherMember ? otherMember.role : (matchedSched.requesterId === 'daum' ? '부장' : '상무'),
-                          targetUserId: otherMember ? otherMember.id : (matchedSched.requesterId === 'daum' ? 'sh' : 'sangmoo'),
                           requesterId: matchedSched.requesterId || item.authorId,
                           requesterName: item.authorName
                         };
@@ -2245,49 +2241,42 @@ export default function Dashboard({
                     const isApproved = vInfo.status === 'approved';
                     const isRejected = vInfo.status === 'rejected';
 
-                    // Extract who the user requested approval from in the content, or use vInfo's assigned approver
-                    let targetUserId = vInfo.targetUserId;
-                    let targetName = vInfo.approverName;
-                    let targetRole = vInfo.approverRole;
+                    // 1. Determine Approver accurately
+                    let targetUserId = 'sangmoo';
+                    let targetName = '조상무';
+                    let targetRole = '상무';
 
-                    if (matchedSched && matchedSched.approverId) {
-                      targetUserId = matchedSched.approverId;
-                    } else if (matchedSched && matchedSched.memberIds && matchedSched.memberIds.length > 1) {
-                      const otherId = matchedSched.memberIds.find(id => id !== matchedSched.requesterId && !(matchedSched.requesterId === 'sh' && id === 'yoonhee') && !(matchedSched.requesterId === 'daum' && id === 'daeum'));
-                      if (otherId) targetUserId = otherId;
-                    }
-
-                    if (/조상무|상무님|조상무님/i.test(item.content || '')) {
+                    if (/조상무|상무님|상무/i.test(allContent)) {
                       targetUserId = 'sangmoo';
                       targetName = '조상무';
                       targetRole = '상무';
-                    } else if (/정윤희|정부장|부장님|윤희/i.test(item.content || '')) {
+                    } else if (/정윤희|정부장|부장님|윤희/i.test(allContent)) {
                       targetUserId = 'sh';
                       targetName = '정윤희';
                       targetRole = '부장';
-                    } else if (/정다음|정사원|다음사원/i.test(item.content || '')) {
+                    } else if (/정다음|정사원|다음사원/i.test(allContent)) {
                       targetUserId = 'daum';
                       targetName = '정다음';
                       targetRole = '사원';
-                    } else if (!targetUserId) {
-                      const reqId = vInfo.requesterId || item.authorId || 'daum';
-                      if (reqId === 'daum') {
-                        targetUserId = 'sh';
-                        targetName = '정윤희';
-                        targetRole = '부장';
-                      } else {
-                        targetUserId = 'sangmoo';
-                        targetName = '조상무';
-                        targetRole = '상무';
-                      }
+                    } else if (matchedSched && matchedSched.approverId) {
+                      targetUserId = matchedSched.approverId;
+                    } else if (vInfo.targetUserId) {
+                      targetUserId = vInfo.targetUserId;
+                    } else if (/반차|연차|휴가|병가/i.test(allContent)) {
+                      targetUserId = 'sangmoo';
+                      targetName = '조상무';
+                      targetRole = '상무';
+                    } else if (matchedSched && matchedSched.memberIds && matchedSched.memberIds.length > 1) {
+                      const otherId = matchedSched.memberIds.find(id => id !== matchedSched.requesterId && !(matchedSched.requesterId === 'sh' && id === 'yoonhee') && !(matchedSched.requesterId === 'daum' && id === 'daeum'));
+                      if (otherId) targetUserId = otherId;
+                    } else {
+                      targetUserId = (vInfo.requesterId === 'daum' || item.authorId === 'daum') ? 'sh' : 'sangmoo';
                     }
 
-                    if (!targetName || !targetRole) {
-                      const member = displayMembers.find(m => m.id === targetUserId || (targetUserId === 'sh' && m.id === 'sh') || (targetUserId === 'daum' && m.id === 'daum') || (targetUserId === 'sangmoo' && m.id === 'sangmoo'));
-                      if (member) {
-                        targetName = member.name;
-                        targetRole = member.role;
-                      }
+                    const foundTarget = displayMembers.find(m => m.id === targetUserId || (targetUserId === 'sh' && m.id === 'sh') || (targetUserId === 'daum' && m.id === 'daum') || (targetUserId === 'sangmoo' && m.id === 'sangmoo'));
+                    if (foundTarget) {
+                      targetName = foundTarget.name;
+                      targetRole = foundTarget.role;
                     }
 
                     const targetDisplay = `${targetName || ''} ${targetRole || ''}`.trim();

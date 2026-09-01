@@ -192,11 +192,22 @@ function IssueWarningIcon({ size = 16, style = {} }) {
 
 
 function getApproverMember(sched, currentUserId = 'sh') {
-  if (!sched) return { name: '정윤희', role: '부장' };
+  if (!sched) return { name: '조상무', role: '상무' };
   try {
+    const rawText = `${sched.title || ''} ${sched.description || ''}`;
+    if (/조상무|상무님|상무/i.test(rawText)) {
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    }
+    if (/정윤희|정부장|부장님|윤희/i.test(rawText)) {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    }
     if (sched.approverId) {
       const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo') || (sched.approverId === 'daeum' && m.id === 'daum'));
       if (found) return found;
+    }
+    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
+    if (isLeave) {
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
     }
     const requester = sched.requesterId || sched.memberId || currentUserId;
     // If it has multiple assignees (e.g. daum and sh), the other member is the target/approver
@@ -207,13 +218,12 @@ function getApproverMember(sched, currentUserId = 'sh') {
         if (found) return found;
       }
     }
-    // If requester is daum, direct manager is 정윤희 부장 (sh)
     if (requester === 'daum' || requester === 'daeum') {
       return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
     return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
   } catch (e) {
-    return { name: '정윤희', role: '부장' };
+    return { name: '조상무', role: '상무' };
   }
 }
 

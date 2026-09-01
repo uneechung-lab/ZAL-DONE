@@ -16,6 +16,7 @@ export default function Dashboard({
   setFeeds: setFeedsProp,
   onAddSchedule,
   onOpenScheduleDetail,
+  onCancelSchedule,
   onNavigateToSync,
   onSwitchUser,
   onLogout,
@@ -2447,16 +2448,54 @@ export default function Dashboard({
                             backgroundColor: '#fffbeb',
                             border: '1px solid #fde68a',
                             borderRadius: '10px',
-                            padding: '10px 14px',
-                            fontSize: '12px',
-                            color: '#b45309',
-                            fontWeight: '600',
+                            padding: '8px 14px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'space-between',
+                            gap: '8px'
                           }}>
-                            <span>⏳</span>
-                            <span>{targetDisplay ? `요청 대기중 (${targetDisplay}에게 요청)` : '요청 대기중'}</span>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '12px',
+                              color: '#b45309',
+                              fontWeight: '600'
+                            }}>
+                              <span>⏳</span>
+                              <span>{targetDisplay ? `요청 대기중 (${targetDisplay}에게 요청)` : '요청 대기중'}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                if (sched && onCancelSchedule) {
+                                  onCancelSchedule(sched.id);
+                                } else if (onCancelSchedule && item.feedId) {
+                                  onCancelSchedule(item.feedId);
+                                } else if (item.feedId) {
+                                  handleDeleteFeed(item.feedId);
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fca5a5',
+                                borderRadius: '8px',
+                                fontWeight: '700',
+                                lineHeight: '1.2',
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                            >
+                              요청취소
+                            </button>
                           </div>
                         );
                       }

@@ -5322,6 +5322,7 @@ export default function App() {
           setFeeds={setFeeds}
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
+          onCancelSchedule={handleCancelSchedule}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {
             const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;
@@ -5862,7 +5863,7 @@ export default function App() {
                                                         handleCancelSchedule(matchedSchedule.id);
                                                       }}
                                                     >
-                                                      {isDelegatedTask ? '요청취소' : '신청취소'}
+                                                      {isDelegatedTask ? '요청취소' : '요청취소'}
                                                     </button>
                                                   </div>
                                                );
@@ -5944,9 +5945,7 @@ export default function App() {
                                                        }
                                                        setSchedules(prev => prev.filter(s => s.id !== matchedSchedule.id));
                                                      }}
-                                                   >
-                                                     신청취소
-                                                   </button>
+                                                   >요청취소</button>
                                                  )}
                                                </div>
                                              );
@@ -6892,7 +6891,7 @@ export default function App() {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    {isLeave ? '신청취소' : '요청취소'}
+                                    {isLeave ? '요청취소' : '요청취소'}
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -7019,7 +7018,7 @@ export default function App() {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  {isLeave ? '신청취소' : '요청취소'}
+                                  {isLeave ? '요청취소' : '요청취소'}
                                 </button>
                               </div>
                             </div>

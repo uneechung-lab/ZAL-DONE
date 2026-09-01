@@ -1915,14 +1915,50 @@ export default function Dashboard({
       </div>
 
       {/* ──── MAIN DASHBOARD CONTAINER (LEFT 2-COLUMN MASONRY + RIGHT FIXED SIDEBAR) ──── */}
-      <div className="dashboard-layout-container" style={{ paddingTop: '8px' }}>
-        
-        {/* ════════ LEFT: 2-COLUMN FEED MASONRY GRID ════════ */}
-        <section className="dashboard-feed-masonry">
-            {(() => {
-              const categoryItems = getCategoryItems(activeFilter);
-            if (categoryItems.length === 0) {
-              return (
+      {(() => {
+        const categoryItems = getCategoryItems(activeFilter);
+        const hasAnyScheduleAtAll = (schedules && schedules.length > 0) || (feeds && feeds.length > 0);
+        const isCompletelyEmpty = !hasAnyScheduleAtAll || (activeFilter === 'all' && categoryItems.length === 0 && totalTimelineEventsCount === 0);
+
+        if (isCompletelyEmpty) {
+          return (
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '360px',
+              padding: '60px 20px',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: '1px dashed #cbd5e1',
+                borderRadius: '20px',
+                padding: '48px 36px',
+                textAlign: 'center',
+                color: '#94a3b8',
+                width: '100%',
+                maxWidth: '440px',
+                boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)'
+              }}>
+                <div style={{ fontSize: '38px', marginBottom: '12px' }}>💬</div>
+                <div style={{ fontSize: '15.5px', fontWeight: '700', color: '#334155' }}>
+                  등록된 일정이 없습니다.
+                </div>
+                <div style={{ fontSize: '13px', marginTop: '6px', color: '#64748b' }}>
+                  상단 입력창에 오늘의 일정을 등록해 보세요!
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="dashboard-layout-container" style={{ paddingTop: '8px' }}>
+            {/* ════════ LEFT: 2-COLUMN FEED MASONRY GRID ════════ */}
+            <section className="dashboard-feed-masonry">
+              {categoryItems.length === 0 ? (
                 <div style={{
                   columnSpan: 'all',
                   width: '100%',
@@ -1952,10 +1988,8 @@ export default function Dashboard({
                     </div>
                   </div>
                 </div>
-              );
-            }
-
-            return categoryItems.map(item => {
+              ) : (
+                categoryItems.map(item => {
               const parentFeed = item.feed || {
                 id: item.feedId || item.id,
                 likes: 0,
@@ -2665,8 +2699,7 @@ export default function Dashboard({
                   )}
                 </article>
               );
-            });
-          })()}
+            }))}
         </section>
 
 
@@ -2908,6 +2941,8 @@ export default function Dashboard({
         </aside>
 
       </div>
+    );
+  })()}
 
       {/* ──── REPORT PREVIEW MODAL DIALOG ──── */}
       {reportModalType && (

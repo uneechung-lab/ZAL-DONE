@@ -1524,32 +1524,32 @@ export default function Dashboard({
             style={{
               position: 'relative',
               display: 'flex',
-              alignItems: 'center',
+              alignItems: (isInputFocused || composerText.length > 0) ? 'flex-end' : 'center',
               backgroundColor: '#ffffff',
-              borderRadius: '26px',
+              borderRadius: (isInputFocused || composerText.length > 0) ? '20px' : '26px',
               border: '1.5px solid',
               borderColor: isSubmitting ? '#0f172a' : (isInputFocused ? '#0f172a' : '#cbd5e1'),
               boxShadow: isSubmitting ? '0 0 0 1px #0f172a' : (isInputFocused ? '0 0 0 1px #0f172a' : 'none'),
-              padding: '6px 8px 6px 22px',
-              minHeight: '52px',
-              height: '52px',
-              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+              padding: (isInputFocused || composerText.length > 0) ? '12px 12px 10px 20px' : '6px 8px 6px 22px',
+              minHeight: (isInputFocused || composerText.length > 0) ? '100px' : '52px',
+              height: (isInputFocused || composerText.length > 0) ? '100px' : '52px',
+              transition: 'height 0.2s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.2s ease, border-color 0.15s ease, box-shadow 0.15s ease',
               width: '100%',
               boxSizing: 'border-box',
               cursor: isSubmitting ? 'default' : 'text',
               overflow: 'hidden'
             }}
           >
-            <input
+            <textarea
               ref={composerTextareaRef}
-              type="text"
               value={composerText}
               disabled={isSubmitting}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
               onChange={(e) => setComposerText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isSubmitting) {
+                if (e.key === 'Enter' && !e.shiftKey && !isSubmitting) {
+                  e.preventDefault();
                   handleComposerSubmit(e);
                 }
               }}
@@ -1558,14 +1558,18 @@ export default function Dashboard({
                 flex: 1,
                 border: 'none',
                 outline: 'none',
-                fontSize: '15.5px',
+                fontSize: '15px',
                 fontWeight: '500',
                 color: '#0f172a',
                 backgroundColor: 'transparent',
-                height: '40px',
-                lineHeight: '40px',
+                height: (isInputFocused || composerText.length > 0) ? '76px' : '38px',
+                lineHeight: (isInputFocused || composerText.length > 0) ? '1.5' : '38px',
                 padding: '0',
-                opacity: isSubmitting ? 0 : 1
+                resize: 'none',
+                alignSelf: (isInputFocused || composerText.length > 0) ? 'flex-start' : 'center',
+                opacity: isSubmitting ? 0 : 1,
+                transition: 'height 0.2s ease',
+                fontFamily: 'inherit'
               }}
             />
             {/* Clear (Delete) button when text is inputted */}
@@ -1591,7 +1595,9 @@ export default function Dashboard({
                   justifyContent: 'center',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
-                  marginRight: '6px'
+                  marginRight: '6px',
+                  alignSelf: (isInputFocused || composerText.length > 0) ? 'flex-end' : 'center',
+                  marginBottom: (isInputFocused || composerText.length > 0) ? '6px' : '0'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.28)';
@@ -1628,7 +1634,8 @@ export default function Dashboard({
                 justifyContent: 'center',
                 transition: 'all 0.15s ease',
                 flexShrink: 0,
-                opacity: isSubmitting ? 0 : 1
+                opacity: isSubmitting ? 0 : 1,
+                alignSelf: (isInputFocused || composerText.length > 0) ? 'flex-end' : 'center'
               }}
               onMouseEnter={(e) => {
                 if (composerText.trim()) {

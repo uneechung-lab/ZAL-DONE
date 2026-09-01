@@ -5536,6 +5536,7 @@ export default function App() {
                           const match = schedules.find(s => 
                             s.title === p.title &&
                             s.date === d &&
+                            s.status !== 'cancelled' && !s.isCancelled &&
                             (!p.year || !s.year || s.year === p.year) &&
                             (!p.month || !s.month || s.month === p.month)
                           );
@@ -6012,7 +6013,38 @@ export default function App() {
                                                   )}
                                                 </div>
                                               );
-                                            }
+                                            } else if (matchedSchedule && (matchedSchedule.status === 'cancelled' || matchedSchedule.isCancelled)) {
+                                               const isMine = matchedSchedule.requesterId === ME.id || (matchedSchedule.memberId === ME.id && !matchedSchedule.requesterId);
+                                               return (
+                                                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                                   <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
+                                                     {isMine ? '🚫 요청 취소됨' : '🚫 요청자가 취소함'}
+                                                   </span>
+                                                   {isMine && (
+                                                     <button
+                                                       style={{
+                                                         padding: '6px 12px',
+                                                         fontSize: '12px',
+                                                         fontWeight: '700',
+                                                         backgroundColor: '#f0fdf4',
+                                                         color: '#15803d',
+                                                         border: '1px solid #86efac',
+                                                         borderRadius: '8px',
+                                                         cursor: 'pointer',
+                                                         marginLeft: 'auto',
+                                                         transition: 'all 0.15s ease'
+                                                       }}
+                                                       onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         handleResubmitSchedule(matchedSchedule.id);
+                                                       }}
+                                                     >
+                                                       🔄 재요청
+                                                     </button>
+                                                   )}
+                                                 </div>
+                                               );
+                                             }
 
                                            return (
                                              <button

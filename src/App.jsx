@@ -213,7 +213,7 @@ function getApproverMember(sched, currentUserId = 'sh') {
 
     // 3. Person designated in text / description
     const fullText = `${sched.title || ''} ${desc}`;
-    if (/조상무|상무님/i.test(fullText) && requester !== 'sangmoo' && requester !== 'sangmu') {
+    if (/조상무|상무님|상무/i.test(fullText) && requester !== 'sangmoo' && requester !== 'sangmu') {
       return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
     }
     if (/정윤희|정부장|부장님/i.test(fullText) && requester !== 'sh' && requester !== 'yoonhee') {
@@ -223,7 +223,13 @@ function getApproverMember(sched, currentUserId = 'sh') {
       return TEAM.find(m => m.id === 'daum') || { name: '정다음', role: '사원' };
     }
 
-    // 4. Delegated task/meeting assignees
+    // 4. Default approver for personal leave (반차/연차/휴가) is always sangmoo (조상무 상무)
+    const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(sched.title || '') || sched.category === '휴가';
+    if (isLeave) {
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+    }
+
+    // 5. Delegated task/meeting assignees
     if (sched.memberIds && sched.memberIds.length > 0) {
       const otherId = sched.memberIds.find(id => id !== requester && !(requester === 'sh' && id === 'yoonhee') && !(requester === 'daum' && id === 'daeum') && !(requester === 'sangmoo' && id === 'sangmu'));
       if (otherId) {
@@ -232,7 +238,7 @@ function getApproverMember(sched, currentUserId = 'sh') {
       }
     }
 
-    // 5. Default fallback if not explicitly designated
+    // 6. Default fallback for delegated non-leave tasks
     if (requester === 'daum' || requester === 'daeum') {
       return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
@@ -812,7 +818,7 @@ function parseMessageToSchedules(text, selectedDate, teamList = TEAM, year = new
       } else if (/정다음|다음/i.test(raw)) {
         approverId = 'daum';
       } else {
-        approverId = myId === 'daum' ? 'sh' : 'sangmoo';
+        approverId = 'sangmoo';
       }
     } else {
       // Normal personal task of the current user
@@ -5444,6 +5450,7 @@ export default function App() {
             });
             const groupedAcceptedOutgoingRequests = groupList(acceptedOutgoingRequests);
             const pendingItems = schedules.filter(s => {
+              if (s.status === 'cancelled' || s.isCancelled) return false;
               const isLeave = /반차|연차|휴가|병가|결재|비용/i.test(s.title || '') || s.category === '휴가';
               return isLeave && isApproverForItem(s);
             });

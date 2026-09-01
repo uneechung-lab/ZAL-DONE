@@ -1923,6 +1923,37 @@ export default function App() {
   const [weeklyNextPlanText, setWeeklyNextPlanText] = useState('');
   const [weeklyRiskText, setWeeklyRiskText] = useState('');
 
+  const handleGlobalResetDemo = async () => {
+    const nowTs = Date.now().toString();
+    localStorage.setItem('zal_reset_timestamp', nowTs);
+    localStorage.setItem('zal_schedules', JSON.stringify([]));
+    localStorage.setItem('zal_feeds_v2', JSON.stringify([]));
+    
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('zal_messages') || key.startsWith('zal_feeds') || key.startsWith('zal_schedules') || key.startsWith('zal_daily_issue')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    setSchedules([]);
+    setFeeds([]);
+    setShowPreviousMessages(false);
+    setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
+    setDailyIssueText('특이사항 없음 (또는 이슈 내용 입력)');
+    setDashboardResetKey(k => k + 1);
+
+    if (isConfigured) {
+      try {
+        await appwriteService.setGlobalResetMarker();
+        await appwriteService.clearSchedules();
+        await appwriteService.clearMessages();
+      } catch (err) {
+        console.error("Remote clear error:", err);
+      }
+    }
+    showLayerAlert('모든 대화, 일정 및 대시보드 데이터가 성공적으로 초기화되었습니다.', '초기화 완료', 'success');
+  };
+
   const [monthlyGoodText, setMonthlyGoodText] = useState('Good: 주요 프로모션 전환율 개선 및 기획/QA 목표 달성');
   const [monthlyBadText, setMonthlyBadText] = useState('Bad: 3주차 서버 응답 지연 발생 → 모니터링 체계 보완 완료');
   const [monthlyNextTasksText, setMonthlyNextTasksText] = useState('대시보드 2.0 고도화 및 고객 유지율(Retention) 개선 캠페인 실행');
@@ -5196,18 +5227,11 @@ export default function App() {
             }
           }}
           onResetData={() => {
-            try {
-              localStorage.clear();
-              sessionStorage.clear();
-            } catch (err) {}
-            if (isConfigured) {
-              try {
-                appwriteService.setGlobalResetMarker();
-                appwriteService.clearSchedules();
-                appwriteService.clearMessages();
-              } catch (e) {}
-            }
-            window.location.reload();
+            showLayerConfirm(
+              '모든 대화, 일정 및 대시보드 데이터를 초기화하시겠습니까?',
+              '시연 데이터 초기화',
+              () => handleGlobalResetDemo()
+            );
           }}
         />
       )}
@@ -7452,34 +7476,9 @@ export default function App() {
                         e.stopPropagation();
                         setIsUserMenuOpen(false);
                         showLayerConfirm(
-                          '모든 대화 및 일정 데이터를 초기화하시겠습니까?',
-                          '데이터 초기화 확인',
-                          async () => {
-                            const nowTs = Date.now().toString();
-                            localStorage.setItem('zal_reset_timestamp', nowTs);
-                            localStorage.setItem('zal_schedules', JSON.stringify([]));
-                            localStorage.removeItem('zal_feeds');
-                            Object.keys(localStorage).forEach(key => {
-                              if (key.startsWith('zal_messages') || key.startsWith('zal_feeds') || key.startsWith('zal_schedules')) {
-                                localStorage.removeItem(key);
-                              }
-                            });
-                            setSchedules([]);
-                            setShowPreviousMessages(false);
-                            setMessages([{ id: 0, from: 'ai', text: getGreetingMsg(ME.name, getTimeSlot()), time: formatTime(new Date()), createdAt: new Date().toISOString() }]);
-                            setDashboardResetKey(k => k + 1);
-
-                            if (isConfigured) {
-                              try {
-                                await appwriteService.setGlobalResetMarker();
-                                await appwriteService.clearSchedules();
-                                await appwriteService.clearMessages();
-                              } catch (err) {
-                                console.error("Remote clear error:", err);
-                              }
-                            }
-                            showLayerAlert('모든 데이터가 성공적으로 초기화되었습니다.', '초기화 완료', 'success');
-                          }
+                          '모든 대화, 일정 및 대시보드 데이터를 초기화하시겠습니까?',
+                          '시연 데이터 초기화',
+                          () => handleGlobalResetDemo()
                         );
                       }}
                       style={{

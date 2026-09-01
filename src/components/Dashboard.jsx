@@ -1524,8 +1524,8 @@ export default function Dashboard({
               backgroundColor: '#ffffff',
               borderRadius: '26px',
               border: '1.5px solid',
-              borderColor: isSubmitting ? '#bae6fd' : (isInputFocused ? '#0f172a' : '#cbd5e1'),
-              boxShadow: isSubmitting ? '0 0 0 1px #bae6fd' : (isInputFocused ? '0 0 0 1px #0f172a' : 'none'),
+              borderColor: isSubmitting ? '#0f172a' : (isInputFocused ? '#0f172a' : '#cbd5e1'),
+              boxShadow: isSubmitting ? '0 0 0 1px #0f172a' : (isInputFocused ? '0 0 0 1px #0f172a' : 'none'),
               padding: '6px 8px 6px 22px',
               minHeight: '52px',
               height: '52px',
@@ -1651,13 +1651,13 @@ export default function Dashboard({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: '#f0f9ff',
+                backgroundColor: '#f1f5f9',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
                 padding: '0 20px',
-                color: '#0284c7',
+                color: '#1e293b',
                 fontSize: '14px',
                 fontWeight: '600',
                 zIndex: 10
@@ -1667,7 +1667,7 @@ export default function Dashboard({
                   height="19"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#0284c7"
+                  stroke="#1e293b"
                   strokeWidth="2.5"
                   style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}
                 >

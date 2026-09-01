@@ -2264,38 +2264,33 @@ export default function Dashboard({
                     const isApproved = vInfo.status === 'approved';
                     const isRejected = vInfo.status === 'rejected';
 
-                    // 1. Determine Approver accurately
+                    // 1. Determine Approver accurately using the schedule model
                     let targetUserId = 'sangmoo';
                     let targetName = '조상무';
                     let targetRole = '상무';
 
-                    const allContent = `${item.feed?.content || ''} ${item.content || ''} ${item.description || ''} ${item.title || ''} ${matchedSched?.title || ''} ${matchedSched?.description || ''}`;
-
-                    if (/조상무|상무님|상무/i.test(allContent)) {
-                      targetUserId = 'sangmoo';
-                      targetName = '조상무';
-                      targetRole = '상무';
-                    } else if (/정윤희|정부장|부장님|윤희/i.test(allContent)) {
-                      targetUserId = 'sh';
-                      targetName = '정윤희';
-                      targetRole = '부장';
-                    } else if (/정다음|정사원|다음사원/i.test(allContent)) {
-                      targetUserId = 'daum';
-                      targetName = '정다음';
-                      targetRole = '사원';
-                    } else if (matchedSched && matchedSched.approverId) {
-                      targetUserId = matchedSched.approverId;
+                    if (matchedSched) {
+                      if (matchedSched.approverId) {
+                        targetUserId = matchedSched.approverId;
+                      } else if (matchedSched.memberIds && matchedSched.memberIds.length > 1) {
+                        const reqId = matchedSched.requesterId || item.authorId;
+                        const otherId = matchedSched.memberIds.find(id => id !== reqId && !(reqId === 'sh' && id === 'yoonhee') && !(reqId === 'daum' && id === 'daeum') && !(reqId === 'sangmoo' && id === 'sangmu'));
+                        if (otherId) targetUserId = otherId;
+                      } else if (isItemLeave) {
+                        targetUserId = 'sangmoo';
+                      } else if (/정윤희|정부장|부장/i.test(matchedSched.title || '') || (matchedSched.requesterId === 'daum')) {
+                        targetUserId = 'sh';
+                      }
                     } else if (vInfo.targetUserId) {
                       targetUserId = vInfo.targetUserId;
                     } else if (isItemLeave) {
                       targetUserId = 'sangmoo';
-                      targetName = '조상무';
-                      targetRole = '상무';
-                    } else if (matchedSched && matchedSched.memberIds && matchedSched.memberIds.length > 1) {
-                      const otherId = matchedSched.memberIds.find(id => id !== matchedSched.requesterId && !(matchedSched.requesterId === 'sh' && id === 'yoonhee') && !(matchedSched.requesterId === 'daum' && id === 'daeum'));
-                      if (otherId) targetUserId = otherId;
+                    } else if (/정윤희|정부장|부장/i.test(item.title || '')) {
+                      targetUserId = 'sh';
+                    } else if (/조상무|상무/i.test(item.title || '')) {
+                      targetUserId = 'sangmoo';
                     } else {
-                      targetUserId = (vInfo.requesterId === 'daum' || item.authorId === 'daum') ? 'sh' : 'sangmoo';
+                      targetUserId = (item.authorId === 'daum') ? 'sh' : 'sangmoo';
                     }
 
                     const foundTarget = displayMembers.find(m => m.id === targetUserId || (targetUserId === 'sh' && m.id === 'sh') || (targetUserId === 'daum' && m.id === 'daum') || (targetUserId === 'sangmoo' && m.id === 'sangmoo'));

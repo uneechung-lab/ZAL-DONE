@@ -5317,12 +5317,18 @@ export default function App() {
               return (s.description || '').includes('[수락메시지]') || (s.description || '').includes('[승인 완료]');
             });
             const groupedAcceptedOutgoingRequests = groupList(acceptedOutgoingRequests);
-            const pendingItems = schedules.filter(s => isApproverForItem(s));
+            const pendingItems = schedules.filter(s => {
+              const isLeave = /반차|연차|휴가|병가|결재|비용/i.test(s.title || '') || s.category === '휴가';
+              return isLeave && isApproverForItem(s);
+            });
             const requestedPendingCount = pendingItems.filter(s => s.status === 'requested').length;
+
+            const pendingIds = new Set(pendingItems.map(p => p.id));
             const incomingTaskRequests = schedules.filter(s => {
+              if (pendingIds.has(s.id)) return false;
               const isAssignedToMe = (s.memberId === ME.id || (s.memberIds && s.memberIds.includes(ME.id)));
               const isNotMyRequest = s.requesterId && s.requesterId !== ME.id && !(ME.id === 'sh' && s.requesterId === 'yoonhee');
-              const isNotLeave = !/반차|연차|휴가|병가/i.test(s.title || '');
+              const isNotLeave = !/반차|연차|휴가|병가/i.test(s.title || '') && s.category !== '휴가';
               
               if (!isAssignedToMe || !isNotMyRequest || !isNotLeave) return false;
               

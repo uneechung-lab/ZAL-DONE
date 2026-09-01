@@ -194,29 +194,44 @@ function IssueWarningIcon({ size = 16, style = {} }) {
 function getApproverMember(sched, currentUserId = 'sh') {
   if (!sched) return { name: '조상무', role: '상무' };
   try {
-    const rawText = `${sched.title || ''} ${sched.description || ''}`;
-    if (/조상무|상무님|상무/i.test(rawText)) {
-      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
-    }
-    if (/정윤희|정부장|부장님|윤희/i.test(rawText)) {
-      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
-    }
     if (sched.approverId) {
       const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo') || (sched.approverId === 'daeum' && m.id === 'daum'));
       if (found) return found;
     }
-    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
+
+    const requester = sched.requesterId || sched.memberId || currentUserId;
+
+    // Check explicit approver tag in description e.g. [결재자] 조상무
+    const desc = sched.description || '';
+    const approverTagMatch = desc.match(/\[(?:결재자|승인자|수락자|요청대상)\]\s*([^|\n]+)/);
+    if (approverTagMatch) {
+      const tagText = approverTagMatch[1].trim();
+      const foundByTag = TEAM.find(m => tagText.includes(m.name) || tagText.includes(m.role));
+      if (foundByTag && foundByTag.id !== requester && !(requester === 'sh' && foundByTag.id === 'yoonhee')) return foundByTag;
+    }
+
+    const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(sched.title || '');
     if (isLeave) {
+      if (requester === 'sh' || requester === 'yoonhee') {
+        return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
+      }
+      if (requester === 'daum' || requester === 'daeum') {
+        return TEAM.find(m => m.id === 'sangmoo') || TEAM.find(m => m.id === 'sh') || { name: '조상무', role: '상무' };
+      }
       return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
     }
-    const requester = sched.requesterId || sched.memberId || currentUserId;
-    // If it has multiple assignees (e.g. daum and sh), the other member is the target/approver
+
+    // If it has multiple assignees, the other member is the target/approver
     if (sched.memberIds && sched.memberIds.length > 0) {
       const otherId = sched.memberIds.find(id => id !== requester && !(requester === 'sh' && id === 'yoonhee') && !(requester === 'daum' && id === 'daeum') && !(requester === 'sangmoo' && id === 'sangmu'));
       if (otherId) {
         const found = TEAM.find(m => m.id === otherId || (otherId === 'yoonhee' && m.id === 'sh') || (otherId === 'sangmu' && m.id === 'sangmoo') || (otherId === 'daeum' && m.id === 'daum'));
         if (found) return found;
       }
+    }
+
+    if (requester === 'sh' || requester === 'yoonhee') {
+      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
     }
     if (requester === 'daum' || requester === 'daeum') {
       return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
@@ -1620,18 +1635,30 @@ export default function App() {
 
   const isApproverForItem = (sched) => {
     if (!sched) return false;
-    if (sched.status !== 'requested') return false;
+
+    // 1) Vacation / leave request default to designated approver (never the applicant!)
+    const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(sched.title || '');
+    if (isLeave) {
+      const applicantId = sched.requesterId || sched.memberId;
+      // If ME is the applicant, ME is NOT the approver!
+      if (applicantId === ME.id || (ME.id === 'sh' && applicantId === 'yoonhee') || (ME.id === 'sangmoo' && applicantId === 'sangmu') || (ME.id === 'daum' && applicantId === 'daeum')) {
+        return false;
+      }
+      const approver = getApproverMember(sched, ME.id);
+      return approver.id === ME.id || (ME.id === 'sh' && approver.id === 'yoonhee') || (ME.id === 'sangmoo' && approver.id === 'sangmu') || (ME.id === 'daum' && approver.id === 'daeum');
+    }
 
     // The requester themselves is never the approver of their own outgoing request
-    const isMyOutgoingReq = sched.requesterId && (
-      sched.requesterId === ME.id ||
-      (ME.id === 'sh' && sched.requesterId === 'yoonhee') ||
-      (ME.id === 'daum' && sched.requesterId === 'daeum') ||
-      (ME.id === 'sangmoo' && sched.requesterId === 'sangmu')
+    const reqId = sched.requesterId || sched.memberId;
+    const isMyOutgoingReq = reqId && (
+      reqId === ME.id ||
+      (ME.id === 'sh' && reqId === 'yoonhee') ||
+      (ME.id === 'daum' && reqId === 'daeum') ||
+      (ME.id === 'sangmoo' && reqId === 'sangmu')
     );
-    if (isMyOutgoingReq) return false;
+    if (isMyOutgoingReq && (!sched.approverId || sched.approverId !== ME.id)) return false;
 
-    // 1) Explicit approverId match
+    // 2) Explicit approverId match
     if (sched.approverId) {
       if (sched.approverId === ME.id ||
           (ME.id === 'sh' && sched.approverId === 'yoonhee') ||
@@ -1641,27 +1668,22 @@ export default function App() {
       }
     }
 
-    // 2) Co-assigned / Collaborative Meeting or Task request (e.g. daum created meeting with sh)
-    if (sched.memberIds && sched.memberIds.length > 0) {
-      if (sched.memberIds.includes(ME.id) ||
-          (ME.id === 'sh' && sched.memberIds.includes('yoonhee')) ||
-          (ME.id === 'sangmoo' && sched.memberIds.includes('sangmu')) ||
-          (ME.id === 'daum' && sched.memberIds.includes('daeum'))) {
+    // 3) Co-assigned / Collaborative Meeting or Task request (only if assigned to ME and not requested by ME)
+    if (!isMyOutgoingReq) {
+      if (sched.memberIds && sched.memberIds.length > 0) {
+        if (sched.memberIds.includes(ME.id) ||
+            (ME.id === 'sh' && sched.memberIds.includes('yoonhee')) ||
+            (ME.id === 'sangmoo' && sched.memberIds.includes('sangmu')) ||
+            (ME.id === 'daum' && sched.memberIds.includes('daeum'))) {
+          return true;
+        }
+      }
+      if (sched.memberId === ME.id ||
+          (ME.id === 'sh' && sched.memberId === 'yoonhee') ||
+          (ME.id === 'sangmoo' && sched.memberId === 'sangmu') ||
+          (ME.id === 'daum' && sched.memberId === 'daeum')) {
         return true;
       }
-    }
-    if (sched.memberId === ME.id ||
-        (ME.id === 'sh' && sched.memberId === 'yoonhee') ||
-        (ME.id === 'sangmoo' && sched.memberId === 'sangmu') ||
-        (ME.id === 'daum' && sched.memberId === 'daeum')) {
-      return true;
-    }
-
-    // 3) Vacation / leave request default to direct manager
-    const isLeave = /반차|연차|휴가|병가/i.test(sched.title || '');
-    if (isLeave) {
-      const approver = getApproverMember(sched, ME.id);
-      return approver.id === ME.id || (ME.id === 'sh' && approver.id === 'yoonhee') || (ME.id === 'sangmoo' && approver.id === 'sangmu');
     }
 
     return false;
@@ -3474,7 +3496,8 @@ export default function App() {
     );
     if (!target) return;
 
-    const targetMember = getRejecterMember(target);
+    const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(target.title || '');
+    const targetMember = isLeave ? getApproverMember(target, ME.id) : (getRejecterMember(target) || getApproverMember(target, ME.id));
     const roleSuffix = targetMember.role ? `${targetMember.role}님` : '님';
 
     const performResubmit = async (userMsg) => {
@@ -3512,7 +3535,7 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
             }
-            let dbSched = { ...item, status: 'requested', description: updatedDesc };
+            let dbSched = { ...item, status: 'requested', isCancelled: false, approverId: targetMember.id, description: updatedDesc };
             if (isCurrentUserYoonhee) {
               dbSched.memberId = item.memberId === 'sh' ? 'yoonhee' : (item.memberId === 'yoonhee' ? 'sh' : item.memberId);
               dbSched.memberIds = (item.memberIds || []).map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
@@ -3533,7 +3556,7 @@ export default function App() {
             updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
             updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
           }
-          return { ...s, status: 'requested', isCancelled: false, description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
+          return { ...s, status: 'requested', isCancelled: false, approverId: targetMember.id, description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
         });
         try {
           localStorage.setItem('zal_schedules', JSON.stringify(next));

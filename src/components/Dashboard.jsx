@@ -1923,20 +1923,33 @@ export default function Dashboard({
               const categoryItems = getCategoryItems(activeFilter);
             if (categoryItems.length === 0) {
               return (
-                <div className="masonry-card" style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px dashed #cbd5e1',
-                  borderRadius: '16px',
-                  padding: '40px 20px',
-                  textAlign: 'center',
-                  color: '#94a3b8'
+                <div style={{
+                  columnSpan: 'all',
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '40px 10px',
+                  boxSizing: 'border-box'
                 }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>💬</div>
-                  <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#475569' }}>
-                    해당 카테고리의 항목이 없습니다.
-                  </div>
-                  <div style={{ fontSize: '12.5px', marginTop: '4px' }}>
-                    상단 입력창에 오늘의 일정을 등록해 보세요!
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: '20px',
+                    padding: '44px 32px',
+                    textAlign: 'center',
+                    color: '#94a3b8',
+                    width: '100%',
+                    maxWidth: '440px',
+                    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '10px' }}>💬</div>
+                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#334155' }}>
+                      해당 카테고리의 항목이 없습니다.
+                    </div>
+                    <div style={{ fontSize: '13px', marginTop: '6px', color: '#64748b' }}>
+                      상단 입력창에 오늘의 일정을 등록해 보세요!
+                    </div>
                   </div>
                 </div>
               );

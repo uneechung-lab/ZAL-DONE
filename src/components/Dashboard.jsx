@@ -1928,14 +1928,13 @@ export default function Dashboard({
             </svg>
           </button>
 
-          {/* Clickable Date Label + Small Dropdown Icon */}
+          {/* Clickable Date Label */}
           <button
             type="button"
             onClick={() => setIsDatePickerOpen(prev => !prev)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
               background: isDatePickerOpen ? '#f1f5f9' : 'transparent',
               border: '1px solid transparent',
               borderRadius: '8px',
@@ -1964,23 +1963,6 @@ export default function Dashboard({
             }}>
               {formattedTimelineDate}
             </span>
-            <svg 
-              width="12" 
-              height="12" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="#64748b" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-              style={{
-                transform: isDatePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease',
-                marginTop: '1px'
-              }}
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
           </button>
 
           <button

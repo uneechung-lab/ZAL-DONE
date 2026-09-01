@@ -195,160 +195,21 @@ export default function Dashboard({
   // Current logged in user is executive approver (조상무)
   const isApprover = currentUser?.id === 'sangmoo' || currentUser?.name === '조상무' || currentUser?.role === '상무';
 
-  // Handle Quick Composer Post
-  const handleComposerSubmit = (e) => {
+  // Handle Quick Composer Post (delegates to the exact same AI schedule processor as Calendar)
+  const handleComposerSubmit = async (e) => {
     e?.preventDefault();
     const text = composerText.trim();
     if (!text || isSubmitting) return;
 
     setIsSubmitting(true);
-
-    const now = new Date();
-    const timeDisplay = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-
-    // AI schedule parsing & badge extraction
-    const hasIssue = /긴급|이슈|장애|오류|버그|지연|에러|디버깅/i.test(text);
-    const hasVacation = /반차|연차|휴가|병가|조퇴/i.test(text);
-    const hasRequest = /요청|부탁|신청|컨펌|검토|확인\s*바랍니다|수락|면담/i.test(text);
-    const hasMeeting = /회의|미팅|리뷰|브리핑|스탠드업/i.test(text);
-
-    // Detect target assignee / approver from text (Vacation is ALWAYS approved by Cho Sangmoo)
-    let targetUserId = 'sangmoo';
-    let targetUserName = '조상무';
-    let targetUserRole = '상무';
-
-    if (hasVacation || /조상무|상무님|상무/i.test(text)) {
-      targetUserId = 'sangmoo';
-      targetUserName = '조상무';
-      targetUserRole = '상무';
-    } else if (/정윤희|정부장|부장님|윤희/i.test(text)) {
-      targetUserId = 'sh';
-      targetUserName = '정윤희';
-      targetUserRole = '부장';
-    } else if (/정다음|다음사원|다음/i.test(text)) {
-      targetUserId = 'daum';
-      targetUserName = '정다음';
-      targetUserRole = '사원';
-    } else {
-      if (currentUser?.id === 'daum' || currentUser?.id === 'daeum') {
-        targetUserId = hasVacation ? 'sangmoo' : 'sh';
-        targetUserName = hasVacation ? '조상무' : '정윤희';
-        targetUserRole = hasVacation ? '상무' : '부장';
-      } else {
-        targetUserId = 'sangmoo';
-        targetUserName = '조상무';
-        targetUserRole = '상무';
-      }
-    }
-
-    let primaryType = 'all';
-    if (hasVacation || hasRequest) primaryType = 'vacation';
-    else if (hasIssue) primaryType = 'issue';
-    else if (hasMeeting) primaryType = 'meeting';
-
-    const badges = [];
-    if (hasIssue) {
-      const match = text.match(/(?:긴급|이슈|장애|오류|에러|디버깅)[^\n,.]*/i);
-      badges.push({
-        id: `b_${Date.now()}_1`,
-        type: 'issue',
-        label: `🚨 ${match ? match[0].trim() : '긴급 이슈 대응'}`,
-        category: '이슈'
-      });
-    }
-
-    if (hasVacation) {
-      const isMorning = /오전\s*반차/i.test(text);
-      const isAfternoon = /오후\s*반차/i.test(text);
-      const vacType = isMorning ? '오전 반차' : isAfternoon ? '오후 반차' : '연차 휴가';
-      badges.push({
-        id: `b_${Date.now()}_3`,
-        type: 'vacation',
-        label: `🏖️ ${vacType} 신청`,
-        category: '요청'
-      });
-    } else if (hasRequest) {
-      const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
-      badges.push({
-        id: `b_${Date.now()}_req`,
-        type: 'vacation',
-        label: `📋 ${reqType} (${targetUserName} ${targetUserRole})`,
-        category: '요청'
-      });
-    } else if (hasMeeting) {
-      const match = text.match(/(?:회의|미팅|리뷰|브리핑)[^\n,.]*/i);
-      badges.push({
-        id: `b_${Date.now()}_2`,
-        type: 'meeting',
-        label: `🤝 ${match ? match[0].trim() : '팀 회의 일정'}`,
-        category: '회의'
-      });
-    }
-
-    if (badges.length === 0) {
-      badges.push({
-        id: `b_${Date.now()}_4`,
-        type: 'work',
-        label: '📄 오늘 업무 공유',
-        category: '일반'
-      });
-    }
-
-    let vacInfo = null;
-    if (hasVacation) {
-      vacInfo = {
-        type: /오전/i.test(text) ? '오전 반차' : /오후/i.test(text) ? '오후 반차' : '휴가',
-        date: getTodayFormatted(),
-        status: 'pending',
-        approverName: targetUserName,
-        approverRole: targetUserRole,
-        targetUserId: targetUserId,
-        requesterId: currentUser?.id || 'sh',
-        requesterName: currentUser?.name || '정윤희',
-        approvedAt: null
-      };
-    } else if (hasRequest) {
-      const reqType = hasMeeting ? '미팅 요청' : (/검토|컨펌/i.test(text) ? '검토 요청' : '업무 요청');
-      vacInfo = {
-        type: reqType,
-        date: getTodayFormatted(),
-        status: 'pending',
-        approverName: targetUserName,
-        approverRole: targetUserRole,
-        targetUserId: targetUserId,
-        requesterId: currentUser?.id || 'sh',
-        requesterName: currentUser?.name || '정윤희',
-        approvedAt: null
-      };
-    }
-
-    const newFeed = {
-      id: `feed_${Date.now()}`,
-      authorId: currentUser?.id || 'sh',
-      authorName: currentUser?.name || '정윤희',
-      authorRole: currentUser?.role || '부장',
-      authorAvatarPic: currentUser?.avatarPic || '/pic1_thumb.png',
-      authorColor: currentUser?.color || '#000000',
-      createdAt: now.toISOString(),
-      timeDisplay: timeDisplay,
-      type: primaryType,
-      content: text,
-      aiBadges: badges,
-      vacationInfo: vacInfo,
-      likes: 0,
-      hasLiked: false,
-      cheers: 0,
-      hasCheered: false,
-      comments: []
-    };
-
-    setFeeds(prev => [newFeed, ...prev]);
     setComposerText('');
-    setIsSubmitting(false);
 
-    // Also trigger calendar schedule sync if parent handler provided
-    if (onAddSchedule) {
-      onAddSchedule(text, currentUser);
+    try {
+      if (onAddSchedule) {
+        await onAddSchedule(text, currentUser);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

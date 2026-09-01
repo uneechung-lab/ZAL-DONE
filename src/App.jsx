@@ -4015,12 +4015,17 @@ export default function App() {
 
           const primaryType = hasIssueInText ? 'issue' : hasVacation ? 'vacation' : hasMeeting ? 'meeting' : 'work';
 
-          const badges = savedSchedules.map((s, i) => ({
-            id: `b_${s.id}_${i}`,
-            type: s.status === 'requested' ? 'vacation' : (s.isIssue ? 'issue' : 'meeting'),
-            label: s.isIssue ? `🚨 ${s.title}` : (s.status === 'requested' ? `📋 ${s.title}` : `🤝 ${s.title}`),
-            category: s.isIssue ? '이슈' : (s.status === 'requested' ? '요청' : '회의')
-          }));
+          const badges = savedSchedules.map((s, i) => {
+            const isVac = /반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가';
+            const isMtg = /회의|미팅|리뷰|브리핑/i.test(s.title || '') || s.category === '회의';
+            const isIss = s.isIssue || s.category === '이슈' || /에러|버그|장애|디버깅/i.test(s.title || '');
+            return {
+              id: `b_${s.id}_${i}`,
+              type: isIss ? 'issue' : isVac ? 'vacation' : isMtg ? 'meeting' : 'work',
+              label: isIss ? `🚨 ${s.title}` : (isVac ? `🏖️ ${s.title}` : (isMtg ? `🤝 ${s.title}` : `📄 ${s.title}`)),
+              category: isIss ? '이슈' : (isVac ? '휴가' : (isMtg ? '회의' : '일반'))
+            };
+          });
 
           let targetUserId = 'sangmoo';
           let targetUserName = '조상무';
@@ -4058,6 +4063,16 @@ export default function App() {
             }
           }
 
+          const vacSchedule = savedSchedules.find(s => (/반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가'));
+          const vacDate = vacSchedule ? `${vacSchedule.year}.${String(vacSchedule.month).padStart(2, '0')}.${String(vacSchedule.date).padStart(2, '0')}` : `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+
+          let vacType = '업무 요청';
+          if (vacSchedule) {
+            vacType = vacSchedule.title;
+          } else if (hasVacation) {
+            vacType = text.includes('오전') ? '오전 반차' : (text.includes('오후') ? '오후 반차' : '휴가');
+          }
+
           const newFeed = {
             id: `feed_${Date.now()}`,
             authorId: actingUser.id,
@@ -4070,9 +4085,9 @@ export default function App() {
             type: primaryType,
             content: text,
             aiBadges: badges,
-            vacationInfo: (hasVacation || hasRequest) ? {
-              type: hasVacation ? (text.includes('오전') ? '오전 반차' : text.includes('오후') ? '오후 반차' : '휴가') : '업무 요청',
-              date: `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`,
+            vacationInfo: (hasVacation || hasRequest || vacSchedule) ? {
+              type: vacType,
+              date: vacDate,
               status: 'pending',
               approverName: targetUserName,
               approverRole: targetUserRole,
@@ -4188,7 +4203,7 @@ export default function App() {
   };
 
   const handleDashboardAddSchedule = (text, user) => {
-    processMessageAndCreateSchedule(text, user || ME, true);
+    processMessageAndCreateSchedule(text, user || ME, false);
   };
 
   const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {

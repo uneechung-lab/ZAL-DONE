@@ -539,6 +539,74 @@ export default function Dashboard({
     return '';
   };
 
+  // Helper to check if an item/feed belongs to the current timelineDate
+  const isItemOnTimelineDate = (item, dateObj) => {
+    if (!dateObj || !item) return true;
+    const targetY = dateObj.getFullYear();
+    const targetM = dateObj.getMonth() + 1;
+    const targetD = dateObj.getDate();
+
+    // 1. If it has matchedSchedule or schedule reference
+    const sched = item.matchedSchedule || findMatchingSchedule(item);
+    if (sched) {
+      const sY = sched.year || targetY;
+      const sM = sched.month || targetM;
+      const sD = sched.date;
+      if (sD !== undefined && sD !== null) {
+        return sY === targetY && sM === targetM && Number(sD) === targetD;
+      }
+    }
+
+    // 2. If it has vacationInfo date (e.g. "2026.09.08", "9월 8일", "8일")
+    if (item.vacationInfo && item.vacationInfo.date) {
+      const vDateStr = String(item.vacationInfo.date);
+      const parts = vDateStr.match(/(\d{4})?[.\-\/]?\s*(\d{1,2})[.\-\/]\s*(\d{1,2})/);
+      if (parts) {
+        const vY = parts[1] ? Number(parts[1]) : targetY;
+        const vM = Number(parts[2]);
+        const vD = Number(parts[3]);
+        return vY === targetY && vM === targetM && vD === targetD;
+      }
+      const singleDayMatch = vDateStr.match(/(\d{1,2})\s*일/);
+      if (singleDayMatch) {
+        return Number(singleDayMatch[1]) === targetD;
+      }
+    }
+
+    // 3. Extract date from title or content (e.g. "(2026.09.08)", "9월 8일", "(8일)")
+    const fullText = `${item.title || ''} ${item.description || ''} ${item.feed?.content || ''}`;
+    const textDateMatch = fullText.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+    if (textDateMatch) {
+      const tY = Number(textDateMatch[1]);
+      const tM = Number(textDateMatch[2]);
+      const tD = Number(textDateMatch[3]);
+      return tY === targetY && tM === targetM && tD === targetD;
+    }
+    const monthDayMatch = fullText.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+    if (monthDayMatch) {
+      const tM = Number(monthDayMatch[1]);
+      const tD = Number(monthDayMatch[2]);
+      return tM === targetM && tD === targetD;
+    }
+    const dayOnlyMatch = fullText.match(/\((\d{1,2})\s*일\)/) || fullText.match(/\[(\d{1,2})\s*일\]/) || fullText.match(/\s(\d{1,2})일(?:\s|\)|$)/);
+    if (dayOnlyMatch) {
+      return Number(dayOnlyMatch[1]) === targetD;
+    }
+
+    // 4. Check createdAt of feed/item
+    const createdStr = item.createdAt || item.feed?.createdAt;
+    if (createdStr) {
+      const cDate = new Date(createdStr);
+      if (!isNaN(cDate.getTime())) {
+        return cDate.getFullYear() === targetY && (cDate.getMonth() + 1) === targetM && cDate.getDate() === targetD;
+      }
+    }
+
+    // Default fallback: if no date specified in content, match today's date
+    const today = new Date();
+    return today.getFullYear() === targetY && (today.getMonth() + 1) === targetM && today.getDate() === targetD;
+  };
+
   // Granular categorized items when specific category tab or 'all' is selected
   const getCategoryItems = (categoryKey) => {
     const items = [];
@@ -915,7 +983,7 @@ export default function Dashboard({
     }
 
     // Filter out cancelled requests so they disappear from Dashboard feeds
-    const activeItems = items.filter(item => {
+    let activeItems = items.filter(item => {
       if (item.status === 'cancelled' || item.isCancelled) return false;
       if (item.vacationInfo && item.vacationInfo.status === 'cancelled') return false;
       const matched = item.matchedSchedule || (schedules || []).find(s => 
@@ -925,6 +993,9 @@ export default function Dashboard({
       if (matched && (matched.status === 'cancelled' || matched.isCancelled)) return false;
       return true;
     });
+
+    // Filter cards strictly for the selected timelineDate
+    activeItems = activeItems.filter(item => isItemOnTimelineDate(item, timelineDate));
 
     if (selectedMemberId && selectedMemberId !== 'all') {
       return activeItems.filter(item => item.authorId === selectedMemberId);

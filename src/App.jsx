@@ -194,6 +194,7 @@ function IssueWarningIcon({ size = 16, style = {} }) {
 function getApproverMember(sched, currentUserId = 'sh') {
   if (!sched) return { name: '조상무', role: '상무' };
   try {
+    // 1. Explicit approverId set on the schedule (designated by requester)
     if (sched.approverId) {
       const found = TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo') || (sched.approverId === 'daeum' && m.id === 'daum'));
       if (found) return found;
@@ -201,27 +202,28 @@ function getApproverMember(sched, currentUserId = 'sh') {
 
     const requester = sched.requesterId || sched.memberId || currentUserId;
 
-    // Check explicit approver tag in description e.g. [결재자] 조상무
+    // 2. Explicit tag in description (e.g. [결재자] 조상무, [요청대상] 정다음, [승인자] 정윤희)
     const desc = sched.description || '';
-    const approverTagMatch = desc.match(/\[(?:결재자|승인자|수락자|요청대상)\]\s*([^|\n]+)/);
+    const approverTagMatch = desc.match(/\[(?:결재자|승인자|수락자|요청대상|지정결재자)\]\s*([^|\n]+)/);
     if (approverTagMatch) {
       const tagText = approverTagMatch[1].trim();
-      const foundByTag = TEAM.find(m => tagText.includes(m.name) || tagText.includes(m.role));
+      const foundByTag = TEAM.find(m => tagText.includes(m.name) || (m.role && tagText.includes(m.role)));
       if (foundByTag && foundByTag.id !== requester && !(requester === 'sh' && foundByTag.id === 'yoonhee')) return foundByTag;
     }
 
-    const isLeave = /\[?반차|연차|휴가|병가\]?/i.test(sched.title || '');
-    if (isLeave) {
-      if (requester === 'sh' || requester === 'yoonhee') {
-        return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
-      }
-      if (requester === 'daum' || requester === 'daeum') {
-        return TEAM.find(m => m.id === 'sangmoo') || TEAM.find(m => m.id === 'sh') || { name: '조상무', role: '상무' };
-      }
+    // 3. Person designated in text / description
+    const fullText = `${sched.title || ''} ${desc}`;
+    if (/조상무|상무님/i.test(fullText) && requester !== 'sangmoo' && requester !== 'sangmu') {
       return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
     }
+    if (/정윤희|정부장|부장님/i.test(fullText) && requester !== 'sh' && requester !== 'yoonhee') {
+      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    }
+    if (/정다음|정사원/i.test(fullText) && requester !== 'daum' && requester !== 'daeum') {
+      return TEAM.find(m => m.id === 'daum') || { name: '정다음', role: '사원' };
+    }
 
-    // If it has multiple assignees, the other member is the target/approver
+    // 4. Delegated task/meeting assignees
     if (sched.memberIds && sched.memberIds.length > 0) {
       const otherId = sched.memberIds.find(id => id !== requester && !(requester === 'sh' && id === 'yoonhee') && !(requester === 'daum' && id === 'daeum') && !(requester === 'sangmoo' && id === 'sangmu'));
       if (otherId) {
@@ -230,9 +232,7 @@ function getApproverMember(sched, currentUserId = 'sh') {
       }
     }
 
-    if (requester === 'sh' || requester === 'yoonhee') {
-      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
-    }
+    // 5. Default fallback if not explicitly designated
     if (requester === 'daum' || requester === 'daeum') {
       return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
     }
@@ -1690,35 +1690,8 @@ export default function App() {
   };
 
     const getRejecterMember = (sched) => {
-    if (!sched) return { name: '정윤희', role: '부장' };
-    
-    if (sched.approverId) {
-      return TEAM.find(m => m.id === sched.approverId || (sched.approverId === 'yoonhee' && m.id === 'sh') || (sched.approverId === 'sangmu' && m.id === 'sangmoo')) || { name: '정윤희', role: '부장' };
-    }
-
-    const reqId = sched.requesterId || sched.memberId;
-
-    // 조상무가 신청한 일정인 경우 -> 결재/반려자는 정윤희 부장
-    if (reqId === 'sangmoo' || reqId === 'sangmu') {
-      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
-    }
-
-    // 정윤희가 신청한 일정인 경우 -> 결재/반려자는 조상무 상무
-    if (reqId === 'sh' || reqId === 'yoonhee') {
-      return TEAM.find(m => m.id === 'sangmoo') || { name: '조상무', role: '상무' };
-    }
-
-    // 정다음이 신청한 일정인 경우 -> 결재/반려자는 정윤희 부장
-    if (reqId === 'daum') {
-      return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
-    }
-
-    const targetMemberId = sched.memberId;
-    if (targetMemberId && targetMemberId !== 'sh' && targetMemberId !== 'yoonhee') {
-      return TEAM.find(m => m.id === targetMemberId) || { name: '정다음', role: '사원' };
-    }
-
-    return TEAM.find(m => m.id === 'sh') || { name: '정윤희', role: '부장' };
+    if (!sched) return { name: '조상무', role: '상무' };
+    return getApproverMember(sched, ME.id);
   };
 
   const getCleanDesc = (desc) => {

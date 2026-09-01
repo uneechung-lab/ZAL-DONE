@@ -970,6 +970,23 @@ export default function Dashboard({
             const approver = displayMembers.find(m => m.id === s.approverId) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
             const dateFormatted = `${s.year}.${String(s.month).padStart(2, '0')}.${String(s.date).padStart(2, '0')}`;
             
+            const syntheticFeed = {
+              id: `feed_sched_${s.id}`,
+              authorId: author.id,
+              authorName: author.name,
+              authorRole: author.role,
+              authorAvatarPic: author.avatarPic || '/pic1_thumb.png',
+              authorColor: author.color || '#000000',
+              timeDisplay: '방금 전',
+              createdAt: s.createdAt || new Date().toISOString(),
+              content: s.title,
+              likes: 0,
+              hasLiked: false,
+              cheers: 0,
+              hasCheered: false,
+              comments: []
+            };
+
             if (categoryKey === 'all' || (isLeave && categoryKey === 'vacation') || (isRequested && categoryKey === 'vacation')) {
               items.push({
                 id: `sched_feed_${s.id}`,
@@ -999,7 +1016,8 @@ export default function Dashboard({
                   requesterName: author.name,
                   approvedAt: null
                 },
-                matchedSchedule: s
+                matchedSchedule: s,
+                feed: syntheticFeed
               });
             }
           }
@@ -2010,8 +2028,16 @@ export default function Dashboard({
             }
 
             return categoryItems.map(item => {
-              const parentFeed = item.feed;
-              const isCommentOpen = !!expandedCommentFeedIds[parentFeed.id];
+              const parentFeed = item.feed || {
+                id: item.feedId || item.id,
+                likes: 0,
+                hasLiked: false,
+                cheers: 0,
+                hasCheered: false,
+                comments: []
+              };
+              const feedId = parentFeed.id || item.feedId || item.id;
+              const isCommentOpen = !!expandedCommentFeedIds[feedId];
               const isPendingVacation = item.vacationInfo && item.vacationInfo.status === 'pending';
               const isApprovedVacation = item.vacationInfo && item.vacationInfo.status === 'approved';
 

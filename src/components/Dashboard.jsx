@@ -203,6 +203,8 @@ export default function Dashboard({
 
     setIsSubmitting(true);
     setComposerText('');
+    setIsInputFocused(false);
+    composerTextareaRef.current?.blur();
 
     try {
       if (onAddSchedule) {
@@ -210,6 +212,8 @@ export default function Dashboard({
       }
     } finally {
       setIsSubmitting(false);
+      setIsInputFocused(false);
+      composerTextareaRef.current?.blur();
     }
   };
 

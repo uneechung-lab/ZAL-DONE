@@ -1081,7 +1081,7 @@ export default function Dashboard({
           style={{
             position: 'absolute',
             left: '48px',
-            top: '-25px',
+            top: '-27px',
             height: '110px',
             width: 'auto',
             objectFit: 'contain',

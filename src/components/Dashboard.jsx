@@ -1932,15 +1932,15 @@ export default function Dashboard({
               boxSizing: 'border-box'
             }}>
               <div style={{
-                backgroundColor: '#ffffff',
-                border: '1px dashed #cbd5e1',
+                backgroundColor: 'transparent',
+                border: 'none',
                 borderRadius: '20px',
                 padding: '48px 36px',
                 textAlign: 'center',
                 color: '#94a3b8',
                 width: '100%',
                 maxWidth: '440px',
-                boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)'
+                boxShadow: 'none'
               }}>
                 <div style={{ fontSize: '38px', marginBottom: '12px' }}>💬</div>
                 <div style={{ fontSize: '15.5px', fontWeight: '700', color: '#334155' }}>
@@ -1969,15 +1969,15 @@ export default function Dashboard({
                   boxSizing: 'border-box'
                 }}>
                   <div style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px dashed #cbd5e1',
+                    backgroundColor: 'transparent',
+                    border: 'none',
                     borderRadius: '20px',
                     padding: '44px 32px',
                     textAlign: 'center',
                     color: '#94a3b8',
                     width: '100%',
                     maxWidth: '440px',
-                    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)'
+                    boxShadow: 'none'
                   }}>
                     <div style={{ fontSize: '36px', marginBottom: '10px' }}>💬</div>
                     <div style={{ fontSize: '15px', fontWeight: '700', color: '#334155' }}>

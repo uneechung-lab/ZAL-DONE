@@ -69,10 +69,35 @@ export default function Dashboard({
       setTimelineDate(targetCalendarDate);
     }
   }, [targetCalendarDate]);
+
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => timelineDate.getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(() => timelineDate.getMonth());
+  const datePickerRef = useRef(null);
+
+  useEffect(() => {
+    setPickerYear(timelineDate.getFullYear());
+    setPickerMonth(timelineDate.getMonth());
+  }, [timelineDate]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+    if (isDatePickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDatePickerOpen]);
+
   const [selectedMemberId, setSelectedMemberId] = useState('all');
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
-  const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일 (${timelineDayNames[timelineDate.getDay()]})`;
+  const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일(${timelineDayNames[timelineDate.getDay()]})`;
 
   const today = new Date();
   const formattedTodayHeader = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 ${timelineDayNames[today.getDay()]}요일`;
@@ -1868,8 +1893,8 @@ export default function Dashboard({
         gap: '12px',
         boxSizing: 'border-box'
       }}>
-        {/* Left: Date Navigator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Left: Date Navigator & Date Picker Dropdown */}
+        <div ref={datePickerRef} style={{ display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' }}>
           <button
             type="button"
             onClick={handlePrevTimelineDate}
@@ -1903,16 +1928,60 @@ export default function Dashboard({
             </svg>
           </button>
 
-          <span style={{
-            fontSize: '17px',
-            fontWeight: '800',
-            color: '#0f172a',
-            letterSpacing: '-0.3px',
-            padding: '0 4px',
-            userSelect: 'none'
-          }}>
-            {formattedTimelineDate}
-          </span>
+          {/* Clickable Date Label + Small Dropdown Icon */}
+          <button
+            type="button"
+            onClick={() => setIsDatePickerOpen(prev => !prev)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: isDatePickerOpen ? '#f1f5f9' : 'transparent',
+              border: '1px solid transparent',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+            onMouseLeave={(e) => {
+              if (!isDatePickerOpen) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+              }
+            }}
+            title="날짜 선택 (캘린더 열기)"
+          >
+            <span style={{
+              fontSize: '17px',
+              fontWeight: '800',
+              color: '#0f172a',
+              letterSpacing: '-0.3px',
+              userSelect: 'none'
+            }}>
+              {formattedTimelineDate}
+            </span>
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="#64748b" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              style={{
+                transform: isDatePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                marginTop: '1px'
+              }}
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
 
           <button
             type="button"
@@ -1946,6 +2015,175 @@ export default function Dashboard({
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
+
+          {/* Date Picker Popover */}
+          {isDatePickerOpen && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: '0',
+              zIndex: 1000,
+              backgroundColor: '#ffffff',
+              borderRadius: '14px',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06)',
+              border: '1px solid #e2e8f0',
+              padding: '14px 16px',
+              width: '270px',
+              boxSizing: 'border-box'
+            }}>
+              {/* Header: Month / Year + Prev/Next Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pickerMonth === 0) {
+                      setPickerMonth(11);
+                      setPickerYear(prev => prev - 1);
+                    } else {
+                      setPickerMonth(prev => prev - 1);
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                  {pickerYear}년 {pickerMonth + 1}월
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pickerMonth === 11) {
+                      setPickerMonth(0);
+                      setPickerYear(prev => prev + 1);
+                    } else {
+                      setPickerMonth(prev => prev + 1);
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+
+              {/* Day Names Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '11.5px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                <span style={{ color: '#ef4444' }}>일</span>
+                <span>월</span>
+                <span>화</span>
+                <span>수</span>
+                <span>목</span>
+                <span>금</span>
+                <span style={{ color: '#3b82f6' }}>토</span>
+              </div>
+
+              {/* Calendar Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', textAlign: 'center' }}>
+                {(() => {
+                  const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+                  const lastDate = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+                  const cells = [];
+
+                  // Empty slots for days before the 1st
+                  for (let i = 0; i < firstDay; i++) {
+                    cells.push(<div key={`empty_${i}`} style={{ height: '32px' }} />);
+                  }
+
+                  // Day slots
+                  for (let d = 1; d <= lastDate; d++) {
+                    const isSelected = timelineDate.getFullYear() === pickerYear && 
+                                       timelineDate.getMonth() === pickerMonth && 
+                                       timelineDate.getDate() === d;
+                    const isToday = new Date().getFullYear() === pickerYear && 
+                                    new Date().getMonth() === pickerMonth && 
+                                    new Date().getDate() === d;
+                    const dayOfWeek = (firstDay + d - 1) % 7;
+                    const dayColor = isSelected ? '#ffffff' : (dayOfWeek === 0 ? '#ef4444' : (dayOfWeek === 6 ? '#3b82f6' : '#1e293b'));
+
+                    cells.push(
+                      <button
+                        key={`day_${d}`}
+                        type="button"
+                        onClick={() => {
+                          setTimelineDate(new Date(pickerYear, pickerMonth, d));
+                          setIsDatePickerOpen(false);
+                        }}
+                        style={{
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12.5px',
+                          fontWeight: isSelected || isToday ? '700' : '500',
+                          color: dayColor,
+                          backgroundColor: isSelected ? '#2563eb' : (isToday ? '#eff6ff' : 'transparent'),
+                          border: isToday && !isSelected ? '1px solid #bfdbfe' : 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) e.currentTarget.style.backgroundColor = '#f1f5f9';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) e.currentTarget.style.backgroundColor = isToday ? '#eff6ff' : 'transparent';
+                        }}
+                      >
+                        {d}
+                      </button>
+                    );
+                  }
+                  return cells;
+                })()}
+              </div>
+
+              {/* Bottom Quick Select: 오늘로 이동 */}
+              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const t = new Date();
+                    setPickerYear(t.getFullYear());
+                    setPickerMonth(t.getMonth());
+                    setTimelineDate(t);
+                    setIsDatePickerOpen(false);
+                  }}
+                  style={{
+                    fontSize: '11.5px',
+                    fontWeight: '700',
+                    color: '#2563eb',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
+                  }}
+                >
+                  오늘로 이동
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Team Member Chips (Far right end of container) */}

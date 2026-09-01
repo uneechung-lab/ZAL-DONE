@@ -708,11 +708,14 @@ export default function Dashboard({
       // 2. Requests & Vacations
       if (categoryKey === 'all' || categoryKey === 'vacation') {
         let vInfo = feed.vacationInfo;
-        // Auto-detect meeting/work requests in feed content if missing
-        if (!vInfo && (feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁'))) {
-          let targetUserId = 'sangmoo';
-          let targetUserName = '조상무';
-          let targetUserRole = '상무';
+        // Auto-detect meeting/work/leave requests in feed content or aiBadges if missing
+        const isLeaveText = /반차|휴가|연차|병가|결재/i.test(feed.content || '') || feed.type === 'vacation' || (feed.aiBadges && feed.aiBadges.some(b => b.category === '휴가' || /반차|휴가|연차/i.test(b.label || '')));
+        const isRequestText = feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁') || feed.content.includes('결재') || isLeaveText;
+
+        if (!vInfo && isRequestText) {
+          let targetUserId = isLeaveText ? 'sangmoo' : 'sh';
+          let targetUserName = isLeaveText ? '조상무' : '정윤희';
+          let targetUserRole = isLeaveText ? '상무' : '부장';
           if (/반차|휴가|연차/i.test(feed.content) || /조상무|상무/i.test(feed.content)) {
             targetUserId = 'sangmoo';
             targetUserName = '조상무';
@@ -726,7 +729,7 @@ export default function Dashboard({
             targetUserName = '정윤희';
             targetUserRole = '부장';
           }
-          const reqType = /미팅|회의|면담/i.test(feed.content) ? '미팅 요청' : (/반차|휴가/i.test(feed.content) ? '휴가 신청' : '업무 요청');
+          const reqType = /미팅|회의|면담/i.test(feed.content) ? '미팅 요청' : (isLeaveText ? (feed.content.includes('오후') ? '오후 반차' : feed.content.includes('오전') ? '오전 반차' : '휴가') : '업무 요청');
           vInfo = {
             type: reqType,
             date: getTodayFormatted(),
@@ -948,6 +951,61 @@ export default function Dashboard({
         }
       }
     });
+
+    // Guarantee 100% Calendar-Dashboard database synchronization:
+    // If schedules contains requested tasks, approvals, or vacations not present in feeds, include them!
+    if (schedules && schedules.length > 0) {
+      schedules.forEach(s => {
+        const isLeave = /반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가';
+        const isRequested = s.status === 'requested' || (s.isRequested && s.status !== 'accepted');
+        
+        if (isLeave || isRequested) {
+          const alreadyInItems = items.some(it => {
+            const matched = findMatchingSchedule(it);
+            return (matched && matched.id === s.id) || (it.title && it.title.includes(s.title));
+          });
+
+          if (!alreadyInItems) {
+            const author = displayMembers.find(m => m.id === s.requesterId || m.id === s.memberId) || { name: '정다음', role: '사원', id: 'daum' };
+            const approver = displayMembers.find(m => m.id === s.approverId) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
+            const dateFormatted = `${s.year}.${String(s.month).padStart(2, '0')}.${String(s.date).padStart(2, '0')}`;
+            
+            if (categoryKey === 'all' || (isLeave && categoryKey === 'vacation') || (isRequested && categoryKey === 'vacation')) {
+              items.push({
+                id: `sched_feed_${s.id}`,
+                feedId: `feed_sched_${s.id}`,
+                authorId: author.id,
+                authorName: author.name,
+                authorRole: author.role,
+                authorAvatarPic: author.avatarPic || '/pic1_thumb.png',
+                authorColor: author.color || '#000000',
+                timeDisplay: '방금 전',
+                createdAt: s.createdAt || new Date().toISOString(),
+                category: isLeave ? '휴가' : '요청',
+                title: isLeave ? `🏖️ ${s.title} (${dateFormatted})` : `📋 ${s.title} (${approver.name} ${approver.role} 수락 요청)`,
+                description: s.description || '',
+                badgeText: s.status === 'accepted' ? '✅ 승인완료' : '🏖️ 결재요청',
+                badgeColor: s.status === 'accepted' ? '#059669' : '#b45309',
+                badgeBg: s.status === 'accepted' ? '#ecfdf5' : '#fffbeb',
+                badgeBorder: s.status === 'accepted' ? '#a7f3d0' : '#fde68a',
+                vacationInfo: {
+                  type: isLeave ? s.title : '업무 요청',
+                  date: dateFormatted,
+                  status: s.status === 'accepted' ? 'approved' : (s.status === 'rejected' ? 'rejected' : 'pending'),
+                  approverName: approver.name,
+                  approverRole: approver.role,
+                  targetUserId: approver.id,
+                  requesterId: author.id,
+                  requesterName: author.name,
+                  approvedAt: null
+                },
+                matchedSchedule: s
+              });
+            }
+          }
+        }
+      });
+    }
 
     if (selectedMemberId && selectedMemberId !== 'all') {
       return items.filter(item => item.authorId === selectedMemberId);

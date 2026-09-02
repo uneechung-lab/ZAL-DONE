@@ -9600,31 +9600,24 @@ export default function App() {
 
                 return (
                   <div style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '14px 16px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px'
+                    gap: '8px'
                   }}>
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      borderBottom: '1px solid #e2e8f0',
-                      paddingBottom: '8px'
+                      gap: '8px'
                     }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>📜</span>
-                        <span>결재 및 처리 히스토리</span>
-                        <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 7px', borderRadius: '10px' }}>
-                          총 {historyList.length}건
-                        </span>
-                      </div>
+                      <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>
+                        결재 및 처리 히스토리
+                      </label>
+                      <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: '10px' }}>
+                        총 {historyList.length}건
+                      </span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {historyList.map((hist, idx) => {
                         let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0';
                         if (hist.action === 'reject') {

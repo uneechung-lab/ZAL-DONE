@@ -5926,6 +5926,15 @@ export default function App() {
             const groupedPendingItems = groupList(pendingItems);
             const groupedIncomingTaskRequests = groupList(incomingTaskRequests);
 
+            const assigneeChangeTaskRequests = schedules.filter(s => {
+              if (!s || s.assigneeRequestStatus !== 'pending') return false;
+              const ownerId = s.requesterId || s.memberId || 'daum';
+              const isOwner = (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+              const isRequester = (ME.id === s.assigneeRequesterId) || (s.assigneeRequesterId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (s.assigneeRequesterId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (s.assigneeRequesterId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+              return isOwner || isRequester;
+            });
+            const groupedAssigneeChangeTasks = groupList(assigneeChangeTaskRequests);
+
             const renderBubble = (msg) => {
               if (msg.id === 0) {
                 const now = new Date();
@@ -6839,10 +6848,18 @@ export default function App() {
                     data: item
                   }));
 
+                  const assigneeChangeItems = groupedAssigneeChangeTasks.map(item => ({
+                    type: 'assignee_change_single',
+                    id: 'assignee_change_' + (item.id || item.$id),
+                    createdAt: getCardTs(item) || Date.now(),
+                    data: item
+                  }));
+
                   const allChronologicalItems = [
                     ...otherMessageItems,
                     ...pendingApprovalItems,
                     ...incomingTaskItems,
+                    ...assigneeChangeItems,
                     ...rejectedOutgoingItems,
                     ...acceptedOutgoingItems
                   ].sort((a, b) => a.createdAt - b.createdAt);
@@ -6855,6 +6872,180 @@ export default function App() {
                   return unifiedStream.map(item => {
                     if (item.type === 'message') {
                       return renderBubble(item.data);
+                    }
+                    if (item.type === 'assignee_change_single') {
+                      const tItem = item.data;
+                      if (!tItem) return null;
+                      const liveSched = schedules.find(s => s.id === tItem.id || String(s.id) === String(tItem.id)) || tItem;
+                      
+                      const ownerId = liveSched.requesterId || liveSched.memberId || 'daum';
+                      const ownerMember = TEAM.find(m => m.id === ownerId || (ownerId === 'yoonhee' && m.id === 'sh') || (ownerId === 'sangmu' && m.id === 'sangmoo') || (ownerId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
+                      
+                      const requesterId = liveSched.assigneeRequesterId || 'sh';
+                      const requesterMember = TEAM.find(m => m.id === requesterId || (requesterId === 'yoonhee' && m.id === 'sh') || (requesterId === 'sangmu' && m.id === 'sangmoo') || (requesterId === 'daeum' && m.id === 'daum')) || { name: '정윤희', role: '부장' };
+
+                      const isCurrentOwner = (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+                      const isCurrentRequester = (ME.id === requesterId) || (requesterId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (requesterId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (requesterId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+
+                      const dateStr = liveSched.dateStr || `${liveSched.year}.${liveSched.month < 10 ? '0' : ''}${liveSched.month}.${liveSched.date < 10 ? '0' : ''}${liveSched.date}`;
+                      const timeStr = `${formatHour(liveSched.startHour)} ~ ${formatHour(liveSched.endHour)}`;
+
+                      const currentNames = (liveSched.memberIds || [liveSched.memberId]).map(id => TEAM.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ');
+                      const currentMemberIds = liveSched.memberIds || [liveSched.memberId];
+                      const addedIds = (liveSched.requestedMemberIds || []).filter(id => !currentMemberIds.includes(id) && !(id === 'yoonhee' && currentMemberIds.includes('sh')) && !(id === 'daeum' && currentMemberIds.includes('daum')));
+                      const addedNames = addedIds.map(id => TEAM.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean);
+                      const addedText = addedNames.length > 0 ? `${addedNames.join(', ')}님` : ((liveSched.requestedMemberIds || []).map(id => TEAM.find(m => m.id === id)?.name).filter(Boolean).join(', ') + '님');
+
+                      const headerText = isCurrentOwner 
+                        ? `👥 ${requesterMember.name} ${requesterMember.role || ''}님이 "${liveSched.title}" 일정에 본인을 담당자로 추가(변경) 요청하셨습니다.`
+                        : `👥 "${liveSched.title}" 일정의 담당자 추가(변경)을 요청했습니다.`;
+
+                      return (
+                        <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
+                          <div className="chat-bubble ai" style={{ whiteSpace: 'pre-line', width: '320px', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13.5px', color: '#0f172a' }}>
+                              {headerText}
+                            </div>
+                            <div 
+                              id={'card_' + liveSched.id}
+                              data-card-title={liveSched.title}
+                              onClick={() => openDetailModal(liveSched)}
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '10px',
+                                padding: '12px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#94a3b8';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(15, 23, 42, 0.04)';
+                              }}
+                            >
+                              <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a', marginBottom: '2px' }}>
+                                {liveSched.title}
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                  <span>담당</span>
+                                </div>
+                                <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                                  {currentNames}
+                                  <span style={{ fontSize: '11px', color: 'var(--accent-purple)', fontWeight: '600', marginLeft: '4px' }}>
+                                    ({addedText} 추가(변경)요청됨)
+                                  </span>
+                                </div>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                  <span>날짜</span>
+                                </div>
+                                <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{dateStr}</div>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', color: '#334155', marginTop: '2px', alignItems: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontWeight: '600', color: '#475569' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                  <span>시간</span>
+                                </div>
+                                <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-line' }}>{timeStr}</div>
+                              </div>
+
+                              <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                                {liveSched.assigneeRequestStatus === 'pending' ? (
+                                  isCurrentOwner ? (
+                                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRejectAssigneeChange(liveSched.id);
+                                        }}
+                                        style={{
+                                          padding: '7px 14px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          lineHeight: '1.2',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        요청반려
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleApproveAssigneeChange(liveSched.id);
+                                        }}
+                                        style={{
+                                          padding: '7px 14px',
+                                          fontSize: '12.5px',
+                                          fontWeight: '700',
+                                          backgroundColor: '#ecfdf5',
+                                          color: '#059669',
+                                          border: '1px solid #a7f3d0',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          lineHeight: '1.2',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        요청수락
+                                      </button>
+                                    </div>
+                                  ) : isCurrentRequester ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRejectAssigneeChange(liveSched.id, '요청 취소');
+                                      }}
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        backgroundColor: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '8px',
+                                        fontWeight: '700',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      요청취소
+                                    </button>
+                                  ) : null
+                                ) : liveSched.assigneeRequestStatus === 'approved' ? (
+                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px' }}>
+                                    🎉 담당자 변경 승인됨
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px' }}>
+                                    ❌ 담당자 변경 반려됨
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="chat-meta-row" style={{ alignSelf: 'flex-start' }}>
+                            <span className="chat-meta-sender">AI 잘됨이</span>
+                            <span className="chat-meta-time">{formatCardTime(item.createdAt)}</span>
+                          </div>
+                        </div>
+                      );
                     }
                     if (item.type === 'pending_approval_single') {
                       const pItem = item.data;

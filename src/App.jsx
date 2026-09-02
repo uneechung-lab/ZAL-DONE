@@ -2413,72 +2413,83 @@ export default function App() {
 
   const getScheduleHistoryList = (schedule) => {
     if (!schedule) return [];
-    const list = Array.isArray(schedule.history) ? [...schedule.history] : [];
+    
+    // 1. If explicit history array exists, return it
+    if (Array.isArray(schedule.history) && schedule.history.length > 0) {
+      return schedule.history;
+    }
 
-    // If list is empty, reconstruct from schedule metadata and description
-    if (list.length === 0) {
-      const isLeave = /반차|연차|휴가|병가/i.test(schedule.title || '') || schedule.category === '휴가';
-      const reqId = schedule.requesterId || schedule.memberId || 'daum';
-      const requester = TEAM.find(m => m.id === reqId || (reqId === 'yoonhee' && m.id === 'sh') || (reqId === 'sangmu' && m.id === 'sangmoo') || (reqId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원', id: 'daum' };
-      const appId = schedule.approverId || (isLeave ? 'sangmoo' : 'sh');
-      const approver = TEAM.find(m => m.id === appId || (appId === 'yoonhee' && m.id === 'sh') || (appId === 'sangmu' && m.id === 'sangmoo') || (appId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
+    // 2. Check if this schedule is genuinely an approval/request schedule
+    const isLeave = /반차|연차|휴가|병가/i.test(schedule.title || '') || schedule.category === '휴가';
+    const hasApprovalStatus = schedule.status === 'requested' || (schedule.status && schedule.status.startsWith('rejected')) || (schedule.status === 'accepted' && (schedule.requesterId || schedule.approverId));
+    const isExplicitRequest = Boolean(schedule.isRequest || hasApprovalStatus || (isLeave && (schedule.status || schedule.requesterId)));
 
-      // 1. Initial request entry
+    // If it's a regular schedule created directly without approval workflow, return empty array
+    if (!isLeave && !isExplicitRequest) {
+      return [];
+    }
+
+    const list = [];
+    const reqId = schedule.requesterId || schedule.memberId || 'daum';
+    const requester = TEAM.find(m => m.id === reqId || (reqId === 'yoonhee' && m.id === 'sh') || (reqId === 'sangmu' && m.id === 'sangmoo') || (reqId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원', id: 'daum' };
+    const appId = schedule.approverId || (isLeave ? 'sangmoo' : 'sh');
+    const approver = TEAM.find(m => m.id === appId || (appId === 'yoonhee' && m.id === 'sh') || (appId === 'sangmu' && m.id === 'sangmoo') || (appId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
+
+    // 1. Initial request entry
+    list.push({
+      id: `hist_init_${schedule.id}`,
+      action: 'request',
+      actionLabel: '결재 요청',
+      actorId: requester.id,
+      actorName: requester.name,
+      actorRole: requester.role,
+      message: `${isLeave ? '휴가/반차' : '업무'} 결재를 요청했습니다.`,
+      timestamp: schedule.createdAt || new Date().toISOString()
+    });
+
+    // 2. Parse description for [반려사유], [재요청메시지], [수락메시지]
+    const desc = schedule.description || '';
+    const rejectMatch = desc.match(/\[반려사유\]\s*([^|\n]+)/) || desc.match(/\[반려 사유\]\s*([^|\n]+)/);
+    const resubmitMatch = desc.match(/\[재요청메시지\]\s*([^|\n]+)/) || desc.match(/\[재요청 메시지\]\s*([^|\n]+)/);
+    const acceptMatch = desc.match(/\[수락메시지\]\s*([^|\n]+)/) || desc.match(/\[수락 메시지\]\s*([^|\n]+)/);
+
+    if (rejectMatch) {
       list.push({
-        id: `hist_init_${schedule.id}`,
-        action: 'request',
-        actionLabel: '결재 요청',
+        id: `hist_rej_${schedule.id}`,
+        action: 'reject',
+        actionLabel: '결재 반려',
+        actorId: approver.id,
+        actorName: approver.name,
+        actorRole: approver.role,
+        message: rejectMatch[1].trim(),
+        timestamp: schedule.updatedAt || new Date().toISOString()
+      });
+    }
+
+    if (resubmitMatch) {
+      list.push({
+        id: `hist_resub_${schedule.id}`,
+        action: 'resubmit',
+        actionLabel: '재요청',
         actorId: requester.id,
         actorName: requester.name,
         actorRole: requester.role,
-        message: `${isLeave ? '휴가/반차' : '업무'} 결재를 요청했습니다.`,
-        timestamp: schedule.createdAt || new Date().toISOString()
+        message: resubmitMatch[1].trim(),
+        timestamp: schedule.updatedAt || new Date().toISOString()
       });
+    }
 
-      // 2. Parse description for [반려사유], [재요청메시지], [수락메시지]
-      const desc = schedule.description || '';
-      const rejectMatch = desc.match(/\[반려사유\]\s*([^|\n]+)/);
-      const resubmitMatch = desc.match(/\[재요청메시지\]\s*([^|\n]+)/);
-      const acceptMatch = desc.match(/\[수락메시지\]\s*([^|\n]+)/);
-
-      if (rejectMatch) {
-        list.push({
-          id: `hist_rej_${schedule.id}`,
-          action: 'reject',
-          actionLabel: '결재 반려',
-          actorId: approver.id,
-          actorName: approver.name,
-          actorRole: approver.role,
-          message: rejectMatch[1].trim(),
-          timestamp: schedule.updatedAt || new Date().toISOString()
-        });
-      }
-
-      if (resubmitMatch) {
-        list.push({
-          id: `hist_resub_${schedule.id}`,
-          action: 'resubmit',
-          actionLabel: '재요청',
-          actorId: requester.id,
-          actorName: requester.name,
-          actorRole: requester.role,
-          message: resubmitMatch[1].trim(),
-          timestamp: schedule.updatedAt || new Date().toISOString()
-        });
-      }
-
-      if (schedule.status === 'accepted') {
-        list.push({
-          id: `hist_appr_${schedule.id}`,
-          action: 'approve',
-          actionLabel: isLeave ? '결재 승인' : '일정 수락',
-          actorId: approver.id,
-          actorName: approver.name,
-          actorRole: approver.role,
-          message: acceptMatch ? acceptMatch[1].trim() : `${isLeave ? '휴가/반차' : '일정'} 결재를 승인(수락)했습니다.`,
-          timestamp: schedule.statusUpdatedAt ? new Date(schedule.statusUpdatedAt).toISOString() : (schedule.updatedAt || new Date().toISOString())
-        });
-      }
+    if (schedule.status === 'accepted') {
+      list.push({
+        id: `hist_appr_${schedule.id}`,
+        action: 'approve',
+        actionLabel: isLeave ? '결재 승인' : '일정 수락',
+        actorId: approver.id,
+        actorName: approver.name,
+        actorRole: approver.role,
+        message: acceptMatch ? acceptMatch[1].trim() : `${isLeave ? '휴가/반차' : '일정'} 결재를 승인(수락)했습니다.`,
+        timestamp: schedule.statusUpdatedAt ? new Date(schedule.statusUpdatedAt).toISOString() : (schedule.updatedAt || new Date().toISOString())
+      });
     }
 
     return list;

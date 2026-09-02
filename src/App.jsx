@@ -2745,6 +2745,239 @@ export default function App() {
     }
   };
 
+  const handleRequestAssigneeChange = async () => {
+    if (!selectedDetailEvent) return;
+    if (editMemberIds.length === 0) {
+      showLayerAlert('최소 한 명 이상의 담당자를 지정해야 합니다.', '담당자 지정 필요', 'error');
+      return;
+    }
+
+    const prevMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
+    const isAssigneeModified = editMemberIds.length !== prevMemberIds.length || !editMemberIds.every(id => prevMemberIds.includes(id));
+    if (!isAssigneeModified) {
+      setIsDetailModalOpen(false);
+      return;
+    }
+
+    setIsSavingEvent(true);
+    try {
+      await new Promise(r => setTimeout(r, 350));
+      const targetOwnerId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId || 'daum';
+      const newAssigneeNames = editMemberIds.map(id => TEAM.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ');
+
+      const newHistEntry = {
+        id: `hist_assignee_${Date.now()}`,
+        action: 'request',
+        actionLabel: '담당자 추가 요청',
+        actorId: ME.id,
+        actorName: ME.name,
+        actorRole: ME.role,
+        message: `담당자 변경을 요청했습니다: ${newAssigneeNames}`,
+        timestamp: new Date().toISOString()
+      };
+
+      const existingHistory = getScheduleHistoryList(selectedDetailEvent);
+      const updatedHistory = [...existingHistory, newHistEntry];
+
+      const matchGroupId = selectedDetailEvent.description && selectedDetailEvent.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+      const groupId = matchGroupId ? matchGroupId[1] : null;
+
+      const updateTargetIds = groupId
+        ? schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`)).map(s => s.id)
+        : [selectedDetailEvent.id];
+
+      const updatedSchedules = schedules.map(s => {
+        if (updateTargetIds.includes(s.id)) {
+          const updatedObj = {
+            ...s,
+            requestedMemberIds: editMemberIds,
+            assigneeRequesterId: ME.id,
+            assigneeRequestStatus: 'pending',
+            history: updatedHistory,
+            updatedAt: new Date().toISOString()
+          };
+          if (isConfigured) {
+            appwriteService.updateSchedule(s.id, updatedObj);
+          }
+          return updatedObj;
+        }
+        return s;
+      });
+
+      setSchedules(updatedSchedules);
+
+      // Create Feed Notification for assignee change request
+      const newFeed = {
+        id: `feed_assignee_req_${Date.now()}`,
+        authorId: ME.id,
+        author: ME.name,
+        role: ME.role,
+        type: 'request',
+        content: `[담당자 추가 요청] "${selectedDetailEvent.title}" 일정의 담당자 변경을 요청했습니다. (${newAssigneeNames})`,
+        createdAt: new Date().toISOString(),
+        scheduleId: selectedDetailEvent.id,
+        assigneeRequestInfo: {
+          scheduleId: selectedDetailEvent.id,
+          requestedMemberIds: editMemberIds,
+          requestedNames: newAssigneeNames,
+          requesterId: ME.id,
+          requesterName: ME.name,
+          targetOwnerId: targetOwnerId,
+          status: 'pending'
+        }
+      };
+
+      setFeeds(prev => {
+        const next = [newFeed, ...prev];
+        try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+        return next;
+      });
+
+      setIsDetailModalOpen(false);
+      showLayerAlert(`"${selectedDetailEvent.title}" 일정의 담당자 추가(변경)을 요청했습니다.`, '요청 완료', 'success');
+    } catch (e) {
+      console.error(e);
+      showLayerAlert('요청 처리 중 오류가 발생했습니다.', '오류', 'error');
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
+  const handleApproveAssigneeChange = async (scheduleId) => {
+    const targetSched = schedules.find(s => s.id === scheduleId) || selectedDetailEvent;
+    if (!targetSched || !targetSched.requestedMemberIds) return;
+
+    const newMemberIds = targetSched.requestedMemberIds;
+    const existingHistory = getScheduleHistoryList(targetSched);
+    const approvedHistory = [
+      ...existingHistory,
+      {
+        id: `hist_appr_assignee_${Date.now()}`,
+        action: 'approve',
+        actionLabel: '담당자 변경 승인',
+        actorId: ME.id,
+        actorName: ME.name,
+        actorRole: ME.role,
+        message: '담당자 추가/변경을 승인했습니다.',
+        timestamp: new Date().toISOString()
+      }
+    ];
+
+    const matchGroupId = targetSched.description && targetSched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const groupId = matchGroupId ? matchGroupId[1] : null;
+
+    const updateTargetIds = groupId
+      ? schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`)).map(s => s.id)
+      : [targetSched.id];
+
+    const updatedSchedules = schedules.map(s => {
+      if (updateTargetIds.includes(s.id)) {
+        const updatedObj = {
+          ...s,
+          memberIds: newMemberIds,
+          memberId: newMemberIds[0],
+          requestedMemberIds: null,
+          assigneeRequestStatus: 'approved',
+          history: approvedHistory,
+          updatedAt: new Date().toISOString()
+        };
+        if (isConfigured) {
+          appwriteService.updateSchedule(s.id, updatedObj);
+        }
+        return updatedObj;
+      }
+      return s;
+    });
+
+    setSchedules(updatedSchedules);
+
+    setFeeds(prev => {
+      const next = prev.map(f => {
+        if (f.scheduleId === targetSched.id && f.assigneeRequestInfo) {
+          return {
+            ...f,
+            assigneeRequestInfo: {
+              ...f.assigneeRequestInfo,
+              status: 'approved'
+            }
+          };
+        }
+        return f;
+      });
+      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+
+    setIsDetailModalOpen(false);
+    showLayerAlert(`"${targetSched.title}" 일정의 담당자 변경을 승인했습니다.`, '승인 완료', 'success');
+  };
+
+  const handleRejectAssigneeChange = async (scheduleId, reason = '') => {
+    const targetSched = schedules.find(s => s.id === scheduleId) || selectedDetailEvent;
+    if (!targetSched) return;
+
+    const existingHistory = getScheduleHistoryList(targetSched);
+    const rejectedHistory = [
+      ...existingHistory,
+      {
+        id: `hist_rej_assignee_${Date.now()}`,
+        action: 'reject',
+        actionLabel: '담당자 변경 반려',
+        actorId: ME.id,
+        actorName: ME.name,
+        actorRole: ME.role,
+        message: reason ? `담당자 변경 반려: ${reason}` : '담당자 추가/변경 요청을 반려했습니다.',
+        timestamp: new Date().toISOString()
+      }
+    ];
+
+    const matchGroupId = targetSched.description && targetSched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const groupId = matchGroupId ? matchGroupId[1] : null;
+
+    const updateTargetIds = groupId
+      ? schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`)).map(s => s.id)
+      : [targetSched.id];
+
+    const updatedSchedules = schedules.map(s => {
+      if (updateTargetIds.includes(s.id)) {
+        const updatedObj = {
+          ...s,
+          requestedMemberIds: null,
+          assigneeRequestStatus: 'rejected',
+          history: rejectedHistory,
+          updatedAt: new Date().toISOString()
+        };
+        if (isConfigured) {
+          appwriteService.updateSchedule(s.id, updatedObj);
+        }
+        return updatedObj;
+      }
+      return s;
+    });
+
+    setSchedules(updatedSchedules);
+
+    setFeeds(prev => {
+      const next = prev.map(f => {
+        if (f.scheduleId === targetSched.id && f.assigneeRequestInfo) {
+          return {
+            ...f,
+            assigneeRequestInfo: {
+              ...f.assigneeRequestInfo,
+              status: 'rejected'
+            }
+          };
+        }
+        return f;
+      });
+      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+
+    setIsDetailModalOpen(false);
+    showLayerAlert(`"${targetSched.title}" 일정의 담당자 변경 요청을 반려했습니다.`, '반려 완료', 'info');
+  };
+
   const performDeleteScheduleAndFeed = (targetEvent, fid) => {
     if (!targetEvent) return;
     const targetEventId = targetEvent.id;
@@ -9633,6 +9866,46 @@ export default function App() {
                 );
               })()}
 
+              {/* ──── Assignee Change Request Banner ──── */}
+              {selectedDetailEvent.assigneeRequestStatus === 'pending' && (() => {
+                const isReq = selectedDetailEvent.assigneeRequesterId === ME.id;
+                const requester = activeTeam.find(m => m.id === selectedDetailEvent.assigneeRequesterId) || { name: '동료' };
+                const requestedNames = (selectedDetailEvent.requestedMemberIds || []).map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean).join(', ');
+
+                return (
+                  <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 'var(--radius-sm)', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '13.5px', color: '#1d4ed8', fontWeight: '700' }}>
+                        👥 {isReq ? '담당자 추가/변경 승인 대기 중입니다' : `${requester.name}님이 담당자 추가(변경)을 요청했습니다`}
+                      </span>
+                      {requestedNames && (
+                        <span style={{ fontSize: '12px', color: '#3b82f6' }}>
+                          변경 요청된 담당자: <strong>{requestedNames}</strong>
+                        </span>
+                      )}
+                    </div>
+                    {isDetailEditable && !isReq && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          className="modal-btn"
+                          style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                          onClick={() => handleApproveAssigneeChange(selectedDetailEvent.id)}
+                        >
+                          승인
+                        </button>
+                        <button
+                          className="modal-btn"
+                          style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                          onClick={() => handleRejectAssigneeChange(selectedDetailEvent.id)}
+                        >
+                          반려
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* ──── Approval Request / Waiting Banner (Below History) ──── */}
               {(selectedDetailEvent.status === 'requested' || selectedDetailEvent.isRequested === true || selectedDetailEvent.vacationInfo?.status === 'pending') && (() => {
                 const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
@@ -10081,9 +10354,16 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 1) 담당자 (복수 선택 가능) - 진척률 바로 다음 */}
+              {/* 1) 담당자 (복수 선택 가능) - 타인이 올린 일정도 수정/변경 가능 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
+                  {!isDetailEditable && (
+                    <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--accent-purple)', backgroundColor: '#ede9fe', padding: '2px 7px', borderRadius: '4px' }}>
+                      선택 후 변경 요청 가능
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
                   {activeTeam.map(m => {
                     const isChecked = editMemberIds.includes(m.id);
@@ -10094,7 +10374,7 @@ export default function App() {
                           display: 'inline-flex', 
                           alignItems: 'center', 
                           gap: '8px', 
-                          cursor: isDetailEditable ? 'pointer' : 'default', 
+                          cursor: 'pointer', 
                           background: isChecked ? 'rgba(99, 102, 241, 0.08)' : '#f8fafc', 
                           padding: '8px 14px', 
                           borderRadius: '20px', 
@@ -10102,15 +10382,13 @@ export default function App() {
                           fontSize: '14.5px', 
                           fontWeight: '600', 
                           transition: 'var(--transition)',
-                          userSelect: 'none',
-                          opacity: isDetailEditable ? 1 : 0.8
+                          userSelect: 'none'
                         }}
                       >
                         <input 
                           type="checkbox" 
                           checked={isChecked}
                           onChange={(e) => {
-                            if (!isDetailEditable) return;
                             if (e.target.checked) {
                               setEditMemberIds(prev => [...prev, m.id]);
                             } else {
@@ -10118,7 +10396,6 @@ export default function App() {
                             }
                           }}
                           style={{ display: 'none' }}
-                          disabled={!isDetailEditable}
                         />
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: m.color }} />
                         {m.name}
@@ -10128,34 +10405,33 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 2) 상세내용 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
-              {((editDetail || '').trim() || showDetailInput) ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
-                    {isDetailEditable && !(editDetail || '').trim() && (
-                      <button
-                        type="button"
-                        onClick={() => setShowDetailInput(false)}
-                        style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
-                      >
-                        접기
-                      </button>
-                    )}
+              {/* 2) 상세내용 - 작성자는 +토글, 타인은 내용 있을 때만 노출(내용 없으면 제목도 히든) */}
+              {isDetailEditable ? (
+                ((editDetail || '').trim() || showDetailInput) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
+                      {!(editDetail || '').trim() && (
+                        <button
+                          type="button"
+                          onClick={() => setShowDetailInput(false)}
+                          style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                        >
+                          접기
+                        </button>
+                      )}
+                    </div>
+                    <textarea 
+                      placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
+                      value={editDetail || ''} 
+                      onChange={(e) => setEditDetail(e.target.value)} 
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
+                      autoFocus={!(editDetail || '').trim()}
+                    />
                   </div>
-                  <textarea 
-                    placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
-                    value={editDetail || ''} 
-                    onChange={(e) => setEditDetail(e.target.value)} 
-                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
-                    disabled={!isDetailEditable}
-                    autoFocus={!(editDetail || '').trim()}
-                  />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
-                  {isDetailEditable && (
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
                     <button
                       type="button"
                       onClick={() => setShowDetailInput(true)}
@@ -10182,38 +10458,46 @@ export default function App() {
                     >
                       +
                     </button>
-                  )}
-                </div>
+                  </div>
+                )
+              ) : (
+                (editDetail || '').trim() ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
+                    <div style={{ padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', backgroundColor: '#f8fafc', fontSize: '15px', lineHeight: '1.45', whiteSpace: 'pre-wrap', color: '#334155' }}>
+                      {editDetail}
+                    </div>
+                  </div>
+                ) : null
               )}
 
-              {/* 3) 추가 내용 / 메모 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
-              {((editMemo || '').trim() || showMemoInput) ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
-                    {isDetailEditable && !(editMemo || '').trim() && (
-                      <button
-                        type="button"
-                        onClick={() => setShowMemoInput(false)}
-                        style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
-                      >
-                        접기
-                      </button>
-                    )}
+              {/* 3) 추가 내용 / 메모 - 작성자는 +토글, 타인은 내용 있을 때만 노출(내용 없으면 제목도 히든) */}
+              {isDetailEditable ? (
+                ((editMemo || '').trim() || showMemoInput) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                      {!(editMemo || '').trim() && (
+                        <button
+                          type="button"
+                          onClick={() => setShowMemoInput(false)}
+                          style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                        >
+                          접기
+                        </button>
+                      )}
+                    </div>
+                    <textarea 
+                      placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
+                      value={editMemo || ''} 
+                      onChange={(e) => setEditMemo(e.target.value)} 
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
+                      autoFocus={!(editMemo || '').trim()}
+                    />
                   </div>
-                  <textarea 
-                    placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
-                    value={editMemo || ''} 
-                    onChange={(e) => setEditMemo(e.target.value)} 
-                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
-                    disabled={!isDetailEditable}
-                    autoFocus={!(editMemo || '').trim()}
-                  />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
-                  {isDetailEditable && (
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
                     <button
                       type="button"
                       onClick={() => setShowMemoInput(true)}
@@ -10240,8 +10524,17 @@ export default function App() {
                     >
                       +
                     </button>
-                  )}
-                </div>
+                  </div>
+                )
+              ) : (
+                (editMemo || '').trim() ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                    <div style={{ padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', backgroundColor: '#f8fafc', fontSize: '15px', lineHeight: '1.45', whiteSpace: 'pre-wrap', color: '#334155' }}>
+                      {editMemo}
+                    </div>
+                  </div>
+                ) : null
               )}
             </div>
           </div>
@@ -10258,7 +10551,15 @@ export default function App() {
             justifyContent: 'flex-end', 
             alignItems: 'center' 
           }}>
-              {isDetailEditable && (
+              <button 
+                className="modal-btn" 
+                onClick={() => setIsDetailModalOpen(false)}
+                style={{ padding: '9px 18px', fontSize: '15px' }}
+              >
+                닫기
+              </button>
+
+              {isDetailEditable ? (
                 <>
                   <button 
                     className="modal-btn" 
@@ -10301,6 +10602,7 @@ export default function App() {
                     className="modal-btn primary" 
                     disabled={isDeletingEvent || isSavingEvent}
                     onClick={saveEventEdits}
+                    style={{ padding: '9px 18px', fontSize: '15px' }}
                   >
                     {isSavingEvent ? (
                       <>
@@ -10310,6 +10612,38 @@ export default function App() {
                     ) : '저장'}
                   </button>
                 </>
+              ) : (
+                (() => {
+                  const initialMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
+                  const isAssigneeModified = editMemberIds.length !== initialMemberIds.length || !editMemberIds.every(id => initialMemberIds.includes(id));
+                  
+                  if (isAssigneeModified) {
+                    return (
+                      <button 
+                        className="modal-btn primary" 
+                        disabled={isSavingEvent}
+                        onClick={handleRequestAssigneeChange}
+                        style={{
+                          backgroundColor: 'var(--accent-purple)',
+                          color: '#ffffff',
+                          borderColor: 'var(--accent-purple)',
+                          padding: '9px 18px',
+                          fontSize: '15px',
+                          fontWeight: '700',
+                          cursor: isSavingEvent ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isSavingEvent ? (
+                          <>
+                            <LoadingSpinner size={16} color="#ffffff" />
+                            요청 중...
+                          </>
+                        ) : '담당자 추가 요청'}
+                      </button>
+                    );
+                  }
+                  return null;
+                })()
               )}
             </div>
           </div>

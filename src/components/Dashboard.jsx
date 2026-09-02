@@ -1265,12 +1265,27 @@ export default function Dashboard({
     daum: []
   };
 
+  const isMemberMatch = (sched, memberId) => {
+    if (!sched || !memberId) return false;
+    const ids = sched.memberIds && Array.isArray(sched.memberIds) && sched.memberIds.length > 0 
+      ? sched.memberIds 
+      : [sched.memberId];
+
+    return ids.some(id => {
+      if (id === memberId) return true;
+      if ((memberId === 'sh' || memberId === 'yoonhee') && (id === 'sh' || id === 'yoonhee')) return true;
+      if ((memberId === 'sangmoo' || memberId === 'sangmu') && (id === 'sangmoo' || id === 'sangmu')) return true;
+      if ((memberId === 'daum' || memberId === 'daeum') && (id === 'daum' || id === 'daeum')) return true;
+      return false;
+    });
+  };
+
   const getEventsForMemberAndDate = (memberId, dateObj) => {
     const baseEvents = baseMemberScheduleMap[memberId] || [];
 
     const dynamicEvents = (schedules || []).filter(s => {
       if (s.status === 'cancelled' || s.isCancelled) return false;
-      const matchesMember = s.memberIds ? s.memberIds.includes(memberId) : s.memberId === memberId;
+      const matchesMember = isMemberMatch(s, memberId);
       const sYear = s.year || dateObj.getFullYear();
       const sMonth = s.month || (dateObj.getMonth() + 1);
       const matchesDate = sYear === dateObj.getFullYear() && sMonth === (dateObj.getMonth() + 1) && s.date === dateObj.getDate();

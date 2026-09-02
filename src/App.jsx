@@ -470,6 +470,22 @@ function getMemberAvatarStyle(member, index) {
   };
 }
 
+// Helper to check if a schedule matches a member ID (with alias support for sh/yoonhee, sangmoo/sangmu, daum/daeum)
+function isMemberMatch(sched, memberId) {
+  if (!sched || !memberId) return false;
+  const ids = sched.memberIds && Array.isArray(sched.memberIds) && sched.memberIds.length > 0 
+    ? sched.memberIds 
+    : [sched.memberId];
+
+  return ids.some(id => {
+    if (id === memberId) return true;
+    if ((memberId === 'sh' || memberId === 'yoonhee') && (id === 'sh' || id === 'yoonhee')) return true;
+    if ((memberId === 'sangmoo' || memberId === 'sangmu') && (id === 'sangmoo' || id === 'sangmu')) return true;
+    if ((memberId === 'daum' || memberId === 'daeum') && (id === 'daum' || id === 'daeum')) return true;
+    return false;
+  });
+}
+
 // Helper to check if a message is from today
 function isTodayMessage(msg) {
   if (!msg) return false;
@@ -5947,7 +5963,7 @@ export default function App() {
             const groupedIncomingTaskRequests = groupList(incomingTaskRequests);
 
             const assigneeChangeTaskRequests = schedules.filter(s => {
-              if (!s || s.assigneeRequestStatus !== 'pending') return false;
+              if (!s || !s.assigneeRequestStatus) return false;
               const ownerId = s.requesterId || s.memberId || 'daum';
               const isOwner = (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
               const isRequester = (ME.id === s.assigneeRequesterId) || (s.assigneeRequesterId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (s.assigneeRequesterId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (s.assigneeRequesterId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
@@ -8720,7 +8736,7 @@ export default function App() {
                   const isMemberSelected = daySelectedMemberIds.includes(member.id);
 
                   const memberSchedules = isMemberSelected ? schedules.filter(s => {
-                    const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
+                    const matchesMember = isMemberMatch(s, member.id);
                     const matchesDate = isScheduleInMonth(s, currentYear, currentMonth) && s.date === selectedDate;
                     return matchesMember && matchesDate;
                   }) : [];
@@ -9023,7 +9039,7 @@ export default function App() {
                         
                         return weeklyMembers.map((member, memberIdx) => {
                           const daySchedules = schedules.filter(s => {
-                            const matchesMember = s.memberIds ? s.memberIds.includes(member.id) : s.memberId === member.id;
+                            const matchesMember = isMemberMatch(s, member.id);
                             return matchesMember && isScheduleInMonth(s, currentYear, info.month) && s.date === info.dayNum;
                           });
 

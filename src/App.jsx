@@ -7727,109 +7727,166 @@ export default function App() {
             !/반차|연차|휴가|병가/i.test(s.title || '') &&
             s.status === 'requested'
           ).length;
-          const assigneeChangePendingCount = schedules.filter(s => {
+          const incomingAssigneeChangeCount = schedules.filter(s => {
             if (!s || s.assigneeRequestStatus !== 'pending') return false;
             const ownerId = s.requesterId || s.memberId || 'daum';
             return (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
           }).length;
-          const totalUnprocessedRequestsCount = pendingApprovalCount + incomingTaskCount + assigneeChangePendingCount;
+          const receivedTotal = pendingApprovalCount + incomingTaskCount + incomingAssigneeChangeCount;
 
-          if (totalUnprocessedRequestsCount > 0) {
-            return (
-              <div 
-                style={{ 
-                  position: 'absolute', 
-                  right: '20px', 
-                  bottom: '76px', 
-                  zIndex: 50, 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'flex-end',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  animation: 'floatCharacterIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-                onClick={() => {
-                  const firstCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
-                  if (firstCard) {
-                    firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
-                    firstCard.style.borderColor = '#10b981';
-                    firstCard.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.2)';
-                    setTimeout(() => {
-                      firstCard.style.borderColor = '#cbd5e1';
-                      firstCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
-                    }, 1600);
-                  } else if (chatMessagesRef.current) {
-                    chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
-                  }
-                }}
-              >
-                {/* Speech Bubble Tooltip */}
+          const sentApprovalCount = schedules.filter(s => 
+            (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee') || (s.memberId === ME.id && /반차|연차|휴가|병가/i.test(s.title || ''))) && 
+            s.status === 'requested' && 
+            !isApproverForItem(s)
+          ).length;
+          const outgoingTaskCount = schedules.filter(s => 
+            (s.requesterId === ME.id || (ME.id === 'sh' && s.requesterId === 'yoonhee')) && 
+            (s.memberId !== ME.id && !(s.memberIds && s.memberIds.includes(ME.id))) && 
+            !/반차|연차|휴가|병가/i.test(s.title || '') && 
+            s.status === 'requested'
+          ).length;
+          const outgoingAssigneeChangeCount = schedules.filter(s => {
+            if (!s || s.assigneeRequestStatus !== 'pending') return false;
+            const isReq = (ME.id === s.assigneeRequesterId) || (s.assigneeRequesterId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (s.assigneeRequesterId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (s.assigneeRequesterId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+            return isReq;
+          }).length;
+          const sentTotal = sentApprovalCount + outgoingTaskCount + outgoingAssigneeChangeCount;
+
+          if (receivedTotal === 0 && sentTotal === 0) return null;
+
+          return (
+            <div 
+              style={{ 
+                position: 'absolute', 
+                right: '20px', 
+                bottom: '76px', 
+                zIndex: 50, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'flex-end',
+                cursor: 'pointer',
+                userSelect: 'none',
+                animation: 'floatCharacterIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+              onClick={() => {
+                const firstCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
+                if (firstCard) {
+                  firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  firstCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+                  firstCard.style.borderColor = '#10b981';
+                  firstCard.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.2)';
+                  setTimeout(() => {
+                    firstCard.style.borderColor = '#cbd5e1';
+                    firstCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
+                  }, 1600);
+                } else if (chatMessagesRef.current) {
+                  chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
+                }
+              }}
+            >
+              {/* Stacked Speech Bubbles */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: '8px', marginRight: '6px', gap: '5px' }}>
+                {/* 1) Top Bubble: 보낸 요청 (위쪽 말풍선 - 꼬리 없음) */}
+                {sentTotal > 0 && (
+                  <div 
+                    style={{
+                      position: 'relative',
+                      backgroundColor: '#18181b',
+                      color: '#ffffff',
+                      padding: '5px 10px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    <span>보낸 요청 {sentTotal}건</span>
+
+                    {/* If receivedTotal === 0, this single bubble gets the tail */}
+                    {receivedTotal === 0 && (
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          bottom: '-6px',
+                          right: '20px',
+                          width: 0,
+                          height: 0,
+                          borderLeft: '6px solid transparent',
+                          borderRight: '6px solid transparent',
+                          borderTop: '6px solid #18181b'
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* 2) Bottom Bubble: 받은 요청 (아래쪽 말풍선 - 꼬리 있음) */}
+                {receivedTotal > 0 && (
+                  <div 
+                    style={{
+                      position: 'relative',
+                      backgroundColor: '#18181b',
+                      color: '#ffffff',
+                      padding: '5px 10px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    <span>받은 요청 {receivedTotal}건</span>
+
+                    {/* Bottom Pointer Beak / Tail */}
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        bottom: '-6px',
+                        right: '20px',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '6px solid transparent',
+                        borderRight: '6px solid transparent',
+                        borderTop: '6px solid #18181b'
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Character Button with Ground Shadow */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <button 
+                  type="button"
+                  className="ai-toggle-floating-btn"
+                  style={{ position: 'relative', right: 0, bottom: 0, cursor: 'pointer' }}
+                  title="요청건 보기"
+                >
+                  <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </button>
+
+                {/* Ground Shadow Effect */}
                 <div 
                   style={{
-                    position: 'relative',
-                    marginBottom: '8px',
-                    marginRight: '6px',
-                    backgroundColor: '#18181b',
-                    color: '#ffffff',
-                    padding: '5px 9px',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }}
-                >
-                  <span style={{ fontSize: '13px', lineHeight: 1, margin: 0, padding: 0 }}>💡</span>
-                  <span>받은 요청 {totalUnprocessedRequestsCount}건</span>
-
-                  {/* Bottom Pointer Beak / Tail */}
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      bottom: '-6px',
-                      right: '26px',
-                      width: 0,
-                      height: 0,
-                      borderLeft: '6px solid transparent',
-                      borderRight: '6px solid transparent',
-                      borderTop: '6px solid #18181b'
-                    }}
-                  />
-                </div>
-
-                {/* Character Button with Ground Shadow */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <button 
-                    type="button"
-                    className="ai-toggle-floating-btn"
-                    style={{ position: 'relative', right: 0, bottom: 0, cursor: 'pointer' }}
-                    title="결재 요청건 보기"
-                  >
-                    <img src="/bi2.png" alt="BI Logo 2" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  </button>
-
-                  {/* Ground Shadow Effect */}
-                  <div 
-                    style={{
-                      width: '46px',
-                      height: '7px',
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(0, 0, 0, 0.22)',
-                      marginTop: '-6px',
-                      filter: 'blur(2px)',
-                      pointerEvents: 'none'
-                    }}
-                  />
-                </div>
+                    width: '46px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.16)',
+                    marginTop: '2px',
+                    filter: 'blur(2px)',
+                    transform: 'scaleY(0.7)'
+                  }} 
+                />
               </div>
-            );
-          }
-          return null;
+            </div>
+          );
         })()}
 
         <div className="chat-input-area">

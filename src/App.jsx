@@ -1817,7 +1817,8 @@ export default function App() {
     try {
       localStorage.removeItem('zal_feeds');
       const saved = localStorage.getItem('zal_feeds_v2');
-      return saved ? JSON.parse(saved) : [];
+      const list = saved ? JSON.parse(saved) : [];
+      return (list || []).filter(f => !f.id?.startsWith('feed_assignee_req_') && !f.content?.includes('[담당자 추가 요청]'));
     } catch (e) {
       return [];
     }
@@ -2805,33 +2806,6 @@ export default function App() {
       });
 
       setSchedules(updatedSchedules);
-
-      // Create Feed Notification for assignee change request
-      const newFeed = {
-        id: `feed_assignee_req_${Date.now()}`,
-        authorId: ME.id,
-        author: ME.name,
-        role: ME.role,
-        type: 'request',
-        content: `[담당자 추가 요청] "${selectedDetailEvent.title}" 일정의 담당자 변경을 요청했습니다. (${newAssigneeNames})`,
-        createdAt: new Date().toISOString(),
-        scheduleId: selectedDetailEvent.id,
-        assigneeRequestInfo: {
-          scheduleId: selectedDetailEvent.id,
-          requestedMemberIds: editMemberIds,
-          requestedNames: newAssigneeNames,
-          requesterId: ME.id,
-          requesterName: ME.name,
-          targetOwnerId: targetOwnerId,
-          status: 'pending'
-        }
-      };
-
-      setFeeds(prev => {
-        const next = [newFeed, ...prev];
-        try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-        return next;
-      });
 
       setIsDetailModalOpen(false);
       showLayerAlert(`"${selectedDetailEvent.title}" 일정의 담당자 추가(변경)을 요청했습니다.`, '요청 완료', 'success');
@@ -5713,6 +5687,8 @@ export default function App() {
           onApproveSchedule={handleApproveSchedule}
           onRejectSchedule={handleRejectSchedule}
           onResubmitSchedule={handleResubmitSchedule}
+          onApproveAssigneeChange={handleApproveAssigneeChange}
+          onRejectAssigneeChange={handleRejectAssigneeChange}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {
             const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;

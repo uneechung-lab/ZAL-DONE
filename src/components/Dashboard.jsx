@@ -25,6 +25,8 @@ export default function Dashboard({
   onApproveSchedule,
   onRejectSchedule,
   onResubmitSchedule,
+  onApproveAssigneeChange,
+  onRejectAssigneeChange,
   onNavigateToSync,
   onSwitchUser,
   onLogout,
@@ -2830,7 +2832,31 @@ export default function Dashboard({
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                           <span>담당</span>
                         </div>
-                        <div style={{ fontWeight: '700', color: '#0f172a' }}>{assigneeName}</div>
+                        <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                          {(() => {
+                            if (matchedSched && matchedSched.assigneeRequestStatus === 'pending' && matchedSched.requestedMemberIds) {
+                              const currentNames = (matchedSched.memberIds || [matchedSched.memberId]).map(id => displayMembers.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ') || assigneeName;
+                              
+                              const currentMemberIds = matchedSched.memberIds || [matchedSched.memberId];
+                              const addedIds = matchedSched.requestedMemberIds.filter(id => !currentMemberIds.includes(id) && !(id === 'yoonhee' && currentMemberIds.includes('sh')) && !(id === 'daeum' && currentMemberIds.includes('daum')));
+                              const addedNames = addedIds.map(id => displayMembers.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean);
+                              
+                              const addedText = addedNames.length > 0 
+                                ? `${addedNames.join(', ')}님` 
+                                : (matchedSched.requestedMemberIds.map(id => displayMembers.find(m => m.id === id)?.name).filter(Boolean).join(', ') + '님');
+
+                              return (
+                                <span>
+                                  {currentNames}
+                                  <span style={{ fontSize: '11.5px', color: 'var(--accent-purple)', fontWeight: '600', marginLeft: '4px' }}>
+                                    ({addedText} 추가(변경)요청됨)
+                                  </span>
+                                </span>
+                              );
+                            }
+                            return assigneeName;
+                          })()}
+                        </div>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr', gap: '6px', fontSize: '12.5px', alignItems: 'center' }}>
@@ -2851,8 +2877,125 @@ export default function Dashboard({
                     </div>
                   </div>
 
+                  {/* ──── Assignee Change Request Action Box on Original Card ──── */}
+                  {matchedSched && matchedSched.assigneeRequestStatus === 'pending' && (() => {
+                    const ownerId = matchedSched.requesterId || matchedSched.memberId || 'daum';
+                    const ownerMember = displayMembers.find(m => m.id === ownerId || (ownerId === 'yoonhee' && m.id === 'sh') || (ownerId === 'sangmu' && m.id === 'sangmoo') || (ownerId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
+                    const ownerDisplay = `${ownerMember.name} ${ownerMember.role || ''}`.trim();
+
+                    const isCurrentOwner = (currentUser?.id === ownerId) || 
+                      (ownerId === 'daum' && (currentUser?.id === 'daum' || currentUser?.id === 'daeum')) ||
+                      (ownerId === 'sh' && (currentUser?.id === 'sh' || currentUser?.id === 'yoonhee')) ||
+                      (ownerId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.id === 'sangmu'));
+
+                    const isAssigneeRequester = (currentUser?.id === matchedSched.assigneeRequesterId) || 
+                      (currentUser?.id === 'sh' && matchedSched.assigneeRequesterId === 'sh') ||
+                      (currentUser?.id === 'yoonhee' && matchedSched.assigneeRequesterId === 'sh') ||
+                      (currentUser?.id === 'daum' && matchedSched.assigneeRequesterId === 'daum') ||
+                      (currentUser?.id === 'sangmoo' && matchedSched.assigneeRequesterId === 'sangmoo');
+
+                    return (
+                      <div style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', flex: 1, lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>⏳</span>
+                          <span>{`승인 대기중 (${ownerDisplay})`}</span>
+                        </div>
+                        {isCurrentOwner ? (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onRejectAssigneeChange) {
+                                  onRejectAssigneeChange(matchedSched.id);
+                                }
+                              }}
+                              style={{
+                                padding: '7px 14px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                backgroundColor: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fca5a5',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                            >
+                              요청반려
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onApproveAssigneeChange) {
+                                  onApproveAssigneeChange(matchedSched.id);
+                                }
+                              }}
+                              style={{
+                                padding: '7px 14px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                backgroundColor: '#ecfdf5',
+                                color: '#059669',
+                                border: '1px solid #a7f3d0',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                            >
+                              요청수락
+                            </button>
+                          </div>
+                        ) : isAssigneeRequester ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onRejectAssigneeChange) {
+                                onRejectAssigneeChange(matchedSched.id, '요청 취소');
+                              }
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              backgroundColor: '#fef2f2',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              flexShrink: 0
+                            }}
+                          >
+                            요청취소
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
+
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
+                    if (matchedSched && matchedSched.assigneeRequestStatus === 'pending') {
+                      return null;
+                    }
                     const itemTitleText = `${item.title || ''} ${matchedSched?.title || ''}`;
                     const isItemLeave = /반차|연차|휴가|병가/i.test(itemTitleText) || item.category === '휴가';
                     const isItemRequest = item.category === '요청' || (matchedSched && matchedSched.status === 'requested');

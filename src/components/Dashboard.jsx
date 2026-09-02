@@ -2956,6 +2956,12 @@ export default function Dashboard({
                           </div>
                         );
                       } else {
+                        const requesterId = matchedSched?.requesterId || vInfo.requesterId || item.authorId || parentFeed.authorId;
+                        const isRequesterOrAuthor = (currentUser?.id === requesterId) ||
+                          (requesterId === 'daum' && (currentUser?.id === 'daum' || currentUser?.id === 'daeum' || currentUser?.name?.includes('정다음'))) ||
+                          (requesterId === 'sh' && (currentUser?.id === 'sh' || currentUser?.id === 'yoonhee' || currentUser?.name?.includes('정윤희'))) ||
+                          (requesterId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.id === 'sangmu' || currentUser?.name?.includes('조상무')));
+
                         return (
                           <div style={{
                             backgroundColor: '#fffbeb',
@@ -2978,37 +2984,39 @@ export default function Dashboard({
                               <span>⏳</span>
                               <span>{targetDisplay ? `요청 대기중 (${targetDisplay}에게 요청)` : '요청 대기중'}</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const sched = item.matchedSchedule || findMatchingSchedule(item);
-                                if (sched && onCancelSchedule) {
-                                  onCancelSchedule(sched.id);
-                                } else if (onCancelSchedule && item.feedId) {
-                                  onCancelSchedule(item.feedId);
-                                } else if (item.feedId) {
-                                  handleDeleteFeed(item.feedId);
-                                }
-                              }}
-                              style={{
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                backgroundColor: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fca5a5',
-                                borderRadius: '8px',
-                                fontWeight: '700',
-                                lineHeight: '1.2',
-                                cursor: 'pointer',
-                                flexShrink: 0,
-                                transition: 'all 0.15s ease'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                            >
-                              요청취소
-                            </button>
+                            {isRequesterOrAuthor && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                  if (sched && onCancelSchedule) {
+                                    onCancelSchedule(sched.id);
+                                  } else if (onCancelSchedule && item.feedId) {
+                                    onCancelSchedule(item.feedId);
+                                  } else if (item.feedId) {
+                                    handleDeleteFeed(item.feedId);
+                                  }
+                                }}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '12px',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fca5a5',
+                                  borderRadius: '8px',
+                                  fontWeight: '700',
+                                  lineHeight: '1.2',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                              >
+                                요청취소
+                              </button>
+                            )}
                           </div>
                         );
                       }

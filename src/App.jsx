@@ -9464,7 +9464,7 @@ export default function App() {
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                       >
-                        <span>{isHistoryExpanded ? '접어두기' : `총 ${historyList.length}건 내용보기`}</span>
+                        <span>{isHistoryExpanded ? `총 ${historyList.length}건 접어두기` : `총 ${historyList.length}건 내용보기`}</span>
                         <svg 
                           width="12" 
                           height="12" 

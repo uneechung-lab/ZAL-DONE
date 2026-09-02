@@ -2419,13 +2419,25 @@ export default function App() {
       return schedule.history;
     }
 
-    // 2. Check if this schedule is genuinely an approval/request schedule
-    const isLeave = /반차|연차|휴가|병가/i.test(schedule.title || '') || schedule.category === '휴가';
-    const hasApprovalStatus = schedule.status === 'requested' || (schedule.status && schedule.status.startsWith('rejected')) || (schedule.status === 'accepted' && (schedule.requesterId || schedule.approverId));
-    const isExplicitRequest = Boolean(schedule.isRequest || hasApprovalStatus || (isLeave && (schedule.status || schedule.requesterId)));
+    const desc = schedule.description || '';
+    const rejectMatch = desc.match(/\[반려사유\]\s*([^|\n]+)/) || desc.match(/\[반려 사유\]\s*([^|\n]+)/);
+    const resubmitMatch = desc.match(/\[재요청메시지\]\s*([^|\n]+)/) || desc.match(/\[재요청 메시지\]\s*([^|\n]+)/);
+    const acceptMatch = desc.match(/\[수락메시지\]\s*([^|\n]+)/) || desc.match(/\[수락 메시지\]\s*([^|\n]+)/);
 
-    // If it's a regular schedule created directly without approval workflow, return empty array
-    if (!isLeave && !isExplicitRequest) {
+    // 2. Check if this is truly an approval/request item
+    const isLeave = /반차|연차|휴가|병가/i.test(schedule.title || '') || schedule.category === '휴가';
+    const isPendingApproval = schedule.status === 'requested' || schedule.isRequested === true || schedule.vacationInfo?.status === 'pending';
+    const isRejected = schedule.status && schedule.status.startsWith('rejected');
+    const hasAuditLog = Boolean(rejectMatch || resubmitMatch || acceptMatch);
+
+    // A schedule has history ONLY if:
+    // - It has explicit audit logs in description (rejection/resubmit/accept notes)
+    // - It is currently in a requested/pending state
+    // - It was rejected
+    // - It is a leave request that went through approval
+    const isRealRequest = isPendingApproval || isRejected || hasAuditLog || (isLeave && schedule.vacationInfo);
+
+    if (!isRealRequest) {
       return [];
     }
 
@@ -2446,12 +2458,6 @@ export default function App() {
       message: `${isLeave ? '휴가/반차' : '업무'} 결재를 요청했습니다.`,
       timestamp: schedule.createdAt || new Date().toISOString()
     });
-
-    // 2. Parse description for [반려사유], [재요청메시지], [수락메시지]
-    const desc = schedule.description || '';
-    const rejectMatch = desc.match(/\[반려사유\]\s*([^|\n]+)/) || desc.match(/\[반려 사유\]\s*([^|\n]+)/);
-    const resubmitMatch = desc.match(/\[재요청메시지\]\s*([^|\n]+)/) || desc.match(/\[재요청 메시지\]\s*([^|\n]+)/);
-    const acceptMatch = desc.match(/\[수락메시지\]\s*([^|\n]+)/) || desc.match(/\[수락 메시지\]\s*([^|\n]+)/);
 
     if (rejectMatch) {
       list.push({
@@ -2479,7 +2485,7 @@ export default function App() {
       });
     }
 
-    if (schedule.status === 'accepted') {
+    if (schedule.status === 'accepted' || schedule.vacationInfo?.status === 'approved' || acceptMatch) {
       list.push({
         id: `hist_appr_${schedule.id}`,
         action: 'approve',
@@ -9628,7 +9634,7 @@ export default function App() {
               })()}
 
               {/* ──── Approval Request / Waiting Banner (Below History) ──── */}
-              {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
+              {(selectedDetailEvent.status === 'requested' || selectedDetailEvent.isRequested === true || selectedDetailEvent.vacationInfo?.status === 'pending') && (() => {
                 const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
                 
                 const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;

@@ -9342,6 +9342,7 @@ export default function App() {
             display: 'flex', 
             flexDirection: 'column', 
             padding: 0, 
+            gap: 0,
             overflow: 'hidden', 
             boxSizing: 'border-box' 
           }} onClick={e => e.stopPropagation()}>
@@ -9351,12 +9352,12 @@ export default function App() {
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between', 
-              padding: '14px 24px', 
+              padding: '12px 24px', 
               borderBottom: '1px solid var(--border-color)', 
               backgroundColor: '#ffffff',
               flexShrink: 0 
             }}>
-              <div className="modal-title" style={{ fontSize: '19px', fontWeight: '800', marginBottom: 0 }}>일정 상세 및 수정</div>
+              <div className="modal-title" style={{ fontSize: '18px', fontWeight: '800', marginBottom: 0 }}>일정 상세 및 수정</div>
               <button 
                 style={{ 
                   background: 'none', 
@@ -9385,10 +9386,10 @@ export default function App() {
             <div style={{ 
               flex: 1, 
               overflowY: 'auto', 
-              padding: '10px 24px 20px', 
+              padding: '6px 24px 18px', 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '14px',
+              gap: '12px',
               textAlign: 'left'
             }}>
               {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE (Top of body) ──── */}
@@ -9428,7 +9429,8 @@ export default function App() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px',
-                    marginTop: '2px'
+                    marginTop: 0,
+                    paddingTop: '2px'
                   }}>
                     <div style={{
                       display: 'flex',

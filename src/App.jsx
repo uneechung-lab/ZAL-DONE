@@ -3054,6 +3054,88 @@ export default function App() {
     showLayerAlert(`"${targetSched.title}" 일정의 담당자 변경 요청을 반려했습니다.`, '반려 완료', 'info');
   };
 
+  const handleCancelAssigneeApproval = async (scheduleId, cancelType = 'request') => {
+    const targetSched = schedules.find(s => s.id === scheduleId) || selectedDetailEvent;
+    if (!targetSched) return;
+
+    const ownerId = targetSched.requesterId || targetSched.memberId || 'daum';
+    const isOwner = (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+
+    // 원래 단일 담당자(소유자)로 롤백
+    const rollbackMemberIds = [ownerId];
+    const existingHistory = getScheduleHistoryList(targetSched);
+    const cancelHistory = [
+      ...existingHistory,
+      {
+        id: `hist_cancel_assignee_${Date.now()}`,
+        action: 'cancel',
+        actionLabel: cancelType === 'approve' ? '담당자 변경 승인 취소' : '담당자 추가 요청 취소',
+        actorId: ME.id,
+        actorName: ME.name,
+        actorRole: ME.role,
+        message: cancelType === 'approve' ? '담당자 변경 승인을 취소했습니다.' : '담당자 추가 요청을 취소했습니다.',
+        timestamp: new Date().toISOString()
+      }
+    ];
+
+    const matchGroupId = targetSched.description && targetSched.description.match(/\[그룹 ID\]\s*(g_\w+)/);
+    const groupId = matchGroupId ? matchGroupId[1] : null;
+
+    const updateTargetIds = groupId
+      ? schedules.filter(s => s.description && s.description.includes(`[그룹 ID] ${groupId}`)).map(s => s.id)
+      : [targetSched.id];
+
+    const updatedSchedules = schedules.map(s => {
+      if (updateTargetIds.includes(s.id)) {
+        const updatedObj = {
+          ...s,
+          memberIds: rollbackMemberIds,
+          memberId: rollbackMemberIds[0],
+          requestedMemberIds: null,
+          assigneeRequestStatus: null,
+          history: cancelHistory,
+          updatedAt: new Date().toISOString()
+        };
+        if (isConfigured) {
+          appwriteService.updateSchedule(s.id, updatedObj);
+        }
+        return updatedObj;
+      }
+      return s;
+    });
+
+    setSchedules(updatedSchedules);
+    try { localStorage.setItem('zal_schedules', JSON.stringify(updatedSchedules)); } catch (_) {}
+
+    // 취소 알림 메시지 발송
+    const requesterId = targetSched.assigneeRequesterId || 'sh';
+    const otherId = isOwner ? requesterId : ownerId;
+
+    const myCancelMsg = {
+      id: Date.now() + 1,
+      from: `ai_${ME.id}`,
+      text: `↩️ "${targetSched.title}" 일정의 ${cancelType === 'approve' ? '담당자 변경 승인을 취소' : '담당자 추가 요청을 취소'}했습니다.`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(ME.id, myCancelMsg);
+
+    const otherCancelMsg = {
+      id: Date.now() + 2,
+      from: `ai_${otherId}`,
+      text: `↩️ ${ME.name} ${ME.role || ''}님이 "${targetSched.title}" 일정의 ${cancelType === 'approve' ? '담당자 변경 승인을 취소' : '담당자 추가 요청을 취소'}하셨습니다.`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(otherId, otherCancelMsg);
+
+    showLayerAlert(`"${targetSched.title}" 일정의 ${cancelType === 'approve' ? '승인이 취소' : '요청이 취소'}되었습니다.`, '취소 완료', 'info');
+  };
+
   const performDeleteScheduleAndFeed = (targetEvent, fid) => {
     if (!targetEvent) return;
     const targetEventId = targetEvent.id;
@@ -5791,6 +5873,7 @@ export default function App() {
           onResubmitSchedule={handleResubmitSchedule}
           onApproveAssigneeChange={handleApproveAssigneeChange}
           onRejectAssigneeChange={handleRejectAssigneeChange}
+          onCancelAssigneeApproval={handleCancelAssigneeApproval}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {
             const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;
@@ -7073,13 +7156,58 @@ export default function App() {
                                     </button>
                                   ) : null
                                 ) : liveSched.assigneeRequestStatus === 'approved' ? (
-                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px' }}>
-                                    🎉 담당자 변경 승인됨
-                                  </span>
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px' }}>
+                                      🎉 담당자 변경 승인됨
+                                    </span>
+                                    {isCurrentRequester ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCancelAssigneeApproval(liveSched.id, 'request');
+                                        }}
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5',
+                                          borderRadius: '8px',
+                                          fontWeight: '700',
+                                          cursor: 'pointer',
+                                          lineHeight: '1.2'
+                                        }}
+                                      >
+                                        요청취소
+                                      </button>
+                                    ) : isCurrentOwner ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCancelAssigneeApproval(liveSched.id, 'approve');
+                                        }}
+                                        style={{
+                                          padding: '6px 12px',
+                                          fontSize: '12px',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5',
+                                          borderRadius: '8px',
+                                          fontWeight: '700',
+                                          cursor: 'pointer',
+                                          lineHeight: '1.2'
+                                        }}
+                                      >
+                                        승인취소
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 ) : (
-                                  <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px' }}>
-                                    ❌ 담당자 변경 반려됨
-                                  </span>
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px' }}>
+                                      ❌ 담당자 변경 반려됨
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>

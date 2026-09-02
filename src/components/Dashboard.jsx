@@ -27,6 +27,7 @@ export default function Dashboard({
   onResubmitSchedule,
   onApproveAssigneeChange,
   onRejectAssigneeChange,
+  onCancelAssigneeApproval,
   onNavigateToSync,
   onSwitchUser,
   onLogout,
@@ -3006,9 +3007,96 @@ export default function Dashboard({
                     );
                   })()}
 
+                  {/* ──── Assignee Change Approved Action Box on Original Card ──── */}
+                  {matchedSched && matchedSched.assigneeRequestStatus === 'approved' && (() => {
+                    const ownerId = matchedSched.requesterId || matchedSched.memberId || 'daum';
+                    const isCurrentOwner = (currentUser?.id === ownerId) || 
+                      (ownerId === 'daum' && (currentUser?.id === 'daum' || currentUser?.id === 'daeum')) ||
+                      (ownerId === 'sh' && (currentUser?.id === 'sh' || currentUser?.id === 'yoonhee')) ||
+                      (ownerId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.id === 'sangmu'));
+
+                    const isAssigneeRequester = (currentUser?.id === matchedSched.assigneeRequesterId) || 
+                      (currentUser?.id === 'sh' && matchedSched.assigneeRequesterId === 'sh') ||
+                      (currentUser?.id === 'yoonhee' && matchedSched.assigneeRequesterId === 'sh') ||
+                      (currentUser?.id === 'daum' && matchedSched.assigneeRequesterId === 'daum') ||
+                      (currentUser?.id === 'sangmoo' && matchedSched.assigneeRequesterId === 'sangmoo');
+
+                    return (
+                      <div style={{
+                        backgroundColor: '#ecfdf5',
+                        border: '1px solid #a7f3d0',
+                        borderRadius: '12px',
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ fontSize: '12.5px', color: '#059669', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🎉</span>
+                          <span>담당자 변경 승인됨</span>
+                        </div>
+                        {isAssigneeRequester ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onCancelAssigneeApproval) {
+                                onCancelAssigneeApproval(matchedSched.id, 'request');
+                              }
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              backgroundColor: '#ffffff',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              lineHeight: '1.2'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                          >
+                            요청취소
+                          </button>
+                        ) : isCurrentOwner ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onCancelAssigneeApproval) {
+                                onCancelAssigneeApproval(matchedSched.id, 'approve');
+                              }
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              backgroundColor: '#ffffff',
+                              color: '#dc2626',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              lineHeight: '1.2'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                          >
+                            승인취소
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
+
                   {/* Interactive Request Action Box (Vacation, Meeting, Work) */}
                   {(() => {
-                    if (matchedSched && matchedSched.assigneeRequestStatus === 'pending') {
+                    if (matchedSched && (matchedSched.assigneeRequestStatus === 'pending' || matchedSched.assigneeRequestStatus === 'approved')) {
                       return null;
                     }
                     const itemTitleText = `${item.title || ''} ${matchedSched?.title || ''}`;

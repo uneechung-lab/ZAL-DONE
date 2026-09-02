@@ -1200,15 +1200,17 @@ export default function Dashboard({
       });
     }
 
-    // Filter out cancelled requests so they disappear from Dashboard feeds
-    let activeItems = items.filter(item => {
+    // Filter out cancelled requests and ensure matchedSchedule is always attached
+    let activeItems = items.map(item => {
+      const matched = item.matchedSchedule || findMatchingSchedule(item);
+      return {
+        ...item,
+        matchedSchedule: matched
+      };
+    }).filter(item => {
       if (item.status === 'cancelled' || item.isCancelled) return false;
       if (item.vacationInfo && item.vacationInfo.status === 'cancelled') return false;
-      const matched = item.matchedSchedule || (schedules || []).find(s => 
-        (item.feed && (s.id === item.feed.scheduleId || s.id === item.feed.id)) ||
-        (item.title && s.title && item.title.includes(s.title))
-      );
-      if (matched && (matched.status === 'cancelled' || matched.isCancelled)) return false;
+      if (item.matchedSchedule && (item.matchedSchedule.status === 'cancelled' || item.matchedSchedule.isCancelled)) return false;
       return true;
     });
 
@@ -1283,9 +1285,12 @@ export default function Dashboard({
         bg = '#ecfdf5'; border = '#a7f3d0'; text = '#065f46'; accent = '#10b981';
       }
       return {
+        id: s.id,
         title: s.title,
         start: s.startHour || 9,
         end: s.endHour || 11,
+        matchedSchedule: s,
+        rawSchedule: s,
         bg, border, text, accent
       };
     });

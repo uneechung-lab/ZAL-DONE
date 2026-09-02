@@ -4345,60 +4345,74 @@ export default function App() {
   const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {
     if (!itemOrFeed) return;
     
-    // 1. Try direct id match in schedules
-    let match = schedules.find(s => s.id === itemOrFeed.id || s.id === itemOrFeed.feedId);
+    // 0. Use matchedSchedule directly if available
+    let targetSched = itemOrFeed.matchedSchedule;
+
+    // 1. Direct ID lookup in schedules array
+    if (!targetSched) {
+      targetSched = schedules.find(s => 
+        s.id === itemOrFeed.id || 
+        s.id === itemOrFeed.scheduleId || 
+        s.id === itemOrFeed.feedId ||
+        s.id === `sched_feed_${itemOrFeed.id}` ||
+        `sched_feed_${s.id}` === itemOrFeed.id ||
+        (itemOrFeed.id && String(itemOrFeed.id).endsWith(String(s.id)))
+      );
+    }
     
-    // 2. Try match by title or content
-    if (!match) {
-      const itemTitle = (itemOrFeed.title || '').trim();
-      const itemContent = (itemOrFeed.content || itemOrFeed.description || '').trim();
-      
-      match = schedules.find(s => {
+    // 2. Exact or fuzzy match in schedules array
+    if (!targetSched) {
+      const itemTitle = (itemOrFeed.title || itemOrFeed.content || '').replace(/^[🏖️🚨🤝📋📄⚡\s]+/, '').replace(/\s*\(\d{4}\.\d{2}\.\d{2}\)$/, '').trim();
+      const authorId = itemOrFeed.authorId || itemOrFeed.memberId;
+
+      targetSched = schedules.find(s => {
         if (!s.title) return false;
-        if (itemTitle && (itemTitle.includes(s.title) || s.title.includes(itemTitle))) return true;
-        if (itemContent && (itemContent.includes(s.title) || s.title.includes(itemContent))) return true;
+        const sTitle = s.title.replace(/^[🏖️🚨🤝📋📄⚡\s]+/, '').trim();
+        const authorMatch = !authorId || s.memberId === authorId || s.requesterId === authorId;
+        if (authorMatch && (itemTitle.includes(sTitle) || sTitle.includes(itemTitle))) {
+          return true;
+        }
         return false;
       });
     }
 
-    // 3. If no existing schedule match in schedules array, synthesize an editable schedule object
-    if (!match) {
-      const isVac = /반차|연차|휴가|병가/i.test(itemOrFeed.title || itemOrFeed.content || '');
-      const isIss = /이슈|에러|장애|오류|버그|디버깅/i.test(itemOrFeed.title || itemOrFeed.content || '');
-      const isMtg = /회의|미팅|리뷰|브리핑/i.test(itemOrFeed.title || itemOrFeed.content || '');
-      
-      const authorId = itemOrFeed.authorId || itemOrFeed.memberId || ME.id;
-      const cleanTitle = (itemOrFeed.title || itemOrFeed.content || '일정').replace(/^[🏖️🚨🤝📋📄⚡\s]+/, '').trim();
-      
-      match = {
-        id: itemOrFeed.id || `sched_dash_sync_${Date.now()}`,
-        feedId: itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null),
-        title: cleanTitle || '일정',
-        date: selectedDate || new Date().getDate(),
-        month: currentMonth || (new Date().getMonth() + 1),
-        year: currentYear || new Date().getFullYear(),
-        startHour: itemOrFeed.start || 9.0,
-        endHour: itemOrFeed.end || 18.0,
-        memberId: authorId,
-        memberIds: [authorId],
-        isRequested: itemOrFeed.vacationInfo?.status === 'pending' || false,
-        approverId: itemOrFeed.vacationInfo?.targetUserId || (isVac ? 'sangmoo' : null),
-        status: itemOrFeed.vacationInfo?.status || 'accepted',
-        category: isVac ? '휴가' : isIss ? '이슈' : (isMtg ? '회의' : '일반'),
-        color: isIss ? 'red' : isVac ? 'orange' : (isMtg ? 'purple' : 'blue'),
-        description: itemOrFeed.content || itemOrFeed.description || itemOrFeed.title || '',
-        createdAt: itemOrFeed.createdAt || new Date().toISOString()
-      };
-    } else {
-      match = {
-        ...match,
-        feedId: itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null)
-      };
+    // 3. If found in real schedules array, pass that exact schedule to openDetailModal
+    if (targetSched) {
+      setDashboardFeedId(itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null));
+      openDetailModal(targetSched);
+      return;
     }
 
-    openDetailModal(match);
-    // Remember the feedId so we can delete the dashboard card if user deletes from modal
+    // 4. Fallback fallback only if not found in schedules array
+    const isVac = /반차|연차|휴가|병가/i.test(itemOrFeed.title || itemOrFeed.content || '');
+    const isIss = /이슈|에러|장애|오류|버그|디버깅/i.test(itemOrFeed.title || itemOrFeed.content || '');
+    const isMtg = /회의|미팅|리뷰|브리핑/i.test(itemOrFeed.title || itemOrFeed.content || '');
+    
+    const authorId = itemOrFeed.authorId || itemOrFeed.memberId || ME.id;
+    const cleanTitle = (itemOrFeed.title || itemOrFeed.content || '일정').replace(/^[🏖️🚨🤝📋📄⚡\s]+/, '').trim();
+    
+    const fallbackSched = {
+      id: itemOrFeed.id || `sched_dash_sync_${Date.now()}`,
+      feedId: itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null),
+      title: cleanTitle || '일정',
+      date: selectedDate || new Date().getDate(),
+      month: currentMonth || (new Date().getMonth() + 1),
+      year: currentYear || new Date().getFullYear(),
+      startHour: itemOrFeed.start || 9.0,
+      endHour: itemOrFeed.end || 18.0,
+      memberId: authorId,
+      memberIds: [authorId],
+      isRequested: itemOrFeed.vacationInfo?.status === 'pending' || false,
+      approverId: itemOrFeed.vacationInfo?.targetUserId || (isVac ? 'sangmoo' : null),
+      status: itemOrFeed.vacationInfo?.status === 'pending' ? 'requested' : (itemOrFeed.vacationInfo?.status === 'approved' ? 'accepted' : (itemOrFeed.vacationInfo?.status === 'rejected' ? 'rejected' : 'accepted')),
+      category: isVac ? '휴가' : isIss ? '이슈' : (isMtg ? '회의' : '일반'),
+      color: isIss ? 'red' : isVac ? 'orange' : (isMtg ? 'purple' : 'blue'),
+      description: itemOrFeed.content || itemOrFeed.description || itemOrFeed.title || '',
+      createdAt: itemOrFeed.createdAt || new Date().toISOString()
+    };
+
     setDashboardFeedId(itemOrFeed.feedId || itemOrFeed.id || (itemOrFeed.feed ? itemOrFeed.feed.id : null));
+    openDetailModal(fallbackSched);
   };
 
   const openAddModal = (member = null, hour = 9, date = null, month = null, year = null) => {

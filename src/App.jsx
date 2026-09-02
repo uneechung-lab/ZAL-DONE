@@ -2304,11 +2304,17 @@ export default function App() {
     return (list || []).map(s => {
       if (s.title && s.title.includes('정부장 브리핑')) {
         if (s.memberIds && (s.memberIds.includes('sh') || s.memberIds.includes('yoonhee')) && (s.memberIds.includes('sangmoo') || s.memberId === 'sangmoo' || s.requesterId === 'sangmoo')) {
-          return {
-            ...s,
-            requesterId: 'sangmoo'
-          };
+          s.requesterId = 'sangmoo';
         }
+      }
+      const isLeave = /반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가';
+      const isExplicitRequest = s.isRequested || s.status === 'requested' || (s.approverId && s.approverId !== s.requesterId);
+      // Auto-restore normal work items (like API 연동 마무리, 화면 퍼블리싱 리뷰, 디버깅 등) that got erroneously marked as rejected
+      if (!isLeave && !isExplicitRequest && s.status && (s.status === 'rejected' || s.status.startsWith('rejected_'))) {
+        return {
+          ...s,
+          status: 'accepted'
+        };
       }
       return s;
     });
@@ -9400,18 +9406,60 @@ export default function App() {
 
             {(selectedDetailEvent.status === 'rejected' || (selectedDetailEvent.status && selectedDetailEvent.status.startsWith('rejected'))) && (() => {
               const cleanedDesc = selectedDetailEvent.description || '';
-              const match = cleanedDesc.match(/\[반려 사유\]\s*([^\n]*)/);
+              const match = cleanedDesc.match(/\[반려 사유\]\s*([^\n]*)/) || cleanedDesc.match(/\[반려사유\]\s*([^\n]*)/);
               const reason = match ? match[1] : '';
-              const isCurrentUserRequester = selectedDetailEvent.requesterId === ME.id || (ME.id === 'sh' && selectedDetailEvent.requesterId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.requesterId === 'sangmu');
               
+              const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
+              const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
+              const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
+
+              const isCurrentUserApprover = selectedDetailEvent.approverId 
+                ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
+                : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : true);
+
+              const canReApprove = (isCurrentUserApprover && !isCurrentUserRequester);
+
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                  <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--accent-red)', fontWeight: '700' }}>❌ 반려된 일정입니다</span>
-                    {reason && (
-                      <span style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
-                        <strong>반려 사유:</strong> {reason}
-                      </span>
+                  <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--accent-red)', fontWeight: '700' }}>❌ 반려된 일정입니다</span>
+                      {reason && (
+                        <span style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
+                          <strong>반려 사유:</strong> {reason}
+                        </span>
+                      )}
+                    </div>
+                    {canReApprove && (
+                      <button
+                        className="modal-btn"
+                        style={{ padding: '5px 12px', fontSize: '12.5px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                        onClick={async () => {
+                          if (isConfigured) {
+                            let dbSched = { ...selectedDetailEvent, status: 'accepted' };
+                            await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
+                          }
+                          setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                          setFeeds(prev => {
+                            const next = prev.map(f => {
+                              const isMatch = f.id === selectedDetailEvent.feedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                              if (isMatch && f.vacationInfo) {
+                                return {
+                                  ...f,
+                                  vacationInfo: { ...f.vacationInfo, status: 'approved', approvedAt: new Date().toISOString() }
+                                };
+                              }
+                              return f;
+                            });
+                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                            return next;
+                          });
+                          setIsDetailModalOpen(false);
+                          showLayerAlert(`"${selectedDetailEvent.title}" 일정을 재승인했습니다.`, '재승인 완료', 'success');
+                        }}
+                      >
+                        재승인
+                      </button>
                     )}
                   </div>
 

@@ -332,17 +332,13 @@ export default function Dashboard({
       return next;
     });
 
-    // Also sync status with Calendar schedules so Dashboard and Calendar share unified state
+    // Also sync status with ONLY the specific matching schedule item
     if (setSchedules) {
       setSchedules(prev => {
         const next = prev.map(s => {
-          const isMatch = targetFeed && (
-            (targetFeed.content && targetFeed.content.includes(s.title)) ||
-            (targetFeed.vacationInfo?.type && s.title && s.title.includes(targetFeed.vacationInfo.type)) ||
-            (/반차|휴가|연차/i.test(s.title || '') && /반차|휴가|연차/i.test(targetFeed.vacationInfo?.type || '')) ||
-            (s.status === 'requested' && (s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId))
-          );
-          if (isMatch) {
+          if (!targetFeed) return s;
+          // Exact match by schedule ID or feedId
+          if (s.id === targetFeed.scheduleId || s.id === targetFeed.id || s.feedId === targetFeed.id || s.id === `s_${targetFeed.id}`) {
             return {
               ...s,
               status: approve ? 'accepted' : 'rejected',
@@ -350,12 +346,84 @@ export default function Dashboard({
               updatedAt: new Date().toISOString()
             };
           }
+
+          // Or match specific vacation/leave schedule matching the vacationInfo type and author
+          const isTargetLeave = /반차|휴가|연차/i.test(s.title || '') || s.category === '휴가';
+          if (isTargetLeave && targetFeed.vacationInfo) {
+            const vType = targetFeed.vacationInfo.type || '';
+            const authorMatches = s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId;
+            if (authorMatches && (s.title.includes(vType) || vType.includes(s.title) || (/반차|휴가/i.test(s.title) && /반차|휴가/i.test(vType)))) {
+              return {
+                ...s,
+                status: approve ? 'accepted' : 'rejected',
+                statusUpdatedAt: Date.now(),
+                updatedAt: new Date().toISOString()
+              };
+            }
+          }
+
           return s;
         });
         try { localStorage.setItem('zal_schedules', JSON.stringify(next)); } catch (_) {}
         return next;
       });
     }
+  };
+
+  // Resubmit Rejected Vacation Request
+  const handleResubmitVacation = (feedId) => {
+    let targetFeed = null;
+    setFeeds(prev => {
+      const next = prev.map(f => {
+        if (f.id === feedId && f.vacationInfo) {
+          targetFeed = f;
+          return {
+            ...f,
+            vacationInfo: {
+              ...f.vacationInfo,
+              status: 'pending',
+              approvedAt: null
+            }
+          };
+        }
+        return f;
+      });
+      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+
+    if (setSchedules) {
+      setSchedules(prev => {
+        const next = prev.map(s => {
+          if (!targetFeed) return s;
+          if (s.id === targetFeed.scheduleId || s.id === targetFeed.id || s.feedId === targetFeed.id) {
+            return {
+              ...s,
+              status: 'requested',
+              statusUpdatedAt: Date.now(),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          const isTargetLeave = /반차|휴가|연차/i.test(s.title || '') || s.category === '휴가';
+          if (isTargetLeave && targetFeed.vacationInfo) {
+            const vType = targetFeed.vacationInfo.type || '';
+            const authorMatches = s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId;
+            if (authorMatches && (s.title.includes(vType) || vType.includes(s.title))) {
+              return {
+                ...s,
+                status: 'requested',
+                statusUpdatedAt: Date.now(),
+                updatedAt: new Date().toISOString()
+              };
+            }
+          }
+          return s;
+        });
+        try { localStorage.setItem('zal_schedules', JSON.stringify(next)); } catch (_) {}
+        return next;
+      });
+    }
+    showToast('🔄 결재 요청이 다시 제출되었습니다.');
   };
 
   // Start Editing Feed
@@ -2970,18 +3038,102 @@ export default function Dashboard({
                       return (
                         <div style={{
                           backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '10px',
+                          border: '1px solid #fee2e2',
+                          borderRadius: '12px',
                           padding: '10px 14px',
-                          fontSize: '12.5px',
-                          fontWeight: '700',
-                          color: '#0f172a',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px'
+                          justifyContent: 'space-between',
+                          gap: '10px'
                         }}>
-                          <span>❌</span>
-                          <span>{vInfo.approverName || '담당자'} 요청 반려됨</span>
+                          <div style={{
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            color: '#b91c1c',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <span>❌</span>
+                            <span>{vInfo.approverName || '담당자'} 요청 반려됨</span>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                            {canApprove && (
+                              <button
+                                type="button"
+                                onClick={() => handleApproveVacation(parentFeed.id, true)}
+                                style={{
+                                  padding: '5px 12px',
+                                  fontSize: '12px',
+                                  fontWeight: '700',
+                                  backgroundColor: '#ecfdf5',
+                                  color: '#059669',
+                                  border: '1px solid #a7f3d0',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                              >
+                                재승인
+                              </button>
+                            )}
+
+                            {(isAuthor || currentUser?.id === item.authorId || currentUser?.id === vInfo.requesterId) && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                    if (sched && onCancelSchedule) {
+                                      onCancelSchedule(sched.id);
+                                    } else if (onCancelSchedule && item.feedId) {
+                                      onCancelSchedule(item.feedId);
+                                    } else if (item.feedId) {
+                                      handleDeleteFeed(item.feedId);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '5px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#dc2626',
+                                    border: '1px solid #fca5a5',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                                >
+                                  요청취소
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResubmitVacation(parentFeed.id)}
+                                  style={{
+                                    padding: '5px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    backgroundColor: '#f0fdf4',
+                                    color: '#16a34a',
+                                    border: '1px solid #bbf7d0',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dcfce7'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f0fdf4'}
+                                >
+                                  다시요청
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       );
                     }

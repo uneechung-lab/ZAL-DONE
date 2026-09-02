@@ -5330,6 +5330,8 @@ export default function App() {
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onCancelSchedule={handleCancelSchedule}
+          onApproveSchedule={handleApproveSchedule}
+          onRejectSchedule={handleRejectSchedule}
           onResubmitSchedule={handleResubmitSchedule}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {

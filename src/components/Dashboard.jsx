@@ -22,6 +22,8 @@ export default function Dashboard({
   onAddSchedule,
   onOpenScheduleDetail,
   onCancelSchedule,
+  onApproveSchedule,
+  onRejectSchedule,
   onResubmitSchedule,
   onNavigateToSync,
   onSwitchUser,
@@ -32,7 +34,6 @@ export default function Dashboard({
   const [composerText, setComposerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [reRequestModalState, setReRequestModalState] = useState({ isOpen: false, feedId: null, title: '', message: '', schedId: null });
 
   const [internalFeeds, setInternalFeeds] = useState(() => {
     try {
@@ -2944,13 +2945,11 @@ export default function Dashboard({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const sched = item.matchedSchedule || findMatchingSchedule(item);
-                                  setRejectModalState({
-                                    isOpen: true,
-                                    feedId: parentFeed.id,
-                                    title: item.title || '결재 요청',
-                                    reason: '',
-                                    schedId: sched ? sched.id : (item.id || parentFeed.scheduleId)
-                                  });
+                                  if (onRejectSchedule && sched) {
+                                    onRejectSchedule(sched.id);
+                                  } else {
+                                    handleApproveVacation(parentFeed.id, false);
+                                  }
                                 }}
                                 style={{
                                   padding: '7px 14px',
@@ -2975,7 +2974,15 @@ export default function Dashboard({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleApproveVacation(parentFeed.id, true)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                  if (onApproveSchedule && sched) {
+                                    onApproveSchedule(sched.id);
+                                  } else {
+                                    handleApproveVacation(parentFeed.id, true);
+                                  }
+                                }}
                                 style={{
                                   padding: '7px 14px',
                                   fontSize: '12px',
@@ -3115,7 +3122,15 @@ export default function Dashboard({
                             {canApprove && (
                               <button
                                 type="button"
-                                onClick={() => handleApproveVacation(parentFeed.id, true)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                  if (onApproveSchedule && sched) {
+                                    onApproveSchedule(sched.id);
+                                  } else {
+                                    handleApproveVacation(parentFeed.id, true);
+                                  }
+                                }}
                                 style={{
                                   padding: '5px 12px',
                                   fontSize: '12px',
@@ -3170,13 +3185,11 @@ export default function Dashboard({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     const sched = item.matchedSchedule || findMatchingSchedule(item);
-                                    setReRequestModalState({
-                                      isOpen: true,
-                                      feedId: parentFeed.id,
-                                      title: item.title || '일정 재요청',
-                                      message: '',
-                                      schedId: sched ? sched.id : (item.id || parentFeed.scheduleId)
-                                    });
+                                    if (onResubmitSchedule && sched) {
+                                      onResubmitSchedule(sched.id);
+                                    } else {
+                                      handleResubmitVacation(parentFeed.id);
+                                    }
                                   }}
                                   style={{
                                     padding: '5px 12px',
@@ -3801,233 +3814,7 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* ──── RE-REQUEST REASON MODAL ──── */}
-      {reRequestModalState.isOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }} onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '460px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-            border: '1px solid #e2e8f0',
-            overflow: 'hidden'
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{
-              padding: '18px 20px',
-              borderBottom: '1px solid #f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🔄</span>
-                <span>일정 재요청</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', fontSize: '18px' }}
-              >
-                ✕
-              </button>
-            </div>
 
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.5' }}>
-                <strong>"{reRequestModalState.title}"</strong> 일정을 결재자에게 다시 요청합니다.<br />
-                전달할 재요청 사유나 메시지를 입력해주세요.
-              </div>
-
-              <textarea
-                placeholder="재요청 사유 및 변경 사항을 입력하세요 (예: 사유 보완, 시간 조정 등)"
-                value={reRequestModalState.message}
-                onChange={(e) => setReRequestModalState(prev => ({ ...prev, message: e.target.value }))}
-                style={{
-                  width: '100%',
-                  height: '100px',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-                autoFocus
-              />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
-                <button
-                  type="button"
-                  onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  취소
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleResubmitVacation(reRequestModalState.feedId, reRequestModalState.message, reRequestModalState.schedId);
-                    setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null });
-                  }}
-                  style={{
-                    padding: '8px 18px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    backgroundColor: '#16a34a',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  재요청 보내기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ──── REJECT REASON MODAL ──── */}
-      {rejectModalState.isOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }} onClick={() => setRejectModalState({ isOpen: false, feedId: null, title: '', reason: '', schedId: null })}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '460px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-            border: '1px solid #e2e8f0',
-            overflow: 'hidden'
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{
-              padding: '18px 20px',
-              borderBottom: '1px solid #f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>❌</span>
-                <span>결재 반려</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRejectModalState({ isOpen: false, feedId: null, title: '', reason: '', schedId: null })}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', fontSize: '18px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.5' }}>
-                <strong>"{rejectModalState.title}"</strong> 일정을 반려하시겠습니까?<br />
-                신청자에게 전달할 반려 사유를 입력해주세요.
-              </div>
-
-              <textarea
-                placeholder="반려 사유를 입력하세요 (예: 해당 시간 중요 회의 참석 필요 등)"
-                value={rejectModalState.reason}
-                onChange={(e) => setRejectModalState(prev => ({ ...prev, reason: e.target.value }))}
-                style={{
-                  width: '100%',
-                  height: '100px',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-                autoFocus
-              />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
-                <button
-                  type="button"
-                  onClick={() => setRejectModalState({ isOpen: false, feedId: null, title: '', reason: '', schedId: null })}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  취소
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!rejectModalState.reason.trim()) {
-                      showToast('⚠️ 반려 사유를 입력해주세요.');
-                      return;
-                    }
-                    handleApproveVacation(rejectModalState.feedId, false, rejectModalState.reason, rejectModalState.schedId);
-                    setRejectModalState({ isOpen: false, feedId: null, title: '', reason: '', schedId: null });
-                  }}
-                  style={{
-                    padding: '8px 18px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    backgroundColor: '#dc2626',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  반려하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ──── FLOATING TOAST NOTIFICATION (FOR DEEP-LINK COPY, ETC.) ──── */}
       {toastMessage && (

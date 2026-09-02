@@ -9391,7 +9391,181 @@ export default function App() {
               gap: '14px',
               textAlign: 'left'
             }}>
-              {/* Approval Request / Waiting Banner */}
+              {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE (Top of body) ──── */}
+              {(() => {
+                const historyList = getScheduleHistoryList(selectedDetailEvent);
+                if (!historyList || historyList.length === 0) return null;
+
+                const getActorAvatarPic = (hist) => {
+                  const actorId = hist.actorId;
+                  const actorName = hist.actorName || '';
+                  const m = activeTeam.find(t => 
+                    t.id === actorId || 
+                    t.name === actorName || 
+                    (actorId === 'yoonhee' && t.id === 'sh') || 
+                    (actorId === 'sangmu' && t.id === 'sangmoo') || 
+                    (actorId === 'daeum' && t.id === 'daum')
+                  );
+                  if (m) return getMemberAvatarPic(m);
+                  if (actorId === 'sangmoo' || actorName.includes('상무')) return '/pic2_thumb.png';
+                  if (actorId === 'daum' || actorName.includes('다음')) return '/pic2_thumb.png';
+                  return '/pic1_thumb.png';
+                };
+
+                const formatHistTime = (isoString) => {
+                  if (!isoString) return '';
+                  const d = new Date(isoString);
+                  if (isNaN(d.getTime())) return '';
+                  const month = d.getMonth() + 1;
+                  const day = d.getDate();
+                  const hours = String(d.getHours()).padStart(2, '0');
+                  const minutes = String(d.getMinutes()).padStart(2, '0');
+                  return `${month}. ${day}. ${hours}:${minutes}`;
+                };
+
+                return (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>
+                        결재 및 처리 히스토리
+                      </label>
+                      <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: '10px' }}>
+                        총 {historyList.length}건
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {historyList.map((hist, idx) => {
+                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0';
+                        if (hist.action === 'reject') {
+                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca';
+                        } else if (hist.action === 'resubmit') {
+                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0';
+                        } else if (hist.action === 'request') {
+                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a';
+                        } else if (hist.action === 'cancel') {
+                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1';
+                        }
+
+                        const timeDisplay = formatHistTime(hist.timestamp);
+                        const avatarPic = getActorAvatarPic(hist);
+
+                        return (
+                          <div key={hist.id || idx} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            position: 'relative',
+                            paddingLeft: '2px'
+                          }}>
+                            {/* Left: Avatar with Name below */}
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              width: '46px',
+                              flexShrink: 0,
+                              gap: '3px'
+                            }}>
+                              <img 
+                                src={avatarPic} 
+                                alt={hist.actorName || ''} 
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  border: '1.5px solid #e2e8f0',
+                                  backgroundColor: '#ffffff'
+                                }} 
+                                onError={(e) => { e.target.src = '/pic1_thumb.png'; }}
+                              />
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                color: '#334155',
+                                textAlign: 'center',
+                                lineHeight: 1.15,
+                                wordBreak: 'keep-all',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {hist.actorName || '사용자'}
+                              </span>
+                            </div>
+
+                            {/* Right: Single-row history item box */}
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              padding: '9px 14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '12px',
+                              minHeight: '38px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                            }}>
+                              {/* Action badge + message */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, flexWrap: 'nowrap' }}>
+                                <span style={{
+                                  fontSize: '11.5px',
+                                  fontWeight: '800',
+                                  color: badgeColor,
+                                  backgroundColor: badgeBg,
+                                  border: `1px solid ${badgeBorder}`,
+                                  padding: '2px 7px',
+                                  borderRadius: '4px',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
+                                }}>
+                                  {(hist.actionLabel || '').replace(/휴가\/반차 결재 요청|일정 결재 요청/g, '결재 요청').replace(/일정 재요청/g, '재요청') || (hist.action === 'request' ? '결재 요청' : (hist.action === 'resubmit' ? '재요청' : hist.action))}
+                                </span>
+                                {hist.message && (
+                                  <span style={{
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    color: '#1e293b',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }} title={hist.message}>
+                                    {hist.message}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Time on right */}
+                              {timeDisplay && (
+                                <span style={{
+                                  fontSize: '12px',
+                                  color: '#64748b',
+                                  fontWeight: '500',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
+                                }}>
+                                  {timeDisplay}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ──── Approval Request / Waiting Banner (Below History) ──── */}
               {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
                 const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
                 
@@ -9562,180 +9736,6 @@ export default function App() {
                         {headerNoticeText}
                       </span>
                     )}
-                  </div>
-                );
-              })()}
-
-              {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE (Right below approval banner!) ──── */}
-              {(() => {
-                const historyList = getScheduleHistoryList(selectedDetailEvent);
-                if (!historyList || historyList.length === 0) return null;
-
-                const getActorAvatarPic = (hist) => {
-                  const actorId = hist.actorId;
-                  const actorName = hist.actorName || '';
-                  const m = activeTeam.find(t => 
-                    t.id === actorId || 
-                    t.name === actorName || 
-                    (actorId === 'yoonhee' && t.id === 'sh') || 
-                    (actorId === 'sangmu' && t.id === 'sangmoo') || 
-                    (actorId === 'daeum' && t.id === 'daum')
-                  );
-                  if (m) return getMemberAvatarPic(m);
-                  if (actorId === 'sangmoo' || actorName.includes('상무')) return '/pic2_thumb.png';
-                  if (actorId === 'daum' || actorName.includes('다음')) return '/pic2_thumb.png';
-                  return '/pic1_thumb.png';
-                };
-
-                const formatHistTime = (isoString) => {
-                  if (!isoString) return '';
-                  const d = new Date(isoString);
-                  if (isNaN(d.getTime())) return '';
-                  const month = d.getMonth() + 1;
-                  const day = d.getDate();
-                  const hours = String(d.getHours()).padStart(2, '0');
-                  const minutes = String(d.getMinutes()).padStart(2, '0');
-                  return `${month}. ${day}. ${hours}:${minutes}`;
-                };
-
-                return (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>
-                        결재 및 처리 히스토리
-                      </label>
-                      <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: '10px' }}>
-                        총 {historyList.length}건
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {historyList.map((hist, idx) => {
-                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0';
-                        if (hist.action === 'reject') {
-                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca';
-                        } else if (hist.action === 'resubmit') {
-                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0';
-                        } else if (hist.action === 'request') {
-                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a';
-                        } else if (hist.action === 'cancel') {
-                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1';
-                        }
-
-                        const timeDisplay = formatHistTime(hist.timestamp);
-                        const avatarPic = getActorAvatarPic(hist);
-
-                        return (
-                          <div key={hist.id || idx} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            position: 'relative',
-                            paddingLeft: '2px'
-                          }}>
-                            {/* Left: Avatar with Name below */}
-                            <div style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              width: '46px',
-                              flexShrink: 0,
-                              gap: '3px'
-                            }}>
-                              <img 
-                                src={avatarPic} 
-                                alt={hist.actorName || ''} 
-                                style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '50%',
-                                  objectFit: 'cover',
-                                  border: '1.5px solid #e2e8f0',
-                                  backgroundColor: '#ffffff'
-                                }} 
-                                onError={(e) => { e.target.src = '/pic1_thumb.png'; }}
-                              />
-                              <span style={{
-                                fontSize: '11px',
-                                fontWeight: '700',
-                                color: '#334155',
-                                textAlign: 'center',
-                                lineHeight: 1.15,
-                                wordBreak: 'keep-all',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {hist.actorName || '사용자'}
-                              </span>
-                            </div>
-
-                            {/* Right: Single-row history item box */}
-                            <div style={{
-                              flex: 1,
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '8px',
-                              padding: '9px 14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '12px',
-                              minHeight: '38px',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                            }}>
-                              {/* Action badge + message */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, flexWrap: 'nowrap' }}>
-                                <span style={{
-                                  fontSize: '11.5px',
-                                  fontWeight: '800',
-                                  color: badgeColor,
-                                  backgroundColor: badgeBg,
-                                  border: `1px solid ${badgeBorder}`,
-                                  padding: '2px 7px',
-                                  borderRadius: '4px',
-                                  whiteSpace: 'nowrap',
-                                  flexShrink: 0
-                                }}>
-                                  {(hist.actionLabel || '').replace(/휴가\/반차 결재 요청|일정 결재 요청/g, '결재 요청').replace(/일정 재요청/g, '재요청') || (hist.action === 'request' ? '결재 요청' : (hist.action === 'resubmit' ? '재요청' : hist.action))}
-                                </span>
-                                {hist.message && (
-                                  <span style={{
-                                    fontSize: '13px',
-                                    fontWeight: '500',
-                                    color: '#1e293b',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                  }} title={hist.message}>
-                                    {hist.message}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Time on right */}
-                              {timeDisplay && (
-                                <span style={{
-                                  fontSize: '12px',
-                                  color: '#64748b',
-                                  fontWeight: '500',
-                                  whiteSpace: 'nowrap',
-                                  flexShrink: 0
-                                }}>
-                                  {timeDisplay}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
                 );
               })()}

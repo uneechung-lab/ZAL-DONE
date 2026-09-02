@@ -6052,7 +6052,8 @@ export default function App() {
                               const isIssueCard = parsed.isIssue || (lines[0] && lines[0].includes('이슈')) || (parsed.rawText && parsed.rawText.includes('이슈'));
 
                               const isRequestedCard = matchedSchedule && matchedSchedule.status === 'requested';
-                              const cardDirection = isRequestedCard ? (isApprover ? 'incoming' : 'outgoing') : undefined;
+                              const isCardApprover = matchedSchedule ? isApproverForItem(matchedSchedule) : false;
+                              const cardDirection = isRequestedCard ? (isCardApprover ? 'incoming' : 'outgoing') : undefined;
 
                               return (
                                 <div 

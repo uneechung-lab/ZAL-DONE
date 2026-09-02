@@ -2423,7 +2423,7 @@ export default function App() {
       list.push({
         id: `hist_init_${schedule.id}`,
         action: 'request',
-        actionLabel: isLeave ? '휴가/반차 결재 요청' : '일정 결재 요청',
+        actionLabel: '결재 요청',
         actorId: requester.id,
         actorName: requester.name,
         actorRole: requester.role,
@@ -9710,7 +9710,7 @@ export default function App() {
                                   whiteSpace: 'nowrap',
                                   flexShrink: 0
                                 }}>
-                                  {hist.actionLabel || hist.action}
+                                  {(hist.actionLabel || '').replace(/휴가\/반차 결재 요청|일정 결재 요청/g, '결재 요청') || (hist.action === 'request' ? '결재 요청' : hist.action)}
                                 </span>
                                 {hist.message && (
                                   <span style={{

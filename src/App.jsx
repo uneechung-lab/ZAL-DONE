@@ -7727,9 +7727,14 @@ export default function App() {
             !/반차|연차|휴가|병가/i.test(s.title || '') &&
             s.status === 'requested'
           ).length;
-          const totalUnprocessedRequestsCount = pendingApprovalCount + incomingTaskCount;
+          const assigneeChangePendingCount = schedules.filter(s => {
+            if (!s || s.assigneeRequestStatus !== 'pending') return false;
+            const ownerId = s.requesterId || s.memberId || 'daum';
+            return (ME.id === ownerId) || (ownerId === 'daum' && (ME.id === 'daum' || ME.id === 'daeum')) || (ownerId === 'sh' && (ME.id === 'sh' || ME.id === 'yoonhee')) || (ownerId === 'sangmoo' && (ME.id === 'sangmoo' || ME.id === 'sangmu'));
+          }).length;
+          const totalUnprocessedRequestsCount = pendingApprovalCount + incomingTaskCount + assigneeChangePendingCount;
 
-          if (totalUnprocessedRequestsCount > 0 && showUnprocessedChip) {
+          if (totalUnprocessedRequestsCount > 0) {
             return (
               <div 
                 style={{ 

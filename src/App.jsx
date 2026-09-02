@@ -9386,10 +9386,10 @@ export default function App() {
             <div style={{ 
               flex: 1, 
               overflowY: 'auto', 
-              padding: '6px 24px 18px', 
+              padding: '16px 24px 20px', 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '12px',
+              gap: '14px',
               textAlign: 'left'
             }}>
               {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE (Top of body) ──── */}
@@ -9428,9 +9428,7 @@ export default function App() {
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '6px',
-                    marginTop: 0,
-                    paddingTop: '2px'
+                    gap: '8px'
                   }}>
                     <div style={{
                       display: 'flex',

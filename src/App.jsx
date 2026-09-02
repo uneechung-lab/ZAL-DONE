@@ -6434,10 +6434,16 @@ export default function App() {
                     if (item.type === 'pending_approval_single') {
                       const pItem = item.data;
                       if (!pItem) return null;
-                      const reqMember = TEAM.find(m => m.id === pItem.requesterId || m.id === pItem.memberId) || { name: '정윤희', role: '부장' };
-                      const dateStr = pItem.dateStr || `${pItem.year}.${pItem.month < 10 ? '0' : ''}${pItem.month}.${pItem.date < 10 ? '0' : ''}${pItem.date}`;
-                      const timeStr = `${formatHour(pItem.startHour)} ~ ${formatHour(pItem.endHour)}`;
-                      const cleanDesc = getCleanDesc(pItem.description);
+                      const liveSched = schedules.find(s => s.id === pItem.id || String(s.id) === String(pItem.id) || (s.title === pItem.title && s.date === pItem.date && s.startHour === pItem.startHour)) || pItem;
+                      const currentStatus = liveSched.status || pItem.status || 'requested';
+                      const isRejectedStatus = currentStatus === 'rejected' || (typeof currentStatus === 'string' && currentStatus.startsWith('rejected'));
+                      const isAcceptedStatus = currentStatus === 'accepted';
+                      const isRequestedStatus = currentStatus === 'requested';
+
+                      const reqMember = TEAM.find(m => m.id === liveSched.requesterId || m.id === liveSched.memberId) || { name: '정다음', role: '사원' };
+                      const dateStr = liveSched.dateStr || `${liveSched.year}.${liveSched.month < 10 ? '0' : ''}${liveSched.month}.${liveSched.date < 10 ? '0' : ''}${liveSched.date}`;
+                      const timeStr = `${formatHour(liveSched.startHour)} ~ ${formatHour(liveSched.endHour)}`;
+                      const cleanDesc = getCleanDesc(liveSched.description);
 
                       return (
                         <div key={item.id} className="chat-bubble-wrap ai" style={{ marginTop: '4px', marginBottom: '14px' }}>
@@ -6446,9 +6452,9 @@ export default function App() {
                               {reqMember.name}님이 결재를 요청하셨습니다.
                             </div>
                             <div 
-                              id={'card_' + pItem.id}
-                              data-card-title={pItem.title}
-                              onClick={() => openDetailModal(pItem)}
+                              id={'card_' + liveSched.id}
+                              data-card-title={liveSched.title}
+                              onClick={() => openDetailModal(liveSched)}
                               style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid var(--border-color)',
@@ -6513,12 +6519,12 @@ export default function App() {
                               </div>
 
                               <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
-                                {pItem.status === 'requested' ? (
+                                {isRequestedStatus ? (
                                   <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 'auto' }}>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleRejectSchedule(pItem.id);
+                                        handleRejectSchedule(liveSched.id);
                                       }}
                                       style={{
                                         padding: '7px 14px',
@@ -6541,7 +6547,7 @@ export default function App() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleApproveSchedule(pItem.id);
+                                        handleApproveSchedule(liveSched.id);
                                       }}
                                       style={{
                                         padding: '7px 14px',
@@ -6562,8 +6568,8 @@ export default function App() {
                                       요청수락
                                     </button>
                                   </div>
-                                ) : pItem.status === 'accepted' ? (
-                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'gap', gap: '6px' }}>
+                                ) : isAcceptedStatus ? (
+                                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
                                     <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px', border: 'none' }}>
                                       🎉 승인하였습니다
                                     </span>
@@ -6582,7 +6588,7 @@ export default function App() {
                                       }}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleRejectSchedule(pItem.id);
+                                        handleRejectSchedule(liveSched.id);
                                       }}
                                     >
                                       승인 취소
@@ -6609,7 +6615,7 @@ export default function App() {
                                       }}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleApproveSchedule(pItem.id);
+                                        handleApproveSchedule(liveSched.id);
                                       }}
                                     >
                                       재승인

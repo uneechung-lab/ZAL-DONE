@@ -9443,28 +9443,29 @@ export default function App() {
                         결재 및 처리 히스토리
                       </label>
                       
-                      {/* Accordion Toggle: 총 N건 내용보기 / 접어두기 */}
+                      {/* Accordion Toggle: 총 N건 내용보기 / 접어두기 (보더/배경 없이 언더라인) */}
                       <button
                         type="button"
                         onClick={() => setIsHistoryExpanded(prev => !prev)}
                         style={{
-                          background: '#f8fafc',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '6px',
-                          padding: '3px 9px',
-                          fontSize: '11.5px',
+                          background: 'none',
+                          border: 'none',
+                          padding: '2px 4px',
+                          fontSize: '12px',
                           fontWeight: '600',
-                          color: '#334155',
+                          color: '#64748b',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '5px',
-                          transition: 'all 0.15s ease'
+                          gap: '4px',
+                          transition: 'color 0.15s ease'
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
                       >
-                        <span>{isHistoryExpanded ? `총 ${historyList.length}건 접어두기` : `총 ${historyList.length}건 내용보기`}</span>
+                        <span style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                          {isHistoryExpanded ? `총 ${historyList.length}건 접어두기` : `총 ${historyList.length}건 내용보기`}
+                        </span>
                         <svg 
                           width="12" 
                           height="12" 
@@ -9476,7 +9477,8 @@ export default function App() {
                           strokeLinejoin="round"
                           style={{
                             transform: isHistoryExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s ease'
+                            transition: 'transform 0.2s ease',
+                            marginTop: '1px'
                           }}
                         >
                           <polyline points="6 9 12 15 18 9"></polyline>

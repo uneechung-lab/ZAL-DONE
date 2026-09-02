@@ -2911,23 +2911,12 @@ export default function Dashboard({
                       (currentUser?.id === 'sangmoo' && matchedSched.assigneeRequesterId === 'sangmoo');
 
                     return (
-                      <div style={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        padding: '12px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        marginTop: '4px'
-                      }}>
-                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', flex: 1, lineHeight: '1.4', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>⏳</span>
-                          <span>{`승인 대기중 (${ownerDisplay})`}</span>
-                        </div>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 10px', borderRadius: '6px' }}>
+                          ⏳ 승인 대기중 ({ownerDisplay})
+                        </span>
                         {isCurrentOwner ? (
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -2938,18 +2927,16 @@ export default function Dashboard({
                               }}
                               style={{
                                 padding: '7px 14px',
-                                fontSize: '12px',
+                                fontSize: '12.5px',
                                 fontWeight: '700',
                                 backgroundColor: '#fef2f2',
                                 color: '#dc2626',
                                 border: '1px solid #fca5a5',
                                 borderRadius: '8px',
                                 cursor: 'pointer',
-                                whiteSpace: 'nowrap',
+                                lineHeight: '1.2',
                                 transition: 'all 0.15s ease'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
                             >
                               요청반려
                             </button>
@@ -2963,18 +2950,16 @@ export default function Dashboard({
                               }}
                               style={{
                                 padding: '7px 14px',
-                                fontSize: '12px',
+                                fontSize: '12.5px',
                                 fontWeight: '700',
                                 backgroundColor: '#ecfdf5',
                                 color: '#059669',
                                 border: '1px solid #a7f3d0',
                                 borderRadius: '8px',
                                 cursor: 'pointer',
-                                whiteSpace: 'nowrap',
+                                lineHeight: '1.2',
                                 transition: 'all 0.15s ease'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d1fae5'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
                             >
                               요청수락
                             </button>
@@ -2989,15 +2974,15 @@ export default function Dashboard({
                               }
                             }}
                             style={{
-                              padding: '6px 12px',
-                              fontSize: '12px',
+                              padding: '7px 14px',
+                              fontSize: '12.5px',
                               backgroundColor: '#fef2f2',
                               color: '#dc2626',
                               border: '1px solid #fca5a5',
                               borderRadius: '8px',
                               fontWeight: '700',
-                              cursor: 'pointer',
-                              flexShrink: 0
+                              lineHeight: '1.2',
+                              cursor: 'pointer'
                             }}
                           >
                             요청취소
@@ -3022,21 +3007,10 @@ export default function Dashboard({
                       (currentUser?.id === 'sangmoo' && matchedSched.assigneeRequesterId === 'sangmoo');
 
                     return (
-                      <div style={{
-                        backgroundColor: '#ecfdf5',
-                        border: '1px solid #a7f3d0',
-                        borderRadius: '12px',
-                        padding: '10px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        marginTop: '4px'
-                      }}>
-                        <div style={{ fontSize: '12.5px', color: '#059669', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>🎉</span>
-                          <span>담당자 변경 승인됨</span>
-                        </div>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '6px' }}>
+                          🎉 담당자 변경 승인됨
+                        </span>
                         {isAssigneeRequester ? (
                           <button
                             type="button"
@@ -3047,19 +3021,16 @@ export default function Dashboard({
                               }
                             }}
                             style={{
-                              padding: '6px 12px',
-                              fontSize: '12px',
-                              backgroundColor: '#ffffff',
+                              padding: '7px 14px',
+                              fontSize: '12.5px',
+                              backgroundColor: '#fef2f2',
                               color: '#dc2626',
                               border: '1px solid #fca5a5',
                               borderRadius: '8px',
                               fontWeight: '700',
-                              cursor: 'pointer',
-                              flexShrink: 0,
-                              lineHeight: '1.2'
+                              lineHeight: '1.2',
+                              cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                           >
                             요청취소
                           </button>
@@ -3073,19 +3044,16 @@ export default function Dashboard({
                               }
                             }}
                             style={{
-                              padding: '6px 12px',
-                              fontSize: '12px',
-                              backgroundColor: '#ffffff',
+                              padding: '7px 14px',
+                              fontSize: '12.5px',
+                              backgroundColor: '#fef2f2',
                               color: '#dc2626',
                               border: '1px solid #fca5a5',
                               borderRadius: '8px',
                               fontWeight: '700',
-                              cursor: 'pointer',
-                              flexShrink: 0,
-                              lineHeight: '1.2'
+                              lineHeight: '1.2',
+                              cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                           >
                             승인취소
                           </button>
@@ -3347,30 +3315,12 @@ export default function Dashboard({
 
                     if (isRejected) {
                       return (
-                        <div style={{
-                          backgroundColor: '#fef2f2',
-                          border: '1px solid #fecaca',
-                          borderRadius: '12px',
-                          padding: '10px 14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          marginTop: '4px'
-                        }}>
-                          <div style={{
-                            fontSize: '12.5px',
-                            fontWeight: '700',
-                            color: '#b91c1c',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}>
-                            <span>❌</span>
-                            <span>{vInfo.approverName || '담당자'} 요청 반려됨</span>
-                          </div>
+                        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                          <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#dc2626', backgroundColor: '#fef2f2', padding: '4px 10px', borderRadius: '6px' }}>
+                            ❌ {vInfo.approverName || '담당자'} 요청 반려됨
+                          </span>
 
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                             {canApprove && (
                               <button
                                 type="button"
@@ -3384,20 +3334,17 @@ export default function Dashboard({
                                   }
                                 }}
                                 style={{
-                                  padding: '6px 12px',
-                                  fontSize: '12px',
+                                  padding: '7px 14px',
+                                  fontSize: '12.5px',
                                   fontWeight: '700',
-                                  backgroundColor: '#ffffff',
+                                  backgroundColor: '#ecfdf5',
                                   color: '#059669',
                                   border: '1px solid #a7f3d0',
                                   borderRadius: '8px',
                                   cursor: 'pointer',
-                                  flexShrink: 0,
                                   lineHeight: '1.2',
                                   transition: 'all 0.15s ease'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                               >
                                 재승인
                               </button>
@@ -3419,20 +3366,17 @@ export default function Dashboard({
                                     }
                                   }}
                                   style={{
-                                    padding: '6px 12px',
-                                    fontSize: '12px',
+                                    padding: '7px 14px',
+                                    fontSize: '12.5px',
                                     fontWeight: '700',
-                                    backgroundColor: '#ffffff',
+                                    backgroundColor: '#fef2f2',
                                     color: '#dc2626',
                                     border: '1px solid #fca5a5',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
-                                    flexShrink: 0,
                                     lineHeight: '1.2',
                                     transition: 'all 0.15s ease'
                                   }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                                 >
                                   요청취소
                                 </button>
@@ -3448,20 +3392,17 @@ export default function Dashboard({
                                     }
                                   }}
                                   style={{
-                                    padding: '6px 12px',
-                                    fontSize: '12px',
+                                    padding: '7px 14px',
+                                    fontSize: '12.5px',
                                     fontWeight: '700',
-                                    backgroundColor: '#ffffff',
+                                    backgroundColor: '#f0fdf4',
                                     color: '#16a34a',
                                     border: '1px solid #bbf7d0',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
-                                    flexShrink: 0,
                                     lineHeight: '1.2',
                                     transition: 'all 0.15s ease'
                                   }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0fdf4'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
                                 >
                                   다시요청
                                 </button>

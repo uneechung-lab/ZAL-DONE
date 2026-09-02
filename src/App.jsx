@@ -9225,27 +9225,45 @@ export default function App() {
             </div>
             
             {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
-              const isCurrentUserRequester = selectedDetailEvent.requesterId === ME.id;
-              if (isCurrentUserRequester) return null;
+              const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
+              
+              const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
+              const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
 
               const isCurrentUserAssignee = selectedDetailEvent.memberIds 
-                ? selectedDetailEvent.memberIds.includes(ME.id) 
-                : selectedDetailEvent.memberId === ME.id;
-              
+                ? (selectedDetailEvent.memberIds.includes(ME.id) || (ME.id === 'sh' && selectedDetailEvent.memberIds.includes('yoonhee')) || (ME.id === 'sangmoo' && selectedDetailEvent.memberIds.includes('sangmu')) || (ME.id === 'daum' && selectedDetailEvent.memberIds.includes('daeum')))
+                : (selectedDetailEvent.memberId === ME.id || (ME.id === 'sh' && selectedDetailEvent.memberId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.memberId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.memberId === 'daeum'));
+
+              const isCurrentUserApprover = selectedDetailEvent.approverId 
+                ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
+                : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : isCurrentUserAssignee);
+
+              // Can current user approve/reject this?
+              const canCurrentAction = isLeave ? (isCurrentUserApprover && !isCurrentUserRequester) : (isCurrentUserAssignee && !isCurrentUserRequester);
+
+              const requesterMember = activeTeam.find(m => m.id === requesterId || (requesterId === 'yoonhee' && m.id === 'sh') || (requesterId === 'sangmu' && m.id === 'sangmoo') || (requesterId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
+              const approverMember = activeTeam.find(m => m.id === selectedDetailEvent.approverId || (selectedDetailEvent.approverId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.approverId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.approverId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무' } : { name: '정윤희', role: '부장' });
+
               const assignedNames = selectedDetailEvent.memberIds 
-                ? selectedDetailEvent.memberIds.map(id => activeTeam.find(m => m.id === id)?.name).filter(Boolean).join(', ')
-                : (activeTeam.find(m => m.id === selectedDetailEvent.memberId)?.name || '');
+                ? selectedDetailEvent.memberIds.map(id => activeTeam.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ')
+                : (activeTeam.find(m => m.id === selectedDetailEvent.memberId || (selectedDetailEvent.memberId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.memberId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.memberId === 'daeum' && m.id === 'daum'))?.name || '');
+
+              const headerNoticeText = canCurrentAction 
+                ? (isLeave ? `📋 ${requesterMember.name} ${requesterMember.role || ''}님의 결재 요청입니다 (승인 대기 중)` : `⚡ ${requesterMember.name} ${requesterMember.role || ''}님이 일정을 요청하셨습니다 (수락 대기 중)`)
+                : (isCurrentUserRequester ? (isLeave ? `⏳ ${approverMember.name} ${approverMember.role || ''}님의 승인 대기 중입니다` : `⏳ ${assignedNames} 님의 수락 대기 중입니다`) : `⏳ ${approverMember.name} ${approverMember.role || ''}님의 결재 대기 중입니다`);
 
               return (
                 <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                  {isCurrentUserAssignee ? (
+                  {canCurrentAction ? (
                     !isRejecting ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>⚡ 요청 대기 중인 일정입니다</span>
+                        <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700' }}>
+                          {headerNoticeText}
+                        </span>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button 
                             className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700' }}
+                            style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
                             onClick={async () => {
                               if (isConfigured) {
                                 let dbSched = { ...selectedDetailEvent, status: 'accepted' };
@@ -9257,14 +9275,35 @@ export default function App() {
                                 await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
                               }
                               setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                              
+                              setFeeds(prev => {
+                                const next = prev.map(f => {
+                                  const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                                  if (isMatch && f.vacationInfo) {
+                                    return {
+                                      ...f,
+                                      vacationInfo: {
+                                        ...f.vacationInfo,
+                                        status: 'approved',
+                                        approvedAt: new Date().toISOString()
+                                      }
+                                    };
+                                  }
+                                  return f;
+                                });
+                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                return next;
+                              });
+
                               setIsDetailModalOpen(false);
+                              showLayerAlert(`"${selectedDetailEvent.title}" 일정을 승인(수락)했습니다.`, '승인 완료', 'success');
                             }}
                           >
-                            수락
+                            {isLeave ? '승인' : '수락'}
                           </button>
                           <button 
                             className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700' }}
+                            style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
                             onClick={() => setIsRejecting(true)}
                           >
                             반려
@@ -9286,7 +9325,7 @@ export default function App() {
                           />
                           <button 
                             className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', whiteSpace: 'nowrap' }}
+                            style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
                             onClick={async () => {
                               if (!rejectReasonInput.trim()) {
                                 showLayerAlert('반려 사유를 입력해야 거부할 수 있습니다.', '사유 입력 필요', 'error');
@@ -9295,7 +9334,7 @@ export default function App() {
                               const cleanedDesc = (selectedDetailEvent.description || '').trim();
                               const newDesc = `${cleanedDesc}${cleanedDesc ? '\n' : ''}[반려 사유] ${rejectReasonInput.trim()}`;
                               
-                              const rejectedStatus = 'rejected_sh';
+                              const rejectedStatus = ME.id === 'sangmoo' ? 'rejected_sangmu' : (ME.id === 'daum' ? 'rejected_daeum' : 'rejected_sh');
                               if (isConfigured) {
                                 let dbSched = { 
                                   ...selectedDetailEvent, 
@@ -9311,14 +9350,35 @@ export default function App() {
                                 await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
                               }
                               setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: rejectedStatus, description: newDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                              
+                              setFeeds(prev => {
+                                const next = prev.map(f => {
+                                  const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                                  if (isMatch && f.vacationInfo) {
+                                    return {
+                                      ...f,
+                                      vacationInfo: {
+                                        ...f.vacationInfo,
+                                        status: 'rejected',
+                                        approvedAt: null
+                                      }
+                                    };
+                                  }
+                                  return f;
+                                });
+                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                return next;
+                              });
+
                               setIsDetailModalOpen(false);
+                              showLayerAlert(`"${selectedDetailEvent.title}" 일정을 반려했습니다.`, '반려 완료', 'info');
                             }}
                           >
                             확인
                           </button>
                           <button 
                             className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                            style={{ padding: '4px 8px', fontSize: '12px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                             onClick={() => {
                               setIsRejecting(false);
                               setRejectReasonInput('');
@@ -9331,7 +9391,7 @@ export default function App() {
                     )
                   ) : (
                     <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700', width: '100%', textAlign: 'center' }}>
-                      ⏳ {assignedNames} 님의 수락 대기 중입니다
+                      {headerNoticeText}
                     </span>
                   )}
                 </div>

@@ -2454,7 +2454,7 @@ export default function App() {
         list.push({
           id: `hist_resub_${schedule.id}`,
           action: 'resubmit',
-          actionLabel: '일정 재요청',
+          actionLabel: '재요청',
           actorId: requester.id,
           actorName: requester.name,
           actorRole: requester.role,
@@ -3633,7 +3633,7 @@ export default function App() {
       const newHistItem = {
         id: `hist_resub_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         action: 'resubmit',
-        actionLabel: '일정 재요청',
+        actionLabel: '재요청',
         actorId: ME.id,
         actorName: ME.name,
         actorRole: ME.role || '',
@@ -9710,7 +9710,7 @@ export default function App() {
                                   whiteSpace: 'nowrap',
                                   flexShrink: 0
                                 }}>
-                                  {(hist.actionLabel || '').replace(/휴가\/반차 결재 요청|일정 결재 요청/g, '결재 요청') || (hist.action === 'request' ? '결재 요청' : hist.action)}
+                                  {(hist.actionLabel || '').replace(/휴가\/반차 결재 요청|일정 결재 요청/g, '결재 요청').replace(/일정 재요청/g, '재요청') || (hist.action === 'request' ? '결재 요청' : (hist.action === 'resubmit' ? '재요청' : hist.action))}
                                 </span>
                                 {hist.message && (
                                   <span style={{

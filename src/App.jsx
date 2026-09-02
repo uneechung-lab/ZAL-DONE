@@ -2407,6 +2407,79 @@ export default function App() {
       )
     : false;
 
+  const getScheduleHistoryList = (schedule) => {
+    if (!schedule) return [];
+    const list = Array.isArray(schedule.history) ? [...schedule.history] : [];
+
+    // If list is empty, reconstruct from schedule metadata and description
+    if (list.length === 0) {
+      const isLeave = /반차|연차|휴가|병가/i.test(schedule.title || '') || schedule.category === '휴가';
+      const reqId = schedule.requesterId || schedule.memberId || 'daum';
+      const requester = TEAM.find(m => m.id === reqId || (reqId === 'yoonhee' && m.id === 'sh') || (reqId === 'sangmu' && m.id === 'sangmoo') || (reqId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원', id: 'daum' };
+      const appId = schedule.approverId || (isLeave ? 'sangmoo' : 'sh');
+      const approver = TEAM.find(m => m.id === appId || (appId === 'yoonhee' && m.id === 'sh') || (appId === 'sangmu' && m.id === 'sangmoo') || (appId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
+
+      // 1. Initial request entry
+      list.push({
+        id: `hist_init_${schedule.id}`,
+        action: 'request',
+        actionLabel: isLeave ? '휴가/반차 결재 요청' : '일정 결재 요청',
+        actorId: requester.id,
+        actorName: requester.name,
+        actorRole: requester.role,
+        message: `${isLeave ? '휴가/반차' : '업무'} 결재를 요청했습니다.`,
+        timestamp: schedule.createdAt || new Date().toISOString()
+      });
+
+      // 2. Parse description for [반려사유], [재요청메시지], [수락메시지]
+      const desc = schedule.description || '';
+      const rejectMatch = desc.match(/\[반려사유\]\s*([^|\n]+)/);
+      const resubmitMatch = desc.match(/\[재요청메시지\]\s*([^|\n]+)/);
+      const acceptMatch = desc.match(/\[수락메시지\]\s*([^|\n]+)/);
+
+      if (rejectMatch) {
+        list.push({
+          id: `hist_rej_${schedule.id}`,
+          action: 'reject',
+          actionLabel: '결재 반려',
+          actorId: approver.id,
+          actorName: approver.name,
+          actorRole: approver.role,
+          message: rejectMatch[1].trim(),
+          timestamp: schedule.updatedAt || new Date().toISOString()
+        });
+      }
+
+      if (resubmitMatch) {
+        list.push({
+          id: `hist_resub_${schedule.id}`,
+          action: 'resubmit',
+          actionLabel: '일정 재요청',
+          actorId: requester.id,
+          actorName: requester.name,
+          actorRole: requester.role,
+          message: resubmitMatch[1].trim(),
+          timestamp: schedule.updatedAt || new Date().toISOString()
+        });
+      }
+
+      if (schedule.status === 'accepted') {
+        list.push({
+          id: `hist_appr_${schedule.id}`,
+          action: 'approve',
+          actionLabel: isLeave ? '결재 승인' : '일정 수락',
+          actorId: approver.id,
+          actorName: approver.name,
+          actorRole: approver.role,
+          message: acceptMatch ? acceptMatch[1].trim() : `${isLeave ? '휴가/반차' : '일정'} 결재를 승인(수락)했습니다.`,
+          timestamp: schedule.statusUpdatedAt ? new Date(schedule.statusUpdatedAt).toISOString() : (schedule.updatedAt || new Date().toISOString())
+        });
+      }
+    }
+
+    return list;
+  };
+
   const openDetailModal = (event) => {
     setSelectedDetailEvent(event);
     setEditTitle(event.title);
@@ -3198,6 +3271,17 @@ export default function App() {
           }
         }
 
+        const newHistItem = {
+          id: `hist_appr_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          action: 'approve',
+          actionLabel: isLeave ? '결재 승인' : '일정 수락',
+          actorId: ME.id,
+          actorName: ME.name,
+          actorRole: ME.role || '',
+          message: cleanMsg || `${isLeave ? '휴가/반차' : '일정'} 결재를 승인(수락)했습니다.`,
+          timestamp: new Date().toISOString()
+        };
+
         setSchedules(prev => {
           const next = prev.map(s => {
             if (!isMatchingItem(s)) return s;
@@ -3206,7 +3290,8 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[수락메시지\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [수락메시지] ${cleanMsg}`;
             }
-            return { ...s, status: 'accepted', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
+            const prevHist = Array.isArray(s.history) ? s.history : getScheduleHistoryList(s);
+            return { ...s, status: 'accepted', description: updatedDesc, history: [...prevHist, newHistItem], statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
           });
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -3351,6 +3436,17 @@ export default function App() {
           }
         }
 
+        const newHistItem = {
+          id: `hist_rej_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          action: 'reject',
+          actionLabel: isLeave ? '결재 반려' : '일정 거절',
+          actorId: ME.id,
+          actorName: ME.name,
+          actorRole: ME.role || '',
+          message: cleanReason || '일정을 반려했습니다.',
+          timestamp: new Date().toISOString()
+        };
+
         setSchedules(prev => {
           const next = prev.map(s => {
             if (!isMatchingItem(s)) return s;
@@ -3359,7 +3455,8 @@ export default function App() {
               updatedDesc = updatedDesc.replace(/\[반려사유\].*?(\||\n|$)/g, '').trim();
               updatedDesc += ` | [반려사유] ${cleanReason}`;
             }
-            return { ...s, status: 'rejected', description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
+            const prevHist = Array.isArray(s.history) ? s.history : getScheduleHistoryList(s);
+            return { ...s, status: 'rejected', description: updatedDesc, history: [...prevHist, newHistItem], statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
           });
           try {
             localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -3533,6 +3630,17 @@ export default function App() {
         }
       }
 
+      const newHistItem = {
+        id: `hist_resub_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        action: 'resubmit',
+        actionLabel: '일정 재요청',
+        actorId: ME.id,
+        actorName: ME.name,
+        actorRole: ME.role || '',
+        message: cleanMsg || '일정을 다시 요청했습니다.',
+        timestamp: new Date().toISOString()
+      };
+
       setSchedules(prev => {
         const next = prev.map(s => {
           if (!isMatchingItem(s)) return s;
@@ -3541,7 +3649,8 @@ export default function App() {
             updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
             updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
           }
-          return { ...s, status: 'requested', isCancelled: false, approverId: targetMember.id, description: updatedDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
+          const prevHist = Array.isArray(s.history) ? s.history : getScheduleHistoryList(s);
+          return { ...s, status: 'requested', isCancelled: false, approverId: targetMember.id, description: updatedDesc, history: [...prevHist, newHistItem], statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() };
         });
         try {
           localStorage.setItem('zal_schedules', JSON.stringify(next));
@@ -9767,6 +9876,144 @@ export default function App() {
                   disabled={!isDetailEditable}
                 />
               </div>
+
+              {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE ──── */}
+              {(() => {
+                const historyList = getScheduleHistoryList(selectedDetailEvent);
+                if (!historyList || historyList.length === 0) return null;
+
+                return (
+                  <div style={{
+                    marginTop: '8px',
+                    backgroundColor: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderBottom: '1px solid #e2e8f0',
+                      paddingBottom: '8px'
+                    }}>
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📜</span>
+                        <span>결재 및 처리 히스토리</span>
+                        <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 7px', borderRadius: '10px' }}>
+                          총 {historyList.length}건
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {historyList.map((hist, idx) => {
+                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0', icon = '✅';
+                        if (hist.action === 'reject') {
+                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca'; icon = '❌';
+                        } else if (hist.action === 'resubmit') {
+                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0'; icon = '🔄';
+                        } else if (hist.action === 'request') {
+                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a'; icon = '📋';
+                        } else if (hist.action === 'cancel') {
+                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1'; icon = '🚫';
+                        }
+
+                        const timeDisplay = hist.timestamp ? new Date(hist.timestamp).toLocaleString('ko-KR', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        }) : '';
+
+                        return (
+                          <div key={hist.id || idx} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px',
+                            position: 'relative',
+                            paddingLeft: '2px'
+                          }}>
+                            {/* Timeline badge icon */}
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              backgroundColor: badgeBg,
+                              border: `1.5px solid ${badgeBorder}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '13px',
+                              flexShrink: 0,
+                              marginTop: '2px'
+                            }}>
+                              {icon}
+                            </div>
+
+                            {/* History content box */}
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              padding: '8px 12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    color: badgeColor,
+                                    backgroundColor: badgeBg,
+                                    border: `1px solid ${badgeBorder}`,
+                                    padding: '1px 6px',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {hist.actionLabel || hist.action}
+                                  </span>
+                                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                                    {hist.actorName} <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{hist.actorRole}</span>
+                                  </span>
+                                </div>
+                                {timeDisplay && (
+                                  <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
+                                    {timeDisplay}
+                                  </span>
+                                )}
+                              </div>
+
+                              {hist.message && (
+                                <div style={{
+                                  fontSize: '12.5px',
+                                  color: '#334155',
+                                  backgroundColor: '#f8fafc',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #f1f5f9',
+                                  marginTop: '2px',
+                                  lineHeight: '1.45',
+                                  wordBreak: 'break-word'
+                                }}>
+                                  {hist.message}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="modal-actions" style={{ marginTop: '16px', gap: '10px' }}>

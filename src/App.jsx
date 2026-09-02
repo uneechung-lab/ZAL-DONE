@@ -9443,7 +9443,7 @@ export default function App() {
                         결재 및 처리 히스토리
                       </label>
                       
-                      {/* Accordion Toggle: 총 N건 내용보기 / 접어두기 (보더/배경 없이 언더라인) */}
+                      {/* Accordion Toggle: 총 N건 내용보기 / 접어두기 (보더/배경 없이 언더라인, 노볼드) */}
                       <button
                         type="button"
                         onClick={() => setIsHistoryExpanded(prev => !prev)}
@@ -9452,7 +9452,7 @@ export default function App() {
                           border: 'none',
                           padding: '2px 4px',
                           fontSize: '12px',
-                          fontWeight: '600',
+                          fontWeight: '400',
                           color: '#64748b',
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -9467,12 +9467,12 @@ export default function App() {
                           {isHistoryExpanded ? `총 ${historyList.length}건 접어두기` : `총 ${historyList.length}건 내용보기`}
                         </span>
                         <svg 
-                          width="12" 
-                          height="12" 
+                          width="11" 
+                          height="11" 
                           viewBox="0 0 24 24" 
                           fill="none" 
                           stroke="currentColor" 
-                          strokeWidth="2.5" 
+                          strokeWidth="2" 
                           strokeLinecap="round" 
                           strokeLinejoin="round"
                           style={{

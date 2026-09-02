@@ -6051,9 +6051,15 @@ export default function App() {
                               
                               const isIssueCard = parsed.isIssue || (lines[0] && lines[0].includes('이슈')) || (parsed.rawText && parsed.rawText.includes('이슈'));
 
+                              const isRequestedCard = matchedSchedule && matchedSchedule.status === 'requested';
+                              const cardDirection = isRequestedCard ? (isApprover ? 'incoming' : 'outgoing') : undefined;
+
                               return (
                                 <div 
                                   key={idx} 
+                                  id={matchedSchedule ? ('card_' + matchedSchedule.id) : undefined}
+                                  data-card-title={parsed.title}
+                                  data-request-direction={cardDirection}
                                   onClick={(e) => {
                                     if (matchedSchedule) {
                                       openDetailModal(matchedSchedule);

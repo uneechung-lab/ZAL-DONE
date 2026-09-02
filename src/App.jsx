@@ -9335,9 +9335,28 @@ export default function App() {
       {/* ──── SCHEDULE DETAIL MODAL ─────────────────── */}
       {isDetailModalOpen && selectedDetailEvent && (
         <div className="modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
-          <div className="modal-content" style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div className="modal-title" style={{ fontSize: '21px', marginBottom: 0 }}>일정 상세 및 수정</div>
+          <div className="modal-content" style={{ 
+            width: '100%', 
+            maxWidth: '680px', 
+            maxHeight: '90vh', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            padding: 0, 
+            overflow: 'hidden', 
+            boxSizing: 'border-box' 
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* 1. Modal Header (Fixed Top) */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              padding: '18px 24px', 
+              borderBottom: '1px solid var(--border-color)', 
+              backgroundColor: '#ffffff',
+              flexShrink: 0 
+            }}>
+              <div className="modal-title" style={{ fontSize: '20px', fontWeight: '800', marginBottom: 0 }}>일정 상세 및 수정</div>
               <button 
                 style={{ 
                   background: 'none', 
@@ -9346,10 +9365,10 @@ export default function App() {
                   padding: '4px', 
                   display: 'inline-flex', 
                   alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: 'var(--text-tertiary)',
-                  borderRadius: '4px',
-                  transition: 'all 0.2s'
+                  justifyContent: 'center', 
+                  color: 'var(--text-tertiary)', 
+                  borderRadius: '4px', 
+                  transition: 'all 0.2s' 
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
@@ -9362,311 +9381,459 @@ export default function App() {
               </button>
             </div>
             
-            {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
-              const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
-              
-              const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
-              const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
+            {/* 2. Scrollable Body Area */}
+            <div style={{ 
+              flex: 1, 
+              overflowY: 'auto', 
+              padding: '20px 24px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '14px',
+              textAlign: 'left'
+            }}>
+              {/* Approval Request / Waiting Banner */}
+              {(selectedDetailEvent.status === 'requested' || (!selectedDetailEvent.status && selectedDetailEvent.memberId !== 'sh')) && (() => {
+                const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
+                
+                const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
+                const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
 
-              const isCurrentUserAssignee = selectedDetailEvent.memberIds 
-                ? (selectedDetailEvent.memberIds.includes(ME.id) || (ME.id === 'sh' && selectedDetailEvent.memberIds.includes('yoonhee')) || (ME.id === 'sangmoo' && selectedDetailEvent.memberIds.includes('sangmu')) || (ME.id === 'daum' && selectedDetailEvent.memberIds.includes('daeum')))
-                : (selectedDetailEvent.memberId === ME.id || (ME.id === 'sh' && selectedDetailEvent.memberId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.memberId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.memberId === 'daeum'));
+                const isCurrentUserAssignee = selectedDetailEvent.memberIds 
+                  ? (selectedDetailEvent.memberIds.includes(ME.id) || (ME.id === 'sh' && selectedDetailEvent.memberIds.includes('yoonhee')) || (ME.id === 'sangmoo' && selectedDetailEvent.memberIds.includes('sangmu')) || (ME.id === 'daum' && selectedDetailEvent.memberIds.includes('daeum')))
+                  : (selectedDetailEvent.memberId === ME.id || (ME.id === 'sh' && selectedDetailEvent.memberId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.memberId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.memberId === 'daeum'));
 
-              const isCurrentUserApprover = selectedDetailEvent.approverId 
-                ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
-                : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : isCurrentUserAssignee);
+                const isCurrentUserApprover = selectedDetailEvent.approverId 
+                  ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
+                  : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : isCurrentUserAssignee);
 
-              // Can current user approve/reject this?
-              const canCurrentAction = isLeave ? (isCurrentUserApprover && !isCurrentUserRequester) : (isCurrentUserAssignee && !isCurrentUserRequester);
+                // Can current user approve/reject this?
+                const canCurrentAction = isLeave ? (isCurrentUserApprover && !isCurrentUserRequester) : (isCurrentUserAssignee && !isCurrentUserRequester);
 
-              const requesterMember = activeTeam.find(m => m.id === requesterId || (requesterId === 'yoonhee' && m.id === 'sh') || (requesterId === 'sangmu' && m.id === 'sangmoo') || (requesterId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
-              const approverMember = activeTeam.find(m => m.id === selectedDetailEvent.approverId || (selectedDetailEvent.approverId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.approverId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.approverId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무' } : { name: '정윤희', role: '부장' });
+                const requesterMember = activeTeam.find(m => m.id === requesterId || (requesterId === 'yoonhee' && m.id === 'sh') || (requesterId === 'sangmu' && m.id === 'sangmoo') || (requesterId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
+                const approverMember = activeTeam.find(m => m.id === selectedDetailEvent.approverId || (selectedDetailEvent.approverId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.approverId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.approverId === 'daeum' && m.id === 'daum')) || (isLeave ? { name: '조상무', role: '상무' } : { name: '정윤희', role: '부장' });
 
-              const assignedNames = selectedDetailEvent.memberIds 
-                ? selectedDetailEvent.memberIds.map(id => activeTeam.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ')
-                : (activeTeam.find(m => m.id === selectedDetailEvent.memberId || (selectedDetailEvent.memberId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.memberId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.memberId === 'daeum' && m.id === 'daum'))?.name || '');
+                const assignedNames = selectedDetailEvent.memberIds 
+                  ? selectedDetailEvent.memberIds.map(id => activeTeam.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ')
+                  : (activeTeam.find(m => m.id === selectedDetailEvent.memberId || (selectedDetailEvent.memberId === 'yoonhee' && m.id === 'sh') || (selectedDetailEvent.memberId === 'sangmu' && m.id === 'sangmoo') || (selectedDetailEvent.memberId === 'daeum' && m.id === 'daum'))?.name || '');
 
-              const headerNoticeText = canCurrentAction 
-                ? (isLeave ? `📋 ${requesterMember.name} ${requesterMember.role || ''}님의 결재 요청입니다 (승인 대기 중)` : `⚡ ${requesterMember.name} ${requesterMember.role || ''}님이 일정을 요청하셨습니다 (수락 대기 중)`)
-                : (isCurrentUserRequester ? (isLeave ? `⏳ ${approverMember.name} ${approverMember.role || ''}님의 승인 대기 중입니다` : `⏳ ${assignedNames} 님의 수락 대기 중입니다`) : `⏳ ${approverMember.name} ${approverMember.role || ''}님의 결재 대기 중입니다`);
+                const headerNoticeText = canCurrentAction 
+                  ? (isLeave ? `📋 ${requesterMember.name} ${requesterMember.role || ''}님의 결재 요청입니다 (승인 대기 중)` : `⚡ ${requesterMember.name} ${requesterMember.role || ''}님이 일정을 요청하셨습니다 (수락 대기 중)`)
+                  : (isCurrentUserRequester ? (isLeave ? `⏳ ${approverMember.name} ${approverMember.role || ''}님의 승인 대기 중입니다` : `⏳ ${assignedNames} 님의 수락 대기 중입니다`) : `⏳ ${approverMember.name} ${approverMember.role || ''}님의 결재 대기 중입니다`);
 
-              return (
-                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                  {canCurrentAction ? (
-                    !isRejecting ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700' }}>
-                          {headerNoticeText}
-                        </span>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button 
-                            className="modal-btn" 
-                            style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
-                            onClick={async () => {
-                              if (isConfigured) {
-                                let dbSched = { ...selectedDetailEvent, status: 'accepted' };
-                                if (isCurrentUserYoonhee) {
-                                  dbSched.memberId = selectedDetailEvent.memberId === 'sh' ? 'yoonhee' : (selectedDetailEvent.memberId === 'yoonhee' ? 'sh' : selectedDetailEvent.memberId);
-                                  dbSched.memberIds = selectedDetailEvent.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-                                  dbSched.requesterId = selectedDetailEvent.requesterId === 'sh' ? 'yoonhee' : (selectedDetailEvent.requesterId === 'yoonhee' ? 'sh' : selectedDetailEvent.requesterId);
-                                }
-                                await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
-                              }
-                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
-                              
-                              setFeeds(prev => {
-                                const next = prev.map(f => {
-                                  const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
-                                  if (isMatch && f.vacationInfo) {
-                                    return {
-                                      ...f,
-                                      vacationInfo: {
-                                        ...f.vacationInfo,
-                                        status: 'approved',
-                                        approvedAt: new Date().toISOString()
-                                      }
-                                    };
-                                  }
-                                  return f;
-                                });
-                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                                return next;
-                              });
-
-                              setIsDetailModalOpen(false);
-                              showLayerAlert(`"${selectedDetailEvent.title}" 일정을 승인(수락)했습니다.`, '승인 완료', 'success');
-                            }}
-                          >
-                            {isLeave ? '승인' : '수락'}
-                          </button>
-                          <button 
-                            className="modal-btn" 
-                            style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
-                            onClick={() => setIsRejecting(true)}
-                          >
-                            반려
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                        <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>❌ 반려 사유를 입력해주세요</span>
-                        <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                          <input 
-                            type="text" 
-                            className="modal-input" 
-                            placeholder="반려 사유 입력" 
-                            value={rejectReasonInput} 
-                            onChange={(e) => setRejectReasonInput(e.target.value)} 
-                            style={{ flex: 1, padding: '4px 8px', fontSize: '13px', height: '30px' }}
-                            autoFocus
-                          />
-                          <button 
-                            className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                            onClick={async () => {
-                              if (!rejectReasonInput.trim()) {
-                                showLayerAlert('반려 사유를 입력해야 거부할 수 있습니다.', '사유 입력 필요', 'error');
-                                return;
-                              }
-                              const cleanedDesc = (selectedDetailEvent.description || '').trim();
-                              const newDesc = `${cleanedDesc}${cleanedDesc ? '\n' : ''}[반려 사유] ${rejectReasonInput.trim()}`;
-                              
-                              const rejectedStatus = ME.id === 'sangmoo' ? 'rejected_sangmu' : (ME.id === 'daum' ? 'rejected_daeum' : 'rejected_sh');
-                              if (isConfigured) {
-                                let dbSched = { 
-                                  ...selectedDetailEvent, 
-                                  status: rejectedStatus,
-                                  description: newDesc
-                                };
-                                if (isCurrentUserYoonhee) {
-                                  dbSched.memberId = selectedDetailEvent.memberId === 'sh' ? 'yoonhee' : (selectedDetailEvent.memberId === 'yoonhee' ? 'sh' : selectedDetailEvent.memberId);
-                                  dbSched.memberIds = selectedDetailEvent.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
-                                  dbSched.requesterId = selectedDetailEvent.requesterId === 'sh' ? 'yoonhee' : (selectedDetailEvent.requesterId === 'yoonhee' ? 'sh' : selectedDetailEvent.requesterId);
-                                  dbSched.status = 'rejected_yoonhee';
-                                }
-                                await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
-                              }
-                              setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: rejectedStatus, description: newDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
-                              
-                              setFeeds(prev => {
-                                const next = prev.map(f => {
-                                  const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
-                                  if (isMatch && f.vacationInfo) {
-                                    return {
-                                      ...f,
-                                      vacationInfo: {
-                                        ...f.vacationInfo,
-                                        status: 'rejected',
-                                        approvedAt: null
-                                      }
-                                    };
-                                  }
-                                  return f;
-                                });
-                                try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                                return next;
-                              });
-
-                              setIsDetailModalOpen(false);
-                              showLayerAlert(`"${selectedDetailEvent.title}" 일정을 반려했습니다.`, '반려 완료', 'info');
-                            }}
-                          >
-                            확인
-                          </button>
-                          <button 
-                            className="modal-btn" 
-                            style={{ padding: '4px 8px', fontSize: '12px', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                            onClick={() => {
-                              setIsRejecting(false);
-                              setRejectReasonInput('');
-                            }}
-                          >
-                            취소
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700', width: '100%', textAlign: 'center' }}>
-                      {headerNoticeText}
-                    </span>
-                  )}
-                </div>
-              );
-            })()}
-
-            {(selectedDetailEvent.status === 'rejected' || (selectedDetailEvent.status && selectedDetailEvent.status.startsWith('rejected'))) && (() => {
-              const cleanedDesc = selectedDetailEvent.description || '';
-              const match = cleanedDesc.match(/\[반려 사유\]\s*([^\n]*)/) || cleanedDesc.match(/\[반려사유\]\s*([^\n]*)/);
-              const reason = match ? match[1] : '';
-              
-              const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
-              const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
-              const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
-
-              const isCurrentUserApprover = selectedDetailEvent.approverId 
-                ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
-                : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : true);
-
-              const canReApprove = (isCurrentUserApprover && !isCurrentUserRequester);
-
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                  <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '13px', color: 'var(--accent-red)', fontWeight: '700' }}>❌ 반려된 일정입니다</span>
-                      {reason && (
-                        <span style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
-                          <strong>반려 사유:</strong> {reason}
-                        </span>
-                      )}
-                    </div>
-                    {canReApprove && (
-                      <button
-                        className="modal-btn"
-                        style={{ padding: '5px 12px', fontSize: '12.5px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
-                        onClick={async () => {
-                          if (isConfigured) {
-                            let dbSched = { ...selectedDetailEvent, status: 'accepted' };
-                            await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
-                          }
-                          setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
-                          setFeeds(prev => {
-                            const next = prev.map(f => {
-                              const isMatch = f.id === selectedDetailEvent.feedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
-                              if (isMatch && f.vacationInfo) {
-                                return {
-                                  ...f,
-                                  vacationInfo: { ...f.vacationInfo, status: 'approved', approvedAt: new Date().toISOString() }
-                                };
-                              }
-                              return f;
-                            });
-                            try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-                            return next;
-                          });
-                          setIsDetailModalOpen(false);
-                          showLayerAlert(`"${selectedDetailEvent.title}" 일정을 재승인했습니다.`, '재승인 완료', 'success');
-                        }}
-                      >
-                        재승인
-                      </button>
-                    )}
-                  </div>
-
-                  {isCurrentUserRequester && (
-                    <div style={{ padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: 'var(--radius-sm)' }}>
-                      {!isReRequesting ? (
+                return (
+                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {canCurrentAction ? (
+                      !isRejecting ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                          <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700' }}>🔄 이 일정을 재요청하시겠습니까?</span>
-                          <button 
-                            className="modal-btn" 
-                            style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer' }}
-                            onClick={() => setIsReRequesting(true)}
-                          >
-                            재요청
-                          </button>
+                          <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700' }}>
+                            {headerNoticeText}
+                          </span>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button 
+                              className="modal-btn" 
+                              style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                              onClick={async () => {
+                                if (isConfigured) {
+                                  let dbSched = { ...selectedDetailEvent, status: 'accepted' };
+                                  if (isCurrentUserYoonhee) {
+                                    dbSched.memberId = selectedDetailEvent.memberId === 'sh' ? 'yoonhee' : (selectedDetailEvent.memberId === 'yoonhee' ? 'sh' : selectedDetailEvent.memberId);
+                                    dbSched.memberIds = selectedDetailEvent.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                                    dbSched.requesterId = selectedDetailEvent.requesterId === 'sh' ? 'yoonhee' : (selectedDetailEvent.requesterId === 'yoonhee' ? 'sh' : selectedDetailEvent.requesterId);
+                                  }
+                                  await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
+                                }
+                                setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                                
+                                setFeeds(prev => {
+                                  const next = prev.map(f => {
+                                    const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                                    if (isMatch && f.vacationInfo) {
+                                      return {
+                                        ...f,
+                                        vacationInfo: {
+                                          ...f.vacationInfo,
+                                          status: 'approved',
+                                          approvedAt: new Date().toISOString()
+                                        }
+                                      };
+                                    }
+                                    return f;
+                                  });
+                                  try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                  return next;
+                                });
+
+                                setIsDetailModalOpen(false);
+                                showLayerAlert(`"${selectedDetailEvent.title}" 일정을 승인(수락)했습니다.`, '승인 완료', 'success');
+                              }}
+                            >
+                              {isLeave ? '승인' : '수락'}
+                            </button>
+                            <button 
+                              className="modal-btn" 
+                              style={{ padding: '5px 12px', fontSize: '13px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                              onClick={() => setIsRejecting(true)}
+                            >
+                              반려
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                          <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700' }}>🔄 재요청 메시지를 입력해주세요</span>
+                          <span style={{ fontSize: '13px', color: '#b45309', fontWeight: '700' }}>❌ 반려 사유를 입력해주세요</span>
                           <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
                             <input 
                               type="text" 
                               className="modal-input" 
-                              placeholder="재요청 메시지 입력" 
-                              value={reRequestMsgInput} 
-                              onChange={(e) => setReRequestMsgInput(e.target.value)} 
+                              placeholder="반려 사유 입력" 
+                              value={rejectReasonInput} 
+                              onChange={(e) => setRejectReasonInput(e.target.value)} 
                               style={{ flex: 1, padding: '4px 8px', fontSize: '13px', height: '30px' }}
                               autoFocus
                             />
                             <button 
                               className="modal-btn" 
-                              style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                              onClick={() => {
-                                if (!reRequestMsgInput.trim()) {
-                                  showLayerAlert('재요청 메시지를 입력해 주세요.', '메시지 입력 필요', 'error');
+                              style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-red)', color: '#fff', borderColor: 'var(--accent-red)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                              onClick={async () => {
+                                if (!rejectReasonInput.trim()) {
+                                  showLayerAlert('반려 사유를 입력해야 거부할 수 있습니다.', '사유 입력 필요', 'error');
                                   return;
                                 }
-                                handleResubmitSchedule(selectedDetailEvent.id, reRequestMsgInput.trim());
+                                const cleanedDesc = (selectedDetailEvent.description || '').trim();
+                                const newDesc = `${cleanedDesc}${cleanedDesc ? '\n' : ''}[반려 사유] ${rejectReasonInput.trim()}`;
+                                
+                                const rejectedStatus = ME.id === 'sangmoo' ? 'rejected_sangmu' : (ME.id === 'daum' ? 'rejected_daeum' : 'rejected_sh');
+                                if (isConfigured) {
+                                  let dbSched = { 
+                                    ...selectedDetailEvent, 
+                                    status: rejectedStatus,
+                                    description: newDesc
+                                  };
+                                  if (isCurrentUserYoonhee) {
+                                    dbSched.memberId = selectedDetailEvent.memberId === 'sh' ? 'yoonhee' : (selectedDetailEvent.memberId === 'yoonhee' ? 'sh' : selectedDetailEvent.memberId);
+                                    dbSched.memberIds = selectedDetailEvent.memberIds.map(id => id === 'sh' ? 'yoonhee' : (id === 'yoonhee' ? 'sh' : id));
+                                    dbSched.requesterId = selectedDetailEvent.requesterId === 'sh' ? 'yoonhee' : (selectedDetailEvent.requesterId === 'yoonhee' ? 'sh' : selectedDetailEvent.requesterId);
+                                    dbSched.status = 'rejected_yoonhee';
+                                  }
+                                  await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
+                                }
+                                setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: rejectedStatus, description: newDesc, statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                                
+                                setFeeds(prev => {
+                                  const next = prev.map(f => {
+                                    const isMatch = f.id === selectedDetailEvent.feedId || f.id === dashboardFeedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                                    if (isMatch && f.vacationInfo) {
+                                      return {
+                                        ...f,
+                                        vacationInfo: {
+                                          ...f.vacationInfo,
+                                          status: 'rejected',
+                                          approvedAt: null
+                                        }
+                                      };
+                                    }
+                                    return f;
+                                  });
+                                  try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                                  return next;
+                                });
+
                                 setIsDetailModalOpen(false);
+                                showLayerAlert(`"${selectedDetailEvent.title}" 일정을 반려했습니다.`, '반려 완료', 'info');
                               }}
                             >
-                              보내기
+                              확인
                             </button>
                             <button 
                               className="modal-btn" 
                               style={{ padding: '4px 8px', fontSize: '12px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                               onClick={() => {
-                                setIsReRequesting(false);
-                                setReRequestMsgInput('');
+                                setIsRejecting(false);
+                                setRejectReasonInput('');
                               }}
                             >
                               취소
                             </button>
                           </div>
                         </div>
+                      )
+                    ) : (
+                      <span style={{ fontSize: '13.5px', color: '#b45309', fontWeight: '700', width: '100%', textAlign: 'center' }}>
+                        {headerNoticeText}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE (Right below approval banner!) ──── */}
+              {(() => {
+                const historyList = getScheduleHistoryList(selectedDetailEvent);
+                if (!historyList || historyList.length === 0) return null;
+
+                return (
+                  <div style={{
+                    backgroundColor: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderBottom: '1px solid #e2e8f0',
+                      paddingBottom: '8px'
+                    }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📜</span>
+                        <span>결재 및 처리 히스토리</span>
+                        <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 7px', borderRadius: '10px' }}>
+                          총 {historyList.length}건
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {historyList.map((hist, idx) => {
+                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0', icon = '✅';
+                        if (hist.action === 'reject') {
+                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca'; icon = '❌';
+                        } else if (hist.action === 'resubmit') {
+                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0'; icon = '🔄';
+                        } else if (hist.action === 'request') {
+                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a'; icon = '📋';
+                        } else if (hist.action === 'cancel') {
+                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1'; icon = '🚫';
+                        }
+
+                        const timeDisplay = hist.timestamp ? new Date(hist.timestamp).toLocaleString('ko-KR', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        }) : '';
+
+                        return (
+                          <div key={hist.id || idx} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px',
+                            position: 'relative',
+                            paddingLeft: '2px'
+                          }}>
+                            {/* Timeline badge icon */}
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              backgroundColor: badgeBg,
+                              border: `1.5px solid ${badgeBorder}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '13px',
+                              flexShrink: 0,
+                              marginTop: '2px'
+                            }}>
+                              {icon}
+                            </div>
+
+                            {/* History content box */}
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              padding: '8px 12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    color: badgeColor,
+                                    backgroundColor: badgeBg,
+                                    border: `1px solid ${badgeBorder}`,
+                                    padding: '1px 6px',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {hist.actionLabel || hist.action}
+                                  </span>
+                                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                                    {hist.actorName} <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{hist.actorRole}</span>
+                                  </span>
+                                </div>
+                                {timeDisplay && (
+                                  <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
+                                    {timeDisplay}
+                                  </span>
+                                )}
+                              </div>
+
+                              {hist.message && (
+                                <div style={{
+                                  fontSize: '12.5px',
+                                  color: '#334155',
+                                  backgroundColor: '#f8fafc',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #f1f5f9',
+                                  marginTop: '2px',
+                                  lineHeight: '1.45',
+                                  wordBreak: 'break-word'
+                                }}>
+                                  {hist.message}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {(selectedDetailEvent.status === 'rejected' || (selectedDetailEvent.status && selectedDetailEvent.status.startsWith('rejected'))) && (() => {
+                const cleanedDesc = selectedDetailEvent.description || '';
+                const match = cleanedDesc.match(/\[반려 사유\]\s*([^\n]*)/) || cleanedDesc.match(/\[반려사유\]\s*([^\n]*)/);
+                const reason = match ? match[1] : '';
+                
+                const isLeave = /반차|연차|휴가|병가/i.test(selectedDetailEvent.title || '') || selectedDetailEvent.category === '휴가';
+                const requesterId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId;
+                const isCurrentUserRequester = requesterId === ME.id || (ME.id === 'sh' && requesterId === 'yoonhee') || (ME.id === 'sangmoo' && requesterId === 'sangmu') || (ME.id === 'daum' && requesterId === 'daeum');
+
+                const isCurrentUserApprover = selectedDetailEvent.approverId 
+                  ? (selectedDetailEvent.approverId === ME.id || (ME.id === 'sh' && selectedDetailEvent.approverId === 'yoonhee') || (ME.id === 'sangmoo' && selectedDetailEvent.approverId === 'sangmu') || (ME.id === 'daum' && selectedDetailEvent.approverId === 'daeum'))
+                  : (isLeave ? (ME.id === 'sangmoo' || ME.role === '상무') : true);
+
+                const canReApprove = (isCurrentUserApprover && !isCurrentUserRequester);
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '13px', color: 'var(--accent-red)', fontWeight: '700' }}>❌ 반려된 일정입니다</span>
+                        {reason && (
+                          <span style={{ fontSize: '12.5px', color: '#7f1d1d' }}>
+                            <strong>반려 사유:</strong> {reason}
+                          </span>
+                        )}
+                      </div>
+                      {canReApprove && (
+                        <button
+                          className="modal-btn"
+                          style={{ padding: '5px 12px', fontSize: '12.5px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer', borderRadius: '6px' }}
+                          onClick={async () => {
+                            if (isConfigured) {
+                              let dbSched = { ...selectedDetailEvent, status: 'accepted' };
+                              await appwriteService.updateSchedule(selectedDetailEvent.id, dbSched);
+                            }
+                            setSchedules(prev => prev.map(s => s.id === selectedDetailEvent.id ? { ...s, status: 'accepted', statusUpdatedAt: Date.now(), updatedAt: new Date().toISOString() } : s));
+                            setFeeds(prev => {
+                              const next = prev.map(f => {
+                                const isMatch = f.id === selectedDetailEvent.feedId || (f.vacationInfo && f.content && f.content.includes(selectedDetailEvent.title));
+                                if (isMatch && f.vacationInfo) {
+                                  return {
+                                    ...f,
+                                    vacationInfo: { ...f.vacationInfo, status: 'approved', approvedAt: new Date().toISOString() }
+                                  };
+                                }
+                                return f;
+                              });
+                              try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
+                              return next;
+                            });
+                            setIsDetailModalOpen(false);
+                            showLayerAlert(`"${selectedDetailEvent.title}" 일정을 재승인했습니다.`, '재승인 완료', 'success');
+                          }}
+                        >
+                          재승인
+                        </button>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })()}
-            
-            <div className="modal-detail-body" style={{ margin: '16px 0', fontSize: '16px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
-                  <input 
-                    type="text" 
-                    className="modal-input" 
-                    value={editTitle} 
-                    onChange={(e) => setEditTitle(e.target.value)} 
-                    style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '15.5px', boxSizing: 'border-box' }}
-                    disabled={!isDetailEditable}
-                  />
-                </div>
+
+                    {isCurrentUserRequester && (
+                      <div style={{ padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #dcfce7', borderRadius: 'var(--radius-sm)' }}>
+                        {!isReRequesting ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                            <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700' }}>🔄 이 일정을 재요청하시겠습니까?</span>
+                            <button 
+                              className="modal-btn" 
+                              style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', cursor: 'pointer' }}
+                              onClick={() => setIsReRequesting(true)}
+                            >
+                              재요청
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                            <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700' }}>🔄 재요청 메시지를 입력해주세요</span>
+                            <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                              <input 
+                                type="text" 
+                                className="modal-input" 
+                                placeholder="재요청 메시지 입력" 
+                                value={reRequestMsgInput} 
+                                onChange={(e) => setReRequestMsgInput(e.target.value)} 
+                                style={{ flex: 1, padding: '4px 8px', fontSize: '13px', height: '30px' }}
+                                autoFocus
+                              />
+                              <button 
+                                className="modal-btn" 
+                                style={{ padding: '4px 8px', fontSize: '12px', backgroundColor: 'var(--accent-green)', color: '#fff', borderColor: 'var(--accent-green)', fontWeight: '700', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                                onClick={() => {
+                                  if (!reRequestMsgInput.trim()) {
+                                    showLayerAlert('재요청 메시지를 입력해 주세요.', '메시지 입력 필요', 'error');
+                                    return;
+                                  }
+                                  handleResubmitSchedule(selectedDetailEvent.id, reRequestMsgInput.trim());
+                                  setIsDetailModalOpen(false);
+                                }}
+                              >
+                                보내기
+                              </button>
+                              <button 
+                                className="modal-btn" 
+                                style={{ padding: '4px 8px', fontSize: '12px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                                onClick={() => {
+                                  setIsReRequesting(false);
+                                  setReRequestMsgInput('');
+                                }}
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              
+              <div className="modal-detail-body" style={{ margin: 0, fontSize: '16px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>일정명</label>
+                    <input 
+                      type="text" 
+                      className="modal-input" 
+                      value={editTitle} 
+                      onChange={(e) => setEditTitle(e.target.value)} 
+                      style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '15.5px', boxSizing: 'border-box' }}
+                      disabled={!isDetailEditable}
+                    />
+                  </div>
 
                 <div style={{ width: '115px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>구분</label>
@@ -9876,147 +10043,21 @@ export default function App() {
                   disabled={!isDetailEditable}
                 />
               </div>
-
-              {/* ──── APPROVAL & PROCESSING HISTORY TIMELINE ──── */}
-              {(() => {
-                const historyList = getScheduleHistoryList(selectedDetailEvent);
-                if (!historyList || historyList.length === 0) return null;
-
-                return (
-                  <div style={{
-                    marginTop: '8px',
-                    backgroundColor: '#f8fafc',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '14px 16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      borderBottom: '1px solid #e2e8f0',
-                      paddingBottom: '8px'
-                    }}>
-                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>📜</span>
-                        <span>결재 및 처리 히스토리</span>
-                        <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 7px', borderRadius: '10px' }}>
-                          총 {historyList.length}건
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {historyList.map((hist, idx) => {
-                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0', icon = '✅';
-                        if (hist.action === 'reject') {
-                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca'; icon = '❌';
-                        } else if (hist.action === 'resubmit') {
-                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0'; icon = '🔄';
-                        } else if (hist.action === 'request') {
-                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a'; icon = '📋';
-                        } else if (hist.action === 'cancel') {
-                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1'; icon = '🚫';
-                        }
-
-                        const timeDisplay = hist.timestamp ? new Date(hist.timestamp).toLocaleString('ko-KR', {
-                          month: 'numeric',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        }) : '';
-
-                        return (
-                          <div key={hist.id || idx} style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '10px',
-                            position: 'relative',
-                            paddingLeft: '2px'
-                          }}>
-                            {/* Timeline badge icon */}
-                            <div style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              backgroundColor: badgeBg,
-                              border: `1.5px solid ${badgeBorder}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '13px',
-                              flexShrink: 0,
-                              marginTop: '2px'
-                            }}>
-                              {icon}
-                            </div>
-
-                            {/* History content box */}
-                            <div style={{
-                              flex: 1,
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '8px',
-                              padding: '8px 12px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{
-                                    fontSize: '11px',
-                                    fontWeight: '800',
-                                    color: badgeColor,
-                                    backgroundColor: badgeBg,
-                                    border: `1px solid ${badgeBorder}`,
-                                    padding: '1px 6px',
-                                    borderRadius: '4px'
-                                  }}>
-                                    {hist.actionLabel || hist.action}
-                                  </span>
-                                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
-                                    {hist.actorName} <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{hist.actorRole}</span>
-                                  </span>
-                                </div>
-                                {timeDisplay && (
-                                  <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
-                                    {timeDisplay}
-                                  </span>
-                                )}
-                              </div>
-
-                              {hist.message && (
-                                <div style={{
-                                  fontSize: '12.5px',
-                                  color: '#334155',
-                                  backgroundColor: '#f8fafc',
-                                  padding: '6px 10px',
-                                  borderRadius: '6px',
-                                  border: '1px solid #f1f5f9',
-                                  marginTop: '2px',
-                                  lineHeight: '1.45',
-                                  wordBreak: 'break-word'
-                                }}>
-                                  {hist.message}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
+          </div>
 
-            <div className="modal-actions" style={{ marginTop: '16px', gap: '10px' }}>
+          {/* 3. Action Buttons (Fixed Bottom) */}
+          <div className="modal-actions" style={{ 
+            padding: '16px 24px', 
+            borderTop: '1px solid var(--border-color)', 
+            backgroundColor: '#ffffff', 
+            flexShrink: 0, 
+            marginTop: 0, 
+            gap: '10px', 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            alignItems: 'center' 
+          }}>
               {isDetailEditable && (
                 <>
                   <button 

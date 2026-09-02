@@ -2396,6 +2396,8 @@ export default function App() {
   const [reRequestMsgInput, setReRequestMsgInput] = useState('');
 
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [showDetailInput, setShowDetailInput] = useState(false);
+  const [showMemoInput, setShowMemoInput] = useState(false);
 
   const isDetailEditable = selectedDetailEvent
     ? (
@@ -2546,6 +2548,8 @@ export default function App() {
     setIsReRequesting(false);
     setReRequestMsgInput('');
     setIsHistoryExpanded(false);
+    setShowDetailInput(Boolean(target.detail && target.detail.trim()));
+    setShowMemoInput(Boolean(target.memo && target.memo.trim()));
     setIsDetailModalOpen(true);
   };
 
@@ -10060,17 +10064,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
-                <textarea 
-                  placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
-                  value={editDetail} 
-                  onChange={(e) => setEditDetail(e.target.value)} 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
-                  disabled={!isDetailEditable}
-                />
-              </div>
-              
+              {/* 1) 담당자 (복수 선택 가능) - 진척률 바로 다음 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
@@ -10117,16 +10111,121 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
-                <textarea 
-                  placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
-                  value={editMemo} 
-                  onChange={(e) => setEditMemo(e.target.value)} 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
-                  disabled={!isDetailEditable}
-                />
-              </div>
+              {/* 2) 상세내용 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
+              {(editDetail.trim() || showDetailInput) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
+                    {isDetailEditable && !editDetail.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDetailInput(false)}
+                        style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                      >
+                        접기
+                      </button>
+                    )}
+                  </div>
+                  <textarea 
+                    placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
+                    value={editDetail} 
+                    onChange={(e) => setEditDetail(e.target.value)} 
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
+                    disabled={!isDetailEditable}
+                    autoFocus={!editDetail.trim()}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
+                  {isDetailEditable && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDetailInput(true)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        padding: 0,
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 1,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                      title="상세내용 입력창 열기"
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* 3) 추가 내용 / 메모 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
+              {(editMemo.trim() || showMemoInput) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                    {isDetailEditable && !editMemo.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setShowMemoInput(false)}
+                        style={{ background: 'none', border: 'none', fontSize: '12px', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                      >
+                        접기
+                      </button>
+                    )}
+                  </div>
+                  <textarea 
+                    placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
+                    value={editMemo} 
+                    onChange={(e) => setEditMemo(e.target.value)} 
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
+                    disabled={!isDetailEditable}
+                    autoFocus={!editMemo.trim()}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
+                  {isDetailEditable && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMemoInput(true)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        padding: 0,
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        color: '#64748b',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 1,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                      title="추가 내용 / 메모 입력창 열기"
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

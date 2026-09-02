@@ -89,11 +89,19 @@ export const appwriteService = {
       return response.documents.filter(doc => doc.status !== 'deleted' && doc.title !== '__DELETED__').map(doc => {
         let year = doc.year || null;
         let month = doc.month || null;
-        if ((!year || !month) && doc.description) {
-          const ymMatch = doc.description.match(/\[YM:(\d{4})\.(\d{1,2})\]/);
+        let cleanDesc = doc.description || '';
+        let reqMeta = {};
+        if (cleanDesc) {
+          const ymMatch = cleanDesc.match(/\[YM:(\d{4})\.(\d{1,2})\]/);
           if (ymMatch) {
             year = parseInt(ymMatch[1]);
             month = parseInt(ymMatch[2]);
+          }
+          const metaMatch = cleanDesc.match(/\[REQ_META:(.*?)\]/);
+          if (metaMatch) {
+            try {
+              reqMeta = JSON.parse(decodeURIComponent(metaMatch[1]));
+            } catch (_) {}
           }
         }
         let parsedMemberIds = [doc.memberId];
@@ -118,7 +126,11 @@ export const appwriteService = {
           description: doc.description || '',
           status: doc.status || 'active',
           requesterId: doc.requesterId || null,
-          createdAt: doc.$createdAt || null
+          createdAt: doc.$createdAt || null,
+          requestedMemberIds: reqMeta.requestedMemberIds || null,
+          assigneeRequesterId: reqMeta.assigneeRequesterId || null,
+          assigneeRequestStatus: reqMeta.assigneeRequestStatus || null,
+          history: reqMeta.history || null
         };
       });
     } catch (e) {
@@ -133,6 +145,16 @@ export const appwriteService = {
       let desc = schedule.description || '';
       if (schedule.year && schedule.month && !desc.includes('[YM:')) {
         desc = `[YM:${schedule.year}.${schedule.month}] ${desc}`.trim();
+      }
+      if (schedule.assigneeRequestStatus || schedule.requestedMemberIds || schedule.history) {
+        const metaObj = {
+          assigneeRequestStatus: schedule.assigneeRequestStatus,
+          requestedMemberIds: schedule.requestedMemberIds,
+          assigneeRequesterId: schedule.assigneeRequesterId,
+          history: schedule.history
+        };
+        const encodedMeta = `[REQ_META:${encodeURIComponent(JSON.stringify(metaObj))}]`;
+        desc = desc.replace(/\[REQ_META:.*?\]/g, '').trim() + ' ' + encodedMeta;
       }
       const data = {
         date: schedule.date,
@@ -162,6 +184,16 @@ export const appwriteService = {
       let desc = updates.description !== undefined ? updates.description : (updates.desc !== undefined ? updates.desc : '');
       if (updates.year && updates.month && !desc.includes('[YM:')) {
         desc = `[YM:${updates.year}.${updates.month}] ${desc}`.trim();
+      }
+      if (updates.assigneeRequestStatus !== undefined || updates.requestedMemberIds !== undefined || updates.history !== undefined) {
+        const metaObj = {
+          assigneeRequestStatus: updates.assigneeRequestStatus,
+          requestedMemberIds: updates.requestedMemberIds,
+          assigneeRequesterId: updates.assigneeRequesterId,
+          history: updates.history
+        };
+        const encodedMeta = `[REQ_META:${encodeURIComponent(JSON.stringify(metaObj))}]`;
+        desc = desc.replace(/\[REQ_META:.*?\]/g, '').trim() + ' ' + encodedMeta;
       }
 
       // Appwrite schedules schema only has these attributes:

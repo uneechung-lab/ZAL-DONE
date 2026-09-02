@@ -2771,6 +2771,10 @@ export default function App() {
     if (isCurrent) {
       setMessages(prev => [...prev, messageObj]);
     }
+
+    if (isConfigured) {
+      appwriteService.createMessage(messageObj).catch(err => console.error('Appwrite failed to create message:', err));
+    }
   };
 
   const handleRequestAssigneeChange = async () => {

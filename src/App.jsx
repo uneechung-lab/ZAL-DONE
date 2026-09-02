@@ -10354,16 +10354,11 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 1) 담당자 (복수 선택 가능) - 타인이 올린 일정도 수정/변경 가능 */}
+              {/* 1) 담당자 (선택/변경 요청 가능) - 타인이 올린 일정도 수정/변경 가능 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>담당자 (복수 선택 가능)</label>
-                  {!isDetailEditable && (
-                    <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--accent-purple)', backgroundColor: '#ede9fe', padding: '2px 7px', borderRadius: '4px' }}>
-                      선택 후 변경 요청 가능
-                    </span>
-                  )}
-                </div>
+                <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>
+                  담당자 (선택/변경 요청 가능)
+                </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0' }}>
                   {activeTeam.map(m => {
                     const isChecked = editMemberIds.includes(m.id);
@@ -10551,14 +10546,6 @@ export default function App() {
             justifyContent: 'flex-end', 
             alignItems: 'center' 
           }}>
-              <button 
-                className="modal-btn" 
-                onClick={() => setIsDetailModalOpen(false)}
-                style={{ padding: '9px 18px', fontSize: '15px' }}
-              >
-                닫기
-              </button>
-
               {isDetailEditable ? (
                 <>
                   <button 
@@ -10617,32 +10604,31 @@ export default function App() {
                   const initialMemberIds = selectedDetailEvent.memberIds ? selectedDetailEvent.memberIds : [selectedDetailEvent.memberId];
                   const isAssigneeModified = editMemberIds.length !== initialMemberIds.length || !editMemberIds.every(id => initialMemberIds.includes(id));
                   
-                  if (isAssigneeModified) {
-                    return (
-                      <button 
-                        className="modal-btn primary" 
-                        disabled={isSavingEvent}
-                        onClick={handleRequestAssigneeChange}
-                        style={{
-                          backgroundColor: 'var(--accent-purple)',
-                          color: '#ffffff',
-                          borderColor: 'var(--accent-purple)',
-                          padding: '9px 18px',
-                          fontSize: '15px',
-                          fontWeight: '700',
-                          cursor: isSavingEvent ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        {isSavingEvent ? (
-                          <>
-                            <LoadingSpinner size={16} color="#ffffff" />
-                            요청 중...
-                          </>
-                        ) : '담당자 추가 요청'}
-                      </button>
-                    );
-                  }
-                  return null;
+                  return (
+                    <button 
+                      className="modal-btn" 
+                      disabled={!isAssigneeModified || isSavingEvent}
+                      onClick={handleRequestAssigneeChange}
+                      style={{
+                        backgroundColor: isAssigneeModified ? 'var(--accent-purple)' : '#f1f5f9',
+                        color: isAssigneeModified ? '#ffffff' : '#94a3b8',
+                        borderColor: isAssigneeModified ? 'var(--accent-purple)' : '#e2e8f0',
+                        padding: '9px 20px',
+                        fontSize: '15px',
+                        fontWeight: '700',
+                        cursor: (isAssigneeModified && !isSavingEvent) ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.2s ease',
+                        opacity: isAssigneeModified ? 1 : 0.8
+                      }}
+                    >
+                      {isSavingEvent ? (
+                        <>
+                          <LoadingSpinner size={16} color="#ffffff" />
+                          요청 중...
+                        </>
+                      ) : '담당자 추가/변경 요청'}
+                    </button>
+                  );
                 })()
               )}
             </div>

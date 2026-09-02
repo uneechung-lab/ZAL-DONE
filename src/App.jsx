@@ -2548,8 +2548,8 @@ export default function App() {
     setIsReRequesting(false);
     setReRequestMsgInput('');
     setIsHistoryExpanded(false);
-    setShowDetailInput(Boolean(target.detail && target.detail.trim()));
-    setShowMemoInput(Boolean(target.memo && target.memo.trim()));
+    setShowDetailInput(Boolean(parsedDesc.detail && parsedDesc.detail.trim()));
+    setShowMemoInput(Boolean(parsedDesc.memo && parsedDesc.memo.trim()));
     setIsDetailModalOpen(true);
   };
 
@@ -10112,11 +10112,11 @@ export default function App() {
               </div>
 
               {/* 2) 상세내용 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
-              {(editDetail.trim() || showDetailInput) ? (
+              {((editDetail || '').trim() || showDetailInput) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>상세내용</label>
-                    {isDetailEditable && !editDetail.trim() && (
+                    {isDetailEditable && !(editDetail || '').trim() && (
                       <button
                         type="button"
                         onClick={() => setShowDetailInput(false)}
@@ -10128,11 +10128,11 @@ export default function App() {
                   </div>
                   <textarea 
                     placeholder="업무 지시 사항, 아젠다 등 상세 내용을 입력하세요" 
-                    value={editDetail} 
+                    value={editDetail || ''} 
                     onChange={(e) => setEditDetail(e.target.value)} 
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '110px', fontFamily: 'inherit', fontSize: '15px', lineHeight: '1.45' }}
                     disabled={!isDetailEditable}
-                    autoFocus={!editDetail.trim()}
+                    autoFocus={!(editDetail || '').trim()}
                   />
                 </div>
               ) : (
@@ -10170,11 +10170,11 @@ export default function App() {
               )}
 
               {/* 3) 추가 내용 / 메모 - 값이 없으면 히든, 제목 옆 + 버튼 클릭 시 노출 */}
-              {(editMemo.trim() || showMemoInput) ? (
+              {((editMemo || '').trim() || showMemoInput) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>추가 내용 / 메모</label>
-                    {isDetailEditable && !editMemo.trim() && (
+                    {isDetailEditable && !(editMemo || '').trim() && (
                       <button
                         type="button"
                         onClick={() => setShowMemoInput(false)}
@@ -10186,11 +10186,11 @@ export default function App() {
                   </div>
                   <textarea 
                     placeholder="회의 안건, 준비물 등 메모를 입력하세요" 
-                    value={editMemo} 
+                    value={editMemo || ''} 
                     onChange={(e) => setEditMemo(e.target.value)} 
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', resize: 'none', height: '80px', fontFamily: 'inherit', fontSize: '15px' }}
                     disabled={!isDetailEditable}
-                    autoFocus={!editMemo.trim()}
+                    autoFocus={!(editMemo || '').trim()}
                   />
                 </div>
               ) : (

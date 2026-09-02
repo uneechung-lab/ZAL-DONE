@@ -22,6 +22,7 @@ export default function Dashboard({
   onAddSchedule,
   onOpenScheduleDetail,
   onCancelSchedule,
+  onResubmitSchedule,
   onNavigateToSync,
   onSwitchUser,
   onLogout,
@@ -31,6 +32,7 @@ export default function Dashboard({
   const [composerText, setComposerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [reRequestModalState, setReRequestModalState] = useState({ isOpen: false, feedId: null, title: '', message: '', schedId: null });
 
   const [internalFeeds, setInternalFeeds] = useState(() => {
     try {
@@ -371,7 +373,7 @@ export default function Dashboard({
   };
 
   // Resubmit Rejected Vacation Request
-  const handleResubmitVacation = (feedId) => {
+  const handleResubmitVacation = (feedId, customMessage = '', schedId = null) => {
     let targetFeed = null;
     setFeeds(prev => {
       const next = prev.map(f => {
@@ -392,30 +394,43 @@ export default function Dashboard({
       return next;
     });
 
+    const cleanMsg = (customMessage || '').trim();
+
     if (setSchedules) {
       setSchedules(prev => {
         const next = prev.map(s => {
-          if (!targetFeed) return s;
-          if (s.id === targetFeed.scheduleId || s.id === targetFeed.id || s.feedId === targetFeed.id) {
+          let isMatch = false;
+          if (schedId && (s.id === schedId || String(s.id) === String(schedId))) {
+            isMatch = true;
+          } else if (targetFeed) {
+            if (s.id === targetFeed.scheduleId || s.id === targetFeed.id || s.feedId === targetFeed.id) {
+              isMatch = true;
+            } else {
+              const isTargetLeave = /반차|휴가|연차/i.test(s.title || '') || s.category === '휴가';
+              if (isTargetLeave && targetFeed.vacationInfo) {
+                const vType = targetFeed.vacationInfo.type || '';
+                const authorMatches = s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId;
+                if (authorMatches && (s.title.includes(vType) || vType.includes(s.title))) {
+                  isMatch = true;
+                }
+              }
+            }
+          }
+
+          if (isMatch) {
+            let updatedDesc = s.description || '';
+            if (cleanMsg) {
+              updatedDesc = updatedDesc.replace(/\[재요청메시지\].*?(\||\n|$)/g, '').trim();
+              updatedDesc += ` | [재요청메시지] ${cleanMsg}`;
+            }
             return {
               ...s,
               status: 'requested',
+              isCancelled: false,
+              description: updatedDesc,
               statusUpdatedAt: Date.now(),
               updatedAt: new Date().toISOString()
             };
-          }
-          const isTargetLeave = /반차|휴가|연차/i.test(s.title || '') || s.category === '휴가';
-          if (isTargetLeave && targetFeed.vacationInfo) {
-            const vType = targetFeed.vacationInfo.type || '';
-            const authorMatches = s.memberId === targetFeed.authorId || s.requesterId === targetFeed.authorId;
-            if (authorMatches && (s.title.includes(vType) || vType.includes(s.title))) {
-              return {
-                ...s,
-                status: 'requested',
-                statusUpdatedAt: Date.now(),
-                updatedAt: new Date().toISOString()
-              };
-            }
           }
           return s;
         });
@@ -423,6 +438,11 @@ export default function Dashboard({
         return next;
       });
     }
+
+    if (onResubmitSchedule && schedId) {
+      try { onResubmitSchedule(schedId, cleanMsg); } catch (_) {}
+    }
+
     showToast('🔄 결재 요청이 다시 제출되었습니다.');
   };
 
@@ -3122,7 +3142,17 @@ export default function Dashboard({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleResubmitVacation(parentFeed.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const sched = item.matchedSchedule || findMatchingSchedule(item);
+                                    setReRequestModalState({
+                                      isOpen: true,
+                                      feedId: parentFeed.id,
+                                      title: item.title || '일정 재요청',
+                                      message: '',
+                                      schedId: sched ? sched.id : (item.id || parentFeed.scheduleId)
+                                    });
+                                  }}
                                   style={{
                                     padding: '5px 12px',
                                     fontSize: '12px',
@@ -3739,6 +3769,118 @@ export default function Dashboard({
                   }}
                 >
                   <span>{copiedReport ? '✓ 복사 완료' : '📋 클립보드 복사'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── RE-REQUEST REASON MODAL ──── */}
+      {reRequestModalState.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }} onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '460px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{
+              padding: '18px 20px',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🔄</span>
+                <span>일정 재요청</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', fontSize: '18px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.5' }}>
+                <strong>"{reRequestModalState.title}"</strong> 일정을 결재자에게 다시 요청합니다.<br />
+                전달할 재요청 사유나 메시지를 입력해주세요.
+              </div>
+
+              <textarea
+                placeholder="재요청 사유 및 변경 사항을 입력하세요 (예: 사유 보완, 시간 조정 등)"
+                value={reRequestModalState.message}
+                onChange={(e) => setReRequestModalState(prev => ({ ...prev, message: e.target.value }))}
+                style={{
+                  width: '100%',
+                  height: '100px',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '13.5px',
+                  fontFamily: 'inherit',
+                  resize: 'none',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+                autoFocus
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null })}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleResubmitVacation(reRequestModalState.feedId, reRequestModalState.message, reRequestModalState.schedId);
+                    setReRequestModalState({ isOpen: false, feedId: null, title: '', message: '', schedId: null });
+                  }}
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  재요청 보내기
                 </button>
               </div>
             </div>

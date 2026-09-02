@@ -5330,6 +5330,7 @@ export default function App() {
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onCancelSchedule={handleCancelSchedule}
+          onResubmitSchedule={handleResubmitSchedule}
           onNavigateToSync={() => navigateToView('sync')}
           onSwitchUser={(userOrId) => {
             const targetUser = typeof userOrId === 'string' ? (TEAM.find(m => m.id === userOrId) || { id: userOrId, name: userOrId, role: '팀원' }) : userOrId;

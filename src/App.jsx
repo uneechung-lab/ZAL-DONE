@@ -9351,12 +9351,12 @@ export default function App() {
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between', 
-              padding: '18px 24px', 
+              padding: '14px 24px', 
               borderBottom: '1px solid var(--border-color)', 
               backgroundColor: '#ffffff',
               flexShrink: 0 
             }}>
-              <div className="modal-title" style={{ fontSize: '20px', fontWeight: '800', marginBottom: 0 }}>일정 상세 및 수정</div>
+              <div className="modal-title" style={{ fontSize: '19px', fontWeight: '800', marginBottom: 0 }}>일정 상세 및 수정</div>
               <button 
                 style={{ 
                   background: 'none', 
@@ -9385,7 +9385,7 @@ export default function App() {
             <div style={{ 
               flex: 1, 
               overflowY: 'auto', 
-              padding: '20px 24px', 
+              padding: '10px 24px 20px', 
               display: 'flex', 
               flexDirection: 'column', 
               gap: '14px',
@@ -9427,7 +9427,8 @@ export default function App() {
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px'
+                    gap: '6px',
+                    marginTop: '2px'
                   }}>
                     <div style={{
                       display: 'flex',

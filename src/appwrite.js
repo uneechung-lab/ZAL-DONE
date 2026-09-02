@@ -123,7 +123,7 @@ export const appwriteService = {
           startHour: doc.startHour,
           endHour: doc.endHour,
           color: doc.color,
-          description: doc.description || '',
+          description: (doc.description || '').replace(/\[REQ_META:.*?\]/g, '').trim(),
           status: doc.status || 'active',
           requesterId: doc.requesterId || null,
           createdAt: doc.$createdAt || null,

@@ -1703,6 +1703,7 @@ export default function App() {
   const getCleanDesc = (desc) => {
     if (!desc) return '';
     let d = desc;
+    d = d.replace(/\[REQ_META:.*?\]\s*\|?/g, '');
     d = d.replace(/\[YM:.*?\]\s*\|?/g, '');
     d = d.replace(/\[그룹 ID\]\s*g_[\w_]+\s*\|?/g, '');
     d = d.replace(/\[구분:.*?\]\s*\|?/g, '');
@@ -2312,9 +2313,21 @@ export default function App() {
       const isExplicitRequest = s.isRequested || s.status === 'requested' || (s.approverId && s.approverId !== s.requesterId);
       // Auto-restore normal work items (like API 연동 마무리, 화면 퍼블리싱 리뷰, 디버깅 등) that got erroneously marked as rejected
       if (!isLeave && !isExplicitRequest && s.status && (s.status === 'rejected' || s.status.startsWith('rejected_'))) {
+        s.status = 'accepted';
+      }
+      if (s.description && s.description.includes('[REQ_META:')) {
+        const metaMatch = s.description.match(/\[REQ_META:(.*?)\]/);
+        let reqMeta = {};
+        if (metaMatch) {
+          try { reqMeta = JSON.parse(decodeURIComponent(metaMatch[1])); } catch (_) {}
+        }
         return {
           ...s,
-          status: 'accepted'
+          description: s.description.replace(/\[REQ_META:.*?\]/g, '').trim(),
+          requestedMemberIds: s.requestedMemberIds || reqMeta.requestedMemberIds || null,
+          assigneeRequesterId: s.assigneeRequesterId || reqMeta.assigneeRequesterId || null,
+          assigneeRequestStatus: s.assigneeRequestStatus || reqMeta.assigneeRequestStatus || null,
+          history: s.history || reqMeta.history || null
         };
       }
       return s;

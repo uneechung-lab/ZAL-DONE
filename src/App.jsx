@@ -9571,6 +9571,33 @@ export default function App() {
                 const historyList = getScheduleHistoryList(selectedDetailEvent);
                 if (!historyList || historyList.length === 0) return null;
 
+                const getActorAvatarPic = (hist) => {
+                  const actorId = hist.actorId;
+                  const actorName = hist.actorName || '';
+                  const m = activeTeam.find(t => 
+                    t.id === actorId || 
+                    t.name === actorName || 
+                    (actorId === 'yoonhee' && t.id === 'sh') || 
+                    (actorId === 'sangmu' && t.id === 'sangmoo') || 
+                    (actorId === 'daeum' && t.id === 'daum')
+                  );
+                  if (m) return getMemberAvatarPic(m);
+                  if (actorId === 'sangmoo' || actorName.includes('상무')) return '/pic2_thumb.png';
+                  if (actorId === 'daum' || actorName.includes('다음')) return '/pic2_thumb.png';
+                  return '/pic1_thumb.png';
+                };
+
+                const formatHistTime = (isoString) => {
+                  if (!isoString) return '';
+                  const d = new Date(isoString);
+                  if (isNaN(d.getTime())) return '';
+                  const month = d.getMonth() + 1;
+                  const day = d.getDate();
+                  const hours = String(d.getHours()).padStart(2, '0');
+                  const minutes = String(d.getMinutes()).padStart(2, '0');
+                  return `${month}. ${day}. ${hours}:${minutes}`;
+                };
+
                 return (
                   <div style={{
                     backgroundColor: '#f8fafc',
@@ -9599,100 +9626,117 @@ export default function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {historyList.map((hist, idx) => {
-                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0', icon = '✅';
+                        let badgeBg = '#ecfdf5', badgeColor = '#059669', badgeBorder = '#a7f3d0';
                         if (hist.action === 'reject') {
-                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca'; icon = '❌';
+                          badgeBg = '#fef2f2'; badgeColor = '#dc2626'; badgeBorder = '#fecaca';
                         } else if (hist.action === 'resubmit') {
-                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0'; icon = '🔄';
+                          badgeBg = '#f0fdf4'; badgeColor = '#16a34a'; badgeBorder = '#bbf7d0';
                         } else if (hist.action === 'request') {
-                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a'; icon = '📋';
+                          badgeBg = '#fffbeb'; badgeColor = '#b45309'; badgeBorder = '#fde68a';
                         } else if (hist.action === 'cancel') {
-                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1'; icon = '🚫';
+                          badgeBg = '#f1f5f9'; badgeColor = '#64748b'; badgeBorder = '#cbd5e1';
                         }
 
-                        const timeDisplay = hist.timestamp ? new Date(hist.timestamp).toLocaleString('ko-KR', {
-                          month: 'numeric',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        }) : '';
+                        const timeDisplay = formatHistTime(hist.timestamp);
+                        const avatarPic = getActorAvatarPic(hist);
 
                         return (
                           <div key={hist.id || idx} style={{
                             display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '10px',
+                            alignItems: 'center',
+                            gap: '12px',
                             position: 'relative',
                             paddingLeft: '2px'
                           }}>
-                            {/* Timeline badge icon */}
+                            {/* Left: Avatar with Name below */}
                             <div style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              backgroundColor: badgeBg,
-                              border: `1.5px solid ${badgeBorder}`,
                               display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '13px',
+                              width: '46px',
                               flexShrink: 0,
-                              marginTop: '2px'
+                              gap: '3px'
                             }}>
-                              {icon}
+                              <img 
+                                src={avatarPic} 
+                                alt={hist.actorName || ''} 
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  border: '1.5px solid #e2e8f0',
+                                  backgroundColor: '#ffffff'
+                                }} 
+                                onError={(e) => { e.target.src = '/pic1_thumb.png'; }}
+                              />
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                color: '#334155',
+                                textAlign: 'center',
+                                lineHeight: 1.15,
+                                wordBreak: 'keep-all',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {hist.actorName || '사용자'}
+                              </span>
                             </div>
 
-                            {/* History content box */}
+                            {/* Right: Single-row history item box */}
                             <div style={{
                               flex: 1,
                               backgroundColor: '#ffffff',
                               border: '1px solid #e2e8f0',
                               borderRadius: '8px',
-                              padding: '8px 12px',
+                              padding: '9px 14px',
                               display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '12px',
+                              minHeight: '38px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {/* Action badge + message */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, flexWrap: 'nowrap' }}>
+                                <span style={{
+                                  fontSize: '11.5px',
+                                  fontWeight: '800',
+                                  color: badgeColor,
+                                  backgroundColor: badgeBg,
+                                  border: `1px solid ${badgeBorder}`,
+                                  padding: '2px 7px',
+                                  borderRadius: '4px',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
+                                }}>
+                                  {hist.actionLabel || hist.action}
+                                </span>
+                                {hist.message && (
                                   <span style={{
-                                    fontSize: '11px',
-                                    fontWeight: '800',
-                                    color: badgeColor,
-                                    backgroundColor: badgeBg,
-                                    border: `1px solid ${badgeBorder}`,
-                                    padding: '1px 6px',
-                                    borderRadius: '4px'
-                                  }}>
-                                    {hist.actionLabel || hist.action}
-                                  </span>
-                                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
-                                    {hist.actorName} <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{hist.actorRole}</span>
-                                  </span>
-                                </div>
-                                {timeDisplay && (
-                                  <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: '500' }}>
-                                    {timeDisplay}
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    color: '#1e293b',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }} title={hist.message}>
+                                    {hist.message}
                                   </span>
                                 )}
                               </div>
 
-                              {hist.message && (
-                                <div style={{
-                                  fontSize: '12.5px',
-                                  color: '#334155',
-                                  backgroundColor: '#f8fafc',
-                                  padding: '6px 10px',
-                                  borderRadius: '6px',
-                                  border: '1px solid #f1f5f9',
-                                  marginTop: '2px',
-                                  lineHeight: '1.45',
-                                  wordBreak: 'break-word'
+                              {/* Time on right */}
+                              {timeDisplay && (
+                                <span style={{
+                                  fontSize: '12px',
+                                  color: '#64748b',
+                                  fontWeight: '500',
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
                                 }}>
-                                  {hist.message}
-                                </div>
+                                  {timeDisplay}
+                                </span>
                               )}
                             </div>
                           </div>

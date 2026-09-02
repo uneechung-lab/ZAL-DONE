@@ -3759,7 +3759,7 @@ export default function App() {
     showLayerAlert(`"${target.title}" 요청이 취소되었습니다.`, '요청취소 완료', 'info');
   };
 
-  const processMessageAndCreateSchedule = (textInput, actingUser = ME, skipDashboardFeed = false) => {
+  const processMessageAndCreateSchedule = (textInput, actingUser = ME, skipDashboardFeed = false, customDate = null, customMonth = null, customYear = null) => {
     const text = (textInput || '').trim();
     if (!text) return;
 
@@ -3773,8 +3773,11 @@ export default function App() {
 
     const proceedWithAI = async () => {
       try {
-        const todayDate = selectedDate || new Date().getDate();
-        let rawResult = await parseMessageWithGemini(text, todayDate, activeTeam, currentYear, currentMonth, actingUser);
+        const targetD = (customDate !== null && customDate !== undefined) ? customDate : (selectedDate || new Date().getDate());
+        const targetM = (customMonth !== null && customMonth !== undefined) ? customMonth : (currentMonth || (new Date().getMonth() + 1));
+        const targetY = (customYear !== null && customYear !== undefined) ? customYear : (currentYear || new Date().getFullYear());
+        
+        let rawResult = await parseMessageWithGemini(text, targetD, activeTeam, targetY, targetM, actingUser);
         
         let aiResult;
         if (rawResult && typeof rawResult === 'object' && rawResult.action) {
@@ -3782,7 +3785,7 @@ export default function App() {
         } else if (Array.isArray(rawResult)) {
           aiResult = { action: 'create', schedules: rawResult };
         } else {
-          const fallbackList = parseMessageToSchedules(text, todayDate, activeTeam, currentYear, currentMonth, actingUser);
+          const fallbackList = parseMessageToSchedules(text, targetD, activeTeam, targetY, targetM, actingUser);
           aiResult = { action: 'create', schedules: fallbackList };
         }
 
@@ -4321,8 +4324,16 @@ export default function App() {
     }
   };
 
-  const handleDashboardAddSchedule = async (text, user) => {
-    return await processMessageAndCreateSchedule(text, user || ME, false);
+  const handleDashboardAddSchedule = async (text, user, targetDateObj) => {
+    let targetD = selectedDate;
+    let targetM = currentMonth;
+    let targetY = currentYear;
+    if (targetDateObj instanceof Date && !isNaN(targetDateObj.getTime())) {
+      targetD = targetDateObj.getDate();
+      targetM = targetDateObj.getMonth() + 1;
+      targetY = targetDateObj.getFullYear();
+    }
+    return await processMessageAndCreateSchedule(text, user || ME, false, targetD, targetM, targetY);
   };
 
   const handleOpenScheduleDetailFromDashboard = (itemOrFeed) => {
@@ -5303,6 +5314,13 @@ export default function App() {
           currentMonth={currentMonth}
           currentYear={currentYear}
           calendarSelectedDate={new Date(currentYear, currentMonth - 1, selectedDate)}
+          onSelectDate={(newDate) => {
+            if (newDate instanceof Date && !isNaN(newDate.getTime())) {
+              setSelectedDate(newDate.getDate());
+              setCurrentMonth(newDate.getMonth() + 1);
+              setCurrentYear(newDate.getFullYear());
+            }
+          }}
           onAddSchedule={handleDashboardAddSchedule}
           onOpenScheduleDetail={handleOpenScheduleDetailFromDashboard}
           onCancelSchedule={handleCancelSchedule}

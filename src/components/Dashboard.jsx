@@ -18,6 +18,7 @@ export default function Dashboard({
   currentMonth,
   currentYear,
   calendarSelectedDate,
+  onSelectDate,
   onAddSchedule,
   onOpenScheduleDetail,
   onCancelSchedule,
@@ -70,6 +71,16 @@ export default function Dashboard({
     }
   }, [targetCalendarDate]);
 
+  // Synchronize date changes bidirectionally between Dashboard and Calendar
+  const changeTimelineDate = (newDate) => {
+    if (newDate instanceof Date && !isNaN(newDate.getTime())) {
+      setTimelineDate(newDate);
+      if (onSelectDate) {
+        onSelectDate(newDate);
+      }
+    }
+  };
+
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => timelineDate.getFullYear());
   const [pickerMonth, setPickerMonth] = useState(() => timelineDate.getMonth());
@@ -95,6 +106,7 @@ export default function Dashboard({
   }, [isDatePickerOpen]);
 
   const [selectedMemberId, setSelectedMemberId] = useState('all');
+  const [showAllCreatedToday, setShowAllCreatedToday] = useState(true);
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일(${timelineDayNames[timelineDate.getDay()]})`;
@@ -113,11 +125,11 @@ export default function Dashboard({
   ];
 
   const handlePrevTimelineDate = () => {
-    setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 1));
+    changeTimelineDate(new Date(timelineDate.getFullYear(), timelineDate.getMonth(), timelineDate.getDate() - 1));
   };
 
   const handleNextTimelineDate = () => {
-    setTimelineDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1));
+    changeTimelineDate(new Date(timelineDate.getFullYear(), timelineDate.getMonth(), timelineDate.getDate() + 1));
   };
   const [copiedReport, setCopiedReport] = useState(false);
   const [highlightedCardId, setHighlightedCardId] = useState(null);
@@ -257,7 +269,7 @@ export default function Dashboard({
 
     try {
       if (onAddSchedule) {
-        await onAddSchedule(text, currentUser);
+        await onAddSchedule(text, currentUser, timelineDate);
       }
     } finally {
       setIsSubmitting(false);
@@ -564,8 +576,8 @@ export default function Dashboard({
     return '';
   };
 
-  // Helper to check if an item/feed belongs to the current timelineDate
-  const isItemOnTimelineDate = (item, dateObj) => {
+  // Helper to check if an item/feed belongs to the current timelineDate (or created today if includeCreatedToday is true)
+  const isItemOnTimelineDate = (item, dateObj, includeCreatedToday = false) => {
     if (!dateObj || !item) return true;
     const targetY = dateObj.getFullYear();
     const targetM = dateObj.getMonth() + 1;
@@ -578,7 +590,9 @@ export default function Dashboard({
       const sM = sched.month || targetM;
       const sD = sched.date;
       if (sD !== undefined && sD !== null) {
-        return sY === targetY && sM === targetM && Number(sD) === targetD;
+        if (sY === targetY && sM === targetM && Number(sD) === targetD) {
+          return true;
+        }
       }
     }
 
@@ -590,11 +604,13 @@ export default function Dashboard({
         const vY = parts[1] ? Number(parts[1]) : targetY;
         const vM = Number(parts[2]);
         const vD = Number(parts[3]);
-        return vY === targetY && vM === targetM && vD === targetD;
+        if (vY === targetY && vM === targetM && vD === targetD) {
+          return true;
+        }
       }
       const singleDayMatch = vDateStr.match(/(\d{1,2})\s*일/);
-      if (singleDayMatch) {
-        return Number(singleDayMatch[1]) === targetD;
+      if (singleDayMatch && Number(singleDayMatch[1]) === targetD) {
+        return true;
       }
     }
 
@@ -605,31 +621,50 @@ export default function Dashboard({
       const tY = Number(textDateMatch[1]);
       const tM = Number(textDateMatch[2]);
       const tD = Number(textDateMatch[3]);
-      return tY === targetY && tM === targetM && tD === targetD;
+      if (tY === targetY && tM === targetM && tD === targetD) {
+        return true;
+      }
     }
     const monthDayMatch = fullText.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
     if (monthDayMatch) {
       const tM = Number(monthDayMatch[1]);
       const tD = Number(monthDayMatch[2]);
-      return tM === targetM && tD === targetD;
+      if (tM === targetM && tD === targetD) {
+        return true;
+      }
     }
     const dayOnlyMatch = fullText.match(/\((\d{1,2})\s*일\)/) || fullText.match(/\[(\d{1,2})\s*일\]/) || fullText.match(/\s(\d{1,2})일(?:\s|\)|$)/);
-    if (dayOnlyMatch) {
-      return Number(dayOnlyMatch[1]) === targetD;
+    if (dayOnlyMatch && Number(dayOnlyMatch[1]) === targetD) {
+      return true;
     }
 
-    // 4. Check createdAt of feed/item
-    const createdStr = item.createdAt || item.feed?.createdAt;
-    if (createdStr) {
-      const cDate = new Date(createdStr);
-      if (!isNaN(cDate.getTime())) {
-        return cDate.getFullYear() === targetY && (cDate.getMonth() + 1) === targetM && cDate.getDate() === targetD;
+    // 4. If '오늘 등록된 모든 일정보기' (includeCreatedToday) is active:
+    // Include items registered/created today or on the target date
+    if (includeCreatedToday) {
+      const createdStr = item.createdAt || item.feed?.createdAt;
+      if (createdStr) {
+        const cDate = new Date(createdStr);
+        if (!isNaN(cDate.getTime())) {
+          const isCreatedOnTarget = cDate.getFullYear() === targetY && (cDate.getMonth() + 1) === targetM && cDate.getDate() === targetD;
+          const today = new Date();
+          const isCreatedToday = cDate.getFullYear() === today.getFullYear() && (cDate.getMonth() + 1) === (today.getMonth() + 1) && cDate.getDate() === today.getDate();
+          if (isCreatedOnTarget || isCreatedToday) {
+            return true;
+          }
+        }
+      }
+    } else {
+      // 5. Fallback check createdAt of feed/item only if no explicit date was found
+      const createdStr = item.createdAt || item.feed?.createdAt;
+      if (createdStr && !sched && !item.vacationInfo?.date && !textDateMatch && !monthDayMatch && !dayOnlyMatch) {
+        const cDate = new Date(createdStr);
+        if (!isNaN(cDate.getTime())) {
+          return cDate.getFullYear() === targetY && (cDate.getMonth() + 1) === targetM && cDate.getDate() === targetD;
+        }
       }
     }
 
-    // Default fallback: if no date specified in content, match today's date
-    const today = new Date();
-    return today.getFullYear() === targetY && (today.getMonth() + 1) === targetM && today.getDate() === targetD;
+    return false;
   };
 
   // Granular categorized items when specific category tab or 'all' is selected
@@ -935,25 +970,99 @@ export default function Dashboard({
     });
 
     // Guarantee 100% Calendar-Dashboard database synchronization:
-    // If schedules contains requested tasks, approvals, or vacations not present in feeds, include them!
+    // If schedules contains any tasks, meetings, leaves, or issues not present in feeds/items, include them!
     if (schedules && schedules.length > 0) {
       schedules.forEach(s => {
+        if (s.status === 'cancelled' || s.isCancelled) return;
+
         const isLeave = /반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가';
+        const isIssue = s.isIssue || s.category === '이슈' || /에러|버그|장애|디버깅|긴급/i.test(s.title || '');
+        const isMeeting = s.category === '회의' || /회의|미팅|리뷰|브리핑/i.test(s.title || '');
         const isRequested = s.status === 'requested' || (s.isRequested && s.status !== 'accepted');
         
-        if (isLeave || isRequested) {
-          const alreadyInItems = items.some(it => {
-            const matched = findMatchingSchedule(it);
-            return (matched && matched.id === s.id) || (it.title && it.title.includes(s.title));
-          });
+        const alreadyInItems = items.some(it => {
+          const matched = findMatchingSchedule(it);
+          if (matched && matched.id === s.id) return true;
+          if (it.id === `sched_feed_${s.id}` || it.feedId === `feed_sched_${s.id}`) return true;
+          if (it.title && s.title && it.title.includes(s.title)) {
+            const itSched = it.matchedSchedule || matched;
+            if (itSched && itSched.date === s.date && itSched.month === s.month && itSched.year === s.year) {
+              return true;
+            }
+          }
+          return false;
+        });
 
-          if (!alreadyInItems) {
-            const author = displayMembers.find(m => m.id === s.requesterId || m.id === s.memberId) || { name: '정다음', role: '사원', id: 'daum' };
-            const approver = displayMembers.find(m => m.id === s.approverId) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
-            const dateFormatted = `${s.year}.${String(s.month).padStart(2, '0')}.${String(s.date).padStart(2, '0')}`;
-            
-            const syntheticFeed = {
-              id: `feed_sched_${s.id}`,
+        if (!alreadyInItems) {
+          const author = displayMembers.find(m => m.id === s.requesterId || m.id === s.memberId) || { name: '정다음', role: '사원', id: 'daum' };
+          const approver = displayMembers.find(m => m.id === s.approverId) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
+          const dateFormatted = `${s.year || timelineDate.getFullYear()}.${String(s.month || (timelineDate.getMonth() + 1)).padStart(2, '0')}.${String(s.date || timelineDate.getDate()).padStart(2, '0')}`;
+          
+          let cardCategory = '일반';
+          let badgeText = '📄 일반';
+          let badgeColor = '#64748b';
+          let badgeBg = '#f8fafc';
+          let badgeBorder = '#e2e8f0';
+          let cardTitle = s.title;
+
+          if (isIssue) {
+            cardCategory = '이슈';
+            badgeText = '🚨 이슈 대응';
+            badgeColor = '#dc2626';
+            badgeBg = '#fef2f2';
+            badgeBorder = '#fecaca';
+            cardTitle = s.title.startsWith('🚨') ? s.title : `🚨 ${s.title}`;
+          } else if (isLeave) {
+            cardCategory = '휴가';
+            badgeText = s.status === 'accepted' ? '✅ 승인완료' : '🏖️ 결재요청';
+            badgeColor = s.status === 'accepted' ? '#059669' : '#b45309';
+            badgeBg = s.status === 'accepted' ? '#ecfdf5' : '#fffbeb';
+            badgeBorder = s.status === 'accepted' ? '#a7f3d0' : '#fde68a';
+            cardTitle = `🏖️ ${s.title} (${dateFormatted})`;
+          } else if (isMeeting) {
+            cardCategory = '회의';
+            badgeText = '🤝 회의';
+            badgeColor = '#4338ca';
+            badgeBg = '#eef2ff';
+            badgeBorder = '#c7d2fe';
+            cardTitle = s.title.startsWith('🤝') ? s.title : `🤝 ${s.title}`;
+          } else if (isRequested) {
+            cardCategory = '요청';
+            badgeText = '📋 결재요청';
+            badgeColor = '#b45309';
+            badgeBg = '#fffbeb';
+            badgeBorder = '#fde68a';
+            cardTitle = `📋 ${s.title} (${approver.name} ${approver.role} 수락 요청)`;
+          }
+
+          const syntheticFeed = {
+            id: `feed_sched_${s.id}`,
+            authorId: author.id,
+            authorName: author.name,
+            authorRole: author.role,
+            authorAvatarPic: author.avatarPic || '/pic1_thumb.png',
+            authorColor: author.color || '#000000',
+            timeDisplay: '방금 전',
+            createdAt: s.createdAt || new Date().toISOString(),
+            content: s.title,
+            likes: 0,
+            hasLiked: false,
+            cheers: 0,
+            hasCheered: false,
+            comments: []
+          };
+
+          const matchFilter = categoryKey === 'all' ||
+            (categoryKey === 'issue' && isIssue) ||
+            (categoryKey === 'vacation' && (isLeave || isRequested)) ||
+            (categoryKey === 'meeting' && isMeeting) ||
+            (categoryKey === 'work' && (!isIssue && !isLeave && !isMeeting && !isRequested)) ||
+            (categoryKey === 'general' && (!isIssue && !isLeave && !isMeeting && !isRequested));
+
+          if (matchFilter) {
+            items.push({
+              id: `sched_feed_${s.id}`,
+              feedId: `feed_sched_${s.id}`,
               authorId: author.id,
               authorName: author.name,
               authorRole: author.role,
@@ -961,47 +1070,27 @@ export default function Dashboard({
               authorColor: author.color || '#000000',
               timeDisplay: '방금 전',
               createdAt: s.createdAt || new Date().toISOString(),
-              content: s.title,
-              likes: 0,
-              hasLiked: false,
-              cheers: 0,
-              hasCheered: false,
-              comments: []
-            };
-
-            if (categoryKey === 'all' || (isLeave && categoryKey === 'vacation') || (isRequested && categoryKey === 'vacation')) {
-              items.push({
-                id: `sched_feed_${s.id}`,
-                feedId: `feed_sched_${s.id}`,
-                authorId: author.id,
-                authorName: author.name,
-                authorRole: author.role,
-                authorAvatarPic: author.avatarPic || '/pic1_thumb.png',
-                authorColor: author.color || '#000000',
-                timeDisplay: '방금 전',
-                createdAt: s.createdAt || new Date().toISOString(),
-                category: isLeave ? '휴가' : '요청',
-                title: isLeave ? `🏖️ ${s.title} (${dateFormatted})` : `📋 ${s.title} (${approver.name} ${approver.role} 수락 요청)`,
-                description: s.description || '',
-                badgeText: s.status === 'accepted' ? '✅ 승인완료' : '🏖️ 결재요청',
-                badgeColor: s.status === 'accepted' ? '#059669' : '#b45309',
-                badgeBg: s.status === 'accepted' ? '#ecfdf5' : '#fffbeb',
-                badgeBorder: s.status === 'accepted' ? '#a7f3d0' : '#fde68a',
-                vacationInfo: {
-                  type: isLeave ? s.title : '업무 요청',
-                  date: dateFormatted,
-                  status: s.status === 'accepted' ? 'approved' : (s.status === 'rejected' ? 'rejected' : 'pending'),
-                  approverName: approver.name,
-                  approverRole: approver.role,
-                  targetUserId: approver.id,
-                  requesterId: author.id,
-                  requesterName: author.name,
-                  approvedAt: null
-                },
-                matchedSchedule: s,
-                feed: syntheticFeed
-              });
-            }
+              category: cardCategory,
+              title: cardTitle,
+              description: s.description || '',
+              badgeText: badgeText,
+              badgeColor: badgeColor,
+              badgeBg: badgeBg,
+              badgeBorder: badgeBorder,
+              vacationInfo: (isLeave || isRequested) ? {
+                type: isLeave ? s.title : '업무 요청',
+                date: dateFormatted,
+                status: s.status === 'accepted' ? 'approved' : (s.status === 'rejected' ? 'rejected' : 'pending'),
+                approverName: approver.name,
+                approverRole: approver.role,
+                targetUserId: approver.id,
+                requesterId: author.id,
+                requesterName: author.name,
+                approvedAt: null
+              } : null,
+              matchedSchedule: s,
+              feed: syntheticFeed
+            });
           }
         }
       });
@@ -1019,8 +1108,8 @@ export default function Dashboard({
       return true;
     });
 
-    // Filter cards strictly for the selected timelineDate
-    activeItems = activeItems.filter(item => isItemOnTimelineDate(item, timelineDate));
+    // Filter cards for the selected timelineDate (and created today if showAllCreatedToday is checked)
+    activeItems = activeItems.filter(item => isItemOnTimelineDate(item, timelineDate, showAllCreatedToday));
 
     if (selectedMemberId && selectedMemberId !== 'all') {
       return activeItems.filter(item => item.authorId === selectedMemberId);
@@ -1998,6 +2087,48 @@ export default function Dashboard({
             </svg>
           </button>
 
+          {/* Checkbox: 오늘 등록된 모든 일정보기 */}
+          <button
+            type="button"
+            onClick={() => setShowAllCreatedToday(prev => !prev)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginLeft: '8px',
+              fontSize: '12.5px',
+              fontWeight: showAllCreatedToday ? '600' : '500',
+              color: showAllCreatedToday ? '#0f172a' : '#94a3b8',
+              cursor: 'pointer',
+              userSelect: 'none',
+              background: 'none',
+              border: '1px solid #e2e8f0',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+            title="오늘 등록된 모든 일정보기 토글"
+          >
+            {showAllCreatedToday ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#0f172a" />
+                <polyline points="7.5 12 10.5 15 16.5 9" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#e2e8f0" />
+                <polyline points="7.5 12 10.5 15 16.5 9" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+            <span>오늘 등록된 모든 일정보기</span>
+          </button>
+
           {/* Date Picker Popover */}
           {isDatePickerOpen && (
             <div style={{
@@ -2107,7 +2238,7 @@ export default function Dashboard({
                         key={`day_${d}`}
                         type="button"
                         onClick={() => {
-                          setTimelineDate(new Date(pickerYear, pickerMonth, d));
+                          changeTimelineDate(new Date(pickerYear, pickerMonth, d));
                           setIsDatePickerOpen(false);
                         }}
                         style={{
@@ -2147,7 +2278,7 @@ export default function Dashboard({
                     const t = new Date();
                     setPickerYear(t.getFullYear());
                     setPickerMonth(t.getMonth());
-                    setTimelineDate(t);
+                    changeTimelineDate(t);
                     setIsDatePickerOpen(false);
                   }}
                   style={{

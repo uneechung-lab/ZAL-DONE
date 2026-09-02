@@ -9442,11 +9442,8 @@ export default function App() {
                       <label style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-secondary)' }}>
                         결재 및 처리 히스토리
                       </label>
-                      <span style={{ fontSize: '11px', fontWeight: '700', backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 7px', borderRadius: '10px' }}>
-                        총 {historyList.length}건
-                      </span>
                       
-                      {/* Accordion Toggle: 내용보기 / 접어두기 */}
+                      {/* Accordion Toggle: 총 N건 내용보기 / 접어두기 */}
                       <button
                         type="button"
                         onClick={() => setIsHistoryExpanded(prev => !prev)}
@@ -9454,21 +9451,20 @@ export default function App() {
                           background: '#f8fafc',
                           border: '1px solid #cbd5e1',
                           borderRadius: '6px',
-                          padding: '2px 8px',
+                          padding: '3px 9px',
                           fontSize: '11.5px',
                           fontWeight: '600',
                           color: '#334155',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '4px',
-                          marginLeft: '2px',
+                          gap: '5px',
                           transition: 'all 0.15s ease'
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                       >
-                        <span>{isHistoryExpanded ? '접어두기' : '내용보기'}</span>
+                        <span>{isHistoryExpanded ? '접어두기' : `총 ${historyList.length}건 내용보기`}</span>
                         <svg 
                           width="12" 
                           height="12" 

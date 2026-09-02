@@ -2834,6 +2834,7 @@ export default function App() {
       });
 
       setSchedules(updatedSchedules);
+      try { localStorage.setItem('zal_schedules', JSON.stringify(updatedSchedules)); } catch (_) {}
 
       // 1) Send chat message to Requester (e.g. 정윤희 부장)
       const requesterMsg = {
@@ -2916,6 +2917,7 @@ export default function App() {
     });
 
     setSchedules(updatedSchedules);
+    try { localStorage.setItem('zal_schedules', JSON.stringify(updatedSchedules)); } catch (_) {}
 
     // Chat messages for both Approver and Requester
     const requesterId = targetSched.assigneeRequesterId || 'sh';
@@ -2989,6 +2991,7 @@ export default function App() {
     });
 
     setSchedules(updatedSchedules);
+    try { localStorage.setItem('zal_schedules', JSON.stringify(updatedSchedules)); } catch (_) {}
 
     // Chat messages for both Rejecter and Requester
     const requesterId = targetSched.assigneeRequesterId || 'sh';
@@ -7760,24 +7763,33 @@ export default function App() {
           const scrollToCard = (direction) => {
             let targetCard = null;
             if (direction === 'incoming') {
-              targetCard = document.querySelector('[data-request-direction="incoming"]') || document.querySelector('[id^="card_"]');
+              targetCard = document.querySelector('[data-request-direction="incoming"]');
             } else if (direction === 'outgoing') {
-              targetCard = document.querySelector('[data-request-direction="outgoing"]') || document.querySelector('[id^="card_"]');
+              targetCard = document.querySelector('[data-request-direction="outgoing"]');
+              if (!targetCard) {
+                // 보낸 요청과 관련된 말풍선(반차, 연차, 결재 등) 찾기
+                const bubbles = Array.from(document.querySelectorAll('.chat-bubble-wrap'));
+                targetCard = bubbles.find(b => {
+                  const text = b.textContent || '';
+                  return /반차|연차|휴가|결재 올려|결재\s*요청/i.test(text);
+                });
+              }
             } else {
-              targetCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
+              targetCard = document.querySelector('[data-request-direction="incoming"]') || document.querySelector('[data-request-direction="outgoing"]') || document.querySelector('[id^="card_"]');
             }
 
             if (targetCard) {
               targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              targetCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
-              targetCard.style.borderColor = direction === 'outgoing' ? '#3b82f6' : '#10b981';
-              targetCard.style.boxShadow = direction === 'outgoing' 
-                ? '0 0 0 4px rgba(59, 130, 246, 0.25)' 
-                : '0 0 0 4px rgba(16, 185, 129, 0.25)';
+              targetCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease, transform 0.2s ease';
+              const isOutgoing = direction === 'outgoing';
+              targetCard.style.borderColor = isOutgoing ? '#3b82f6' : '#10b981';
+              targetCard.style.boxShadow = isOutgoing 
+                ? '0 0 0 4px rgba(59, 130, 246, 0.35)' 
+                : '0 0 0 4px rgba(16, 185, 129, 0.35)';
               setTimeout(() => {
                 targetCard.style.borderColor = '#cbd5e1';
-                targetCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
-              }, 1800);
+                targetCard.style.boxShadow = 'none';
+              }, 2000);
             } else if (chatMessagesRef.current) {
               chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
             }

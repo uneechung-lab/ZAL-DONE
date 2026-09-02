@@ -6909,6 +6909,7 @@ export default function App() {
                             <div 
                               id={'card_' + liveSched.id}
                               data-card-title={liveSched.title}
+                              data-request-direction={isCurrentOwner ? 'incoming' : 'outgoing'}
                               onClick={() => openDetailModal(liveSched)}
                               style={{
                                 backgroundColor: '#ffffff',
@@ -7070,6 +7071,7 @@ export default function App() {
                             <div 
                               id={'card_' + liveSched.id}
                               data-card-title={liveSched.title}
+                              data-request-direction="incoming"
                               onClick={() => openDetailModal(liveSched)}
                               style={{
                                 backgroundColor: '#ffffff',
@@ -7265,6 +7267,7 @@ export default function App() {
                             <div 
                               id={'card_' + tItem.id}
                               data-card-title={tItem.title}
+                              data-request-direction="incoming"
                               onClick={() => openDetailModal(tItem)}
                               style={{
                                 backgroundColor: '#ffffff',
@@ -7754,6 +7757,32 @@ export default function App() {
 
           if (receivedTotal === 0 && sentTotal === 0) return null;
 
+          const scrollToCard = (direction) => {
+            let targetCard = null;
+            if (direction === 'incoming') {
+              targetCard = document.querySelector('[data-request-direction="incoming"]') || document.querySelector('[id^="card_"]');
+            } else if (direction === 'outgoing') {
+              targetCard = document.querySelector('[data-request-direction="outgoing"]') || document.querySelector('[id^="card_"]');
+            } else {
+              targetCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
+            }
+
+            if (targetCard) {
+              targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              targetCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+              targetCard.style.borderColor = direction === 'outgoing' ? '#3b82f6' : '#10b981';
+              targetCard.style.boxShadow = direction === 'outgoing' 
+                ? '0 0 0 4px rgba(59, 130, 246, 0.25)' 
+                : '0 0 0 4px rgba(16, 185, 129, 0.25)';
+              setTimeout(() => {
+                targetCard.style.borderColor = '#cbd5e1';
+                targetCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
+              }, 1800);
+            } else if (chatMessagesRef.current) {
+              chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
+            }
+          };
+
           return (
             <div 
               style={{ 
@@ -7764,36 +7793,32 @@ export default function App() {
                 display: 'flex', 
                 flexDirection: 'column', 
                 alignItems: 'flex-end',
-                cursor: 'pointer',
                 userSelect: 'none',
                 animation: 'floatCharacterIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
-              onClick={() => {
-                const firstCard = document.querySelector('[id^="card_"]') || document.querySelector('[data-card-title]');
-                if (firstCard) {
-                  firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  firstCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
-                  firstCard.style.borderColor = '#10b981';
-                  firstCard.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.2)';
-                  setTimeout(() => {
-                    firstCard.style.borderColor = '#cbd5e1';
-                    firstCard.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
-                  }, 1600);
-                } else if (chatMessagesRef.current) {
-                  chatMessagesRef.current.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: 'smooth' });
-                }
-              }}
             >
               {/* Stacked Speech Bubbles */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: '8px', marginRight: '6px', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: '8px', marginRight: '6px', gap: '6px' }}>
                 {/* 1) Top Bubble: 보낸 요청 (위쪽 말풍선 - 꼬리 없음) */}
                 {sentTotal > 0 && (
                   <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollToCard('outgoing');
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#27272a';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#18181b';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
                     style={{
                       position: 'relative',
                       backgroundColor: '#18181b',
                       color: '#ffffff',
-                      padding: '5px 10px',
+                      padding: '6px 12px',
                       borderRadius: '10px',
                       display: 'flex',
                       alignItems: 'center',
@@ -7801,8 +7826,11 @@ export default function App() {
                       fontSize: '12.5px',
                       fontWeight: '600',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
+                    title="보낸 요청 카드로 이동"
                   >
                     <span>보낸 요청 {sentTotal}건</span>
 
@@ -7827,11 +7855,23 @@ export default function App() {
                 {/* 2) Bottom Bubble: 받은 요청 (아래쪽 말풍선 - 꼬리 있음) */}
                 {receivedTotal > 0 && (
                   <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollToCard('incoming');
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#27272a';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#18181b';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
                     style={{
                       position: 'relative',
                       backgroundColor: '#18181b',
                       color: '#ffffff',
-                      padding: '5px 10px',
+                      padding: '6px 12px',
                       borderRadius: '10px',
                       display: 'flex',
                       alignItems: 'center',
@@ -7839,8 +7879,11 @@ export default function App() {
                       fontSize: '12.5px',
                       fontWeight: '600',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
+                    title="받은 요청 카드로 이동"
                   >
                     <span>받은 요청 {receivedTotal}건</span>
 
@@ -7862,7 +7905,13 @@ export default function App() {
               </div>
 
               {/* Character Button with Ground Shadow */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div 
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  scrollToCard(receivedTotal > 0 ? 'incoming' : 'outgoing');
+                }}
+              >
                 <button 
                   type="button"
                   className="ai-toggle-floating-btn"

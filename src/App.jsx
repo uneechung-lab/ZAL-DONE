@@ -2746,6 +2746,33 @@ export default function App() {
     }
   };
 
+  const appendMessageToUser = (userId, messageObj) => {
+    if (!userId || !messageObj) return;
+    const userKeys = [userId];
+    if (userId === 'sh') userKeys.push('yoonhee');
+    if (userId === 'yoonhee') userKeys.push('sh');
+    if (userId === 'sangmoo') userKeys.push('sangmu');
+    if (userId === 'sangmu') userKeys.push('sangmoo');
+    if (userId === 'daum') userKeys.push('daeum');
+    if (userId === 'daeum') userKeys.push('daum');
+
+    userKeys.forEach(uKey => {
+      try {
+        const saved = localStorage.getItem(`zal_messages_${uKey}`);
+        const list = saved ? JSON.parse(saved) : [];
+        const next = [...list, messageObj];
+        localStorage.setItem(`zal_messages_${uKey}`, JSON.stringify(next));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    const isCurrent = userKeys.includes(ME.id);
+    if (isCurrent) {
+      setMessages(prev => [...prev, messageObj]);
+    }
+  };
+
   const handleRequestAssigneeChange = async () => {
     if (!selectedDetailEvent) return;
     if (editMemberIds.length === 0) {
@@ -2764,6 +2791,7 @@ export default function App() {
     try {
       await new Promise(r => setTimeout(r, 350));
       const targetOwnerId = selectedDetailEvent.requesterId || selectedDetailEvent.memberId || 'daum';
+      const targetOwnerMember = TEAM.find(m => m.id === targetOwnerId || (targetOwnerId === 'yoonhee' && m.id === 'sh') || (targetOwnerId === 'sangmu' && m.id === 'sangmoo') || (targetOwnerId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
       const newAssigneeNames = editMemberIds.map(id => TEAM.find(m => m.id === id || (id === 'yoonhee' && m.id === 'sh') || (id === 'sangmu' && m.id === 'sangmoo') || (id === 'daeum' && m.id === 'daum'))?.name).filter(Boolean).join(', ');
 
       const newHistEntry = {
@@ -2806,6 +2834,30 @@ export default function App() {
       });
 
       setSchedules(updatedSchedules);
+
+      // 1) Send chat message to Requester (e.g. 정윤희 부장)
+      const requesterMsg = {
+        id: Date.now() + 1,
+        from: `ai_${ME.id}`,
+        text: `📋 "${selectedDetailEvent.title}" 일정의 담당자 추가(변경)을 요청했습니다. (담당자: ${newAssigneeNames})`,
+        time: formatTime(new Date()),
+        createdAt: new Date().toISOString(),
+        targetScheduleId: selectedDetailEvent.id,
+        targetTitle: selectedDetailEvent.title
+      };
+      appendMessageToUser(ME.id, requesterMsg);
+
+      // 2) Send chat message to Target Owner (e.g. 정다음 사원)
+      const targetOwnerMsg = {
+        id: Date.now() + 2,
+        from: `ai_${targetOwnerId}`,
+        text: `📋 ${ME.name} ${ME.role || ''}님이 "${selectedDetailEvent.title}" 일정에 본인을 담당자로 추가(변경) 요청하셨습니다.`,
+        time: formatTime(new Date()),
+        createdAt: new Date().toISOString(),
+        targetScheduleId: selectedDetailEvent.id,
+        targetTitle: selectedDetailEvent.title
+      };
+      appendMessageToUser(targetOwnerId, targetOwnerMsg);
 
       setIsDetailModalOpen(false);
       showLayerAlert(`"${selectedDetailEvent.title}" 일정의 담당자 추가(변경)을 요청했습니다.`, '요청 완료', 'success');
@@ -2865,22 +2917,29 @@ export default function App() {
 
     setSchedules(updatedSchedules);
 
-    setFeeds(prev => {
-      const next = prev.map(f => {
-        if (f.scheduleId === targetSched.id && f.assigneeRequestInfo) {
-          return {
-            ...f,
-            assigneeRequestInfo: {
-              ...f.assigneeRequestInfo,
-              status: 'approved'
-            }
-          };
-        }
-        return f;
-      });
-      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-      return next;
-    });
+    // Chat messages for both Approver and Requester
+    const requesterId = targetSched.assigneeRequesterId || 'sh';
+    const approverChatMsg = {
+      id: Date.now() + 1,
+      from: `ai_${ME.id}`,
+      text: `✅ "${targetSched.title}" 일정의 담당자 추가(변경) 요청을 수락했습니다.`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(ME.id, approverChatMsg);
+
+    const requesterChatMsg = {
+      id: Date.now() + 2,
+      from: `ai_${requesterId}`,
+      text: `✅ ${ME.name} ${ME.role || ''}님이 "${targetSched.title}" 일정의 담당자 추가(변경) 요청을 수락했습니다.`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(requesterId, requesterChatMsg);
 
     setIsDetailModalOpen(false);
     showLayerAlert(`"${targetSched.title}" 일정의 담당자 변경을 승인했습니다.`, '승인 완료', 'success');
@@ -2931,22 +2990,29 @@ export default function App() {
 
     setSchedules(updatedSchedules);
 
-    setFeeds(prev => {
-      const next = prev.map(f => {
-        if (f.scheduleId === targetSched.id && f.assigneeRequestInfo) {
-          return {
-            ...f,
-            assigneeRequestInfo: {
-              ...f.assigneeRequestInfo,
-              status: 'rejected'
-            }
-          };
-        }
-        return f;
-      });
-      try { localStorage.setItem('zal_feeds_v2', JSON.stringify(next)); } catch (_) {}
-      return next;
-    });
+    // Chat messages for both Rejecter and Requester
+    const requesterId = targetSched.assigneeRequesterId || 'sh';
+    const rejecterChatMsg = {
+      id: Date.now() + 1,
+      from: `ai_${ME.id}`,
+      text: `❌ "${targetSched.title}" 일정의 담당자 추가(변경) 요청을 반려했습니다.${reason ? ` (사유: ${reason})` : ''}`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(ME.id, rejecterChatMsg);
+
+    const requesterChatMsg = {
+      id: Date.now() + 2,
+      from: `ai_${requesterId}`,
+      text: `❌ ${ME.name} ${ME.role || ''}님이 "${targetSched.title}" 일정의 담당자 추가(변경) 요청을 반려했습니다.${reason ? ` (사유: ${reason})` : ''}`,
+      time: formatTime(new Date()),
+      createdAt: new Date().toISOString(),
+      targetScheduleId: targetSched.id,
+      targetTitle: targetSched.title
+    };
+    appendMessageToUser(requesterId, requesterChatMsg);
 
     setIsDetailModalOpen(false);
     showLayerAlert(`"${targetSched.title}" 일정의 담당자 변경 요청을 반려했습니다.`, '반려 완료', 'info');

@@ -9490,9 +9490,9 @@ export default function App() {
                                 onError={(e) => { e.target.src = '/pic1_thumb.png'; }}
                               />
                               <span style={{
-                                fontSize: '11px',
-                                fontWeight: '700',
-                                color: '#334155',
+                                fontSize: '10px',
+                                fontWeight: '500',
+                                color: '#475569',
                                 textAlign: 'center',
                                 lineHeight: 1.15,
                                 wordBreak: 'keep-all',

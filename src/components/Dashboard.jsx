@@ -3126,27 +3126,32 @@ export default function Dashboard({
 
                   {/* ──── Assignee Change Request Action Box on Original Card ──── */}
                   {matchedSched && matchedSched.assigneeRequestStatus === 'pending' && (() => {
-                    const ownerId = matchedSched.requesterId || matchedSched.memberId || 'daum';
-                    const ownerMember = displayMembers.find(m => m.id === ownerId || (ownerId === 'yoonhee' && m.id === 'sh') || (ownerId === 'sangmu' && m.id === 'sangmoo') || (ownerId === 'daeum' && m.id === 'daum')) || { name: '정다음', role: '사원' };
-                    const ownerDisplay = `${ownerMember.name} ${ownerMember.role || ''}`.trim();
+                    // The requester who requested this delegation/change (e.g. 조상무)
+                    const reqId = matchedSched.assigneeRequesterId || matchedSched.requesterId || 'sangmoo';
+                    const isAssigneeRequester = (currentUser?.id === reqId) || 
+                      (currentUser?.name === '조상무' && reqId === 'sangmoo') ||
+                      (currentUser?.name === '정윤희' && reqId === 'sh') ||
+                      (currentUser?.name === '정다음' && reqId === 'daum');
 
-                    const isCurrentOwner = (currentUser?.id === ownerId) || 
-                      (ownerId === 'daum' && (currentUser?.id === 'daum' || currentUser?.id === 'daeum')) ||
-                      (ownerId === 'sh' && (currentUser?.id === 'sh' || currentUser?.id === 'yoonhee')) ||
-                      (ownerId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.id === 'sangmu'));
+                    // The target member who was requested to perform the task / whose approval is pending (e.g. 정윤희)
+                    const targetApproverId = (matchedSched.requestedMemberIds && matchedSched.requestedMemberIds.length > 0)
+                      ? matchedSched.requestedMemberIds[0]
+                      : (matchedSched.memberId && matchedSched.memberId !== reqId ? matchedSched.memberId : (matchedSched.approverId || 'sh'));
 
-                    const isAssigneeRequester = (currentUser?.id === matchedSched.assigneeRequesterId) || 
-                      (currentUser?.id === 'sh' && matchedSched.assigneeRequesterId === 'sh') ||
-                      (currentUser?.id === 'yoonhee' && matchedSched.assigneeRequesterId === 'sh') ||
-                      (currentUser?.id === 'daum' && matchedSched.assigneeRequesterId === 'daum') ||
-                      (currentUser?.id === 'sangmoo' && matchedSched.assigneeRequesterId === 'sangmoo');
+                    const targetMember = displayMembers.find(m => m.id === targetApproverId || (targetApproverId === 'sh' && m.id === 'sh') || (targetApproverId === 'sangmoo' && m.id === 'sangmoo') || (targetApproverId === 'daum' && m.id === 'daum')) || { name: '정윤희', role: '부장' };
+                    const targetDisplay = `${targetMember.name} ${targetMember.role || ''}`.trim();
+
+                    const isTargetApprover = (currentUser?.id === targetApproverId) || 
+                      (targetApproverId === 'sh' && (currentUser?.id === 'sh' || currentUser?.name?.includes('정윤희'))) ||
+                      (targetApproverId === 'sangmoo' && (currentUser?.id === 'sangmoo' || currentUser?.name?.includes('조상무'))) ||
+                      (targetApproverId === 'daum' && (currentUser?.id === 'daum' || currentUser?.name?.includes('정다음')));
 
                     return (
                       <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                         <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 10px', borderRadius: '6px' }}>
-                          ⏳ 승인 대기중 ({ownerDisplay})
+                          ⏳ 승인 대기중 ({targetDisplay})
                         </span>
-                        {isCurrentOwner ? (
+                        {isTargetApprover ? (
                           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                             <button
                               type="button"
@@ -3344,6 +3349,8 @@ export default function Dashboard({
                         if (otherId) targetUserId = otherId;
                       } else if (isItemLeave) {
                         targetUserId = 'sangmoo';
+                      } else if (matchedSched.memberId && matchedSched.memberId !== (matchedSched.requesterId || item.authorId)) {
+                        targetUserId = matchedSched.memberId;
                       } else if (/정윤희|정부장|부장/i.test(matchedSched.title || '') || (matchedSched.requesterId === 'daum')) {
                         targetUserId = 'sh';
                       }

@@ -1616,10 +1616,11 @@ export default function Dashboard({
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '48px auto 0 auto',
-        padding: '0 32px',
+        margin: '0 auto',
+        padding: '36px 32px 0 32px',
         boxSizing: 'border-box',
-        position: 'relative'
+        position: 'relative',
+        zIndex: 20
       }}>
         {/* Peeking BI Character (zIndex: 1 - behind input box) */}
         <img
@@ -1628,7 +1629,7 @@ export default function Dashboard({
           style={{
             position: 'absolute',
             left: '48px',
-            top: '-27px',
+            bottom: '-12px',
             height: '110px',
             width: 'auto',
             objectFit: 'contain',
@@ -1651,7 +1652,7 @@ export default function Dashboard({
           zIndex: 30
         }}>
           {/* Left: Date + Greeting & Chips */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 16px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 10px 0' }}>
             <span style={{
               fontSize: '13px',
               fontWeight: '600',
@@ -1719,7 +1720,7 @@ export default function Dashboard({
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            margin: '0 0 16px 0',
+            margin: '0 0 10px 0',
             zIndex: 40
           }}>
             {/* 1. User Profile Trigger & Floating Dropdown */}

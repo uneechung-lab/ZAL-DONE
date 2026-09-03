@@ -114,6 +114,13 @@ export default function Dashboard({
   const [selectedMemberId, setSelectedMemberId] = useState('all');
   const [showAllCreatedToday, setShowAllCreatedToday] = useState(true);
   const [showAllPendingRequests, setShowAllPendingRequests] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일(${timelineDayNames[timelineDate.getDay()]})`;
@@ -2756,6 +2763,13 @@ export default function Dashboard({
         const hasAnyScheduleAtAll = (schedules && schedules.length > 0) || (feeds && feeds.length > 0);
         const isCompletelyEmpty = !hasAnyScheduleAtAll || (activeFilter === 'all' && categoryItems.length === 0 && totalTimelineEventsCount === 0);
 
+        const columns = isMobile 
+          ? [categoryItems] 
+          : [
+              categoryItems.filter((_, idx) => idx % 2 === 0),
+              categoryItems.filter((_, idx) => idx % 2 === 1)
+            ];
+
         if (isCompletelyEmpty) {
           return (
             <div style={{
@@ -2796,7 +2810,6 @@ export default function Dashboard({
             <section className="dashboard-feed-masonry">
               {categoryItems.length === 0 ? (
                 <div style={{
-                  columnSpan: 'all',
                   width: '100%',
                   display: 'flex',
                   justifyContent: 'center',
@@ -2825,7 +2838,9 @@ export default function Dashboard({
                   </div>
                 </div>
               ) : (
-                categoryItems.map(item => {
+                columns.map((columnItems, colIdx) => (
+                  <div key={colIdx} className="dashboard-feed-column">
+                    {columnItems.map(item => {
               const parentFeed = item.feed || {
                 id: item.feedId || item.id,
                 likes: 0,
@@ -3913,8 +3928,10 @@ export default function Dashboard({
                   )}
                 </article>
               );
-            }))}
-        </section>
+            })}
+          </div>
+        )))}
+      </section>
 
 
         {/* ════════ RIGHT: EXPANDED VERTICAL TEAM TIMELINE (SYNC WEEKLY/DAILY STYLE) ════════ */}

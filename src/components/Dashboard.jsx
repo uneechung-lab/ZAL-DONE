@@ -2141,19 +2141,19 @@ export default function Dashboard({
                   whiteSpace: 'nowrap',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px'
+                  gap: '3px'
                 }}
               >
                 <span>{tab.label}</span>
                 {showRedDot && (
                   <span
                     style={{
-                      width: '6px',
-                      height: '6px',
+                      width: '5px',
+                      height: '5px',
                       borderRadius: '50%',
-                      backgroundColor: '#ef4444',
+                      backgroundColor: '#FF0000',
                       display: 'inline-block',
-                      boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.25)',
+                      transform: 'translateY(-5px)',
                       flexShrink: 0
                     }}
                     title="미처리된 요청이 있습니다"

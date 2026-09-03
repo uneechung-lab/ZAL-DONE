@@ -452,7 +452,7 @@ function getMemberRoleText(member, meUser) {
   if (!member) return '나';
 
   const role = cleanMemberRole(member.role);
-  const isMe = meUser && (member.id === meUser.id || member.name === meUser.name);
+  const isMe = meUser && member.name === meUser.name;
   if (isMe) {
     return role ? `나 ${role}` : '나';
   }
@@ -1563,10 +1563,8 @@ export default function App() {
     };
   }, [activeSelectLayer]);
 
-  // Fallback virtual user state for non-configured environment
-  const [virtualUser, setVirtualUser] = useState(() => {
-    return TEAM[0] || { id: 'sh', name: '정윤희', role: '부장', avatar: '윤희', avatarPic: '/pic1_thumb.png', color: '#000000', subtext: '기획 일정' };
-  });
+  // Fallback virtual user state for manual switch
+  const [virtualUser, setVirtualUser] = useState(null);
 
   // Dynamic active team members list
   const [activeTeam, setActiveTeam] = useState(() => {
@@ -1665,19 +1663,20 @@ export default function App() {
   });
 
   const ME = virtualUser || (isConfigured && user ? {
-    id: 'sh',
+    id: parsedUser.name === '조상무' ? 'sangmoo' : 'sh',
     name: parsedUser.name,
     role: parsedUser.role,
-    avatar: parsedUser.name === '조상무' ? '상무' : '나',
+    avatar: parsedUser.name === '조상무' ? '상무' : '윤희',
     avatarPic: parsedUser.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png',
-    color: '#000000'
-  } : TEAM[0]);
+    color: parsedUser.name === '조상무' ? '#6366f1' : '#000000'
+  } : (parsedUser.name === '조상무' ? TEAM[1] : TEAM[0]));
+
   const displayUser = {
-    name: ME.name || parsedUser.name,
-    role: ME.role || parsedUser.role,
-    department: parsedUser.department || (parsedUser.name === '조상무' ? '임원' : '개발'),
-    project: parsedUser.project || (parsedUser.name === '조상무' ? '전체' : '대신증권 연금 경쟁력 강화'),
-    avatarPic: ME.avatarPic || (parsedUser.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png')
+    name: ME.name,
+    role: ME.role,
+    department: parsedUser.department || (ME.name === '조상무' ? '임원' : '개발'),
+    project: parsedUser.project || (ME.name === '조상무' ? '전체' : '대신증권 연금 경쟁력 강화'),
+    avatarPic: ME.avatarPic
   };
 
   const isApproverForItem = (sched) => {
@@ -3342,32 +3341,33 @@ export default function App() {
               subtext: '개인 일정'
             };
 
+            const isSangmoo = parsed.name === '조상무';
             const loggedInMember = {
-              id: 'sh',
-              name: parsed.name || '조상무',
-              role: parsed.role || '상무',
-              avatar: parsed.name ? (parsed.name === '조상무' ? '상무' : parsed.name.slice(0, 2)) : '조상무',
-              avatarPic: parsed.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png',
-              color: userColor || '#000000',
-              subtext: `${parsed.department || (parsed.name === '조상무' ? '임원' : '개발')} 일정`
+              id: isSangmoo ? 'sangmoo' : 'sh',
+              name: parsed.name || (isSangmoo ? '조상무' : '정윤희'),
+              role: parsed.role || (isSangmoo ? '상무' : '부장'),
+              avatar: isSangmoo ? '상무' : '윤희',
+              avatarPic: isSangmoo ? '/pic2_thumb.png' : '/pic1_thumb.png',
+              color: isSangmoo ? '#6366f1' : (userColor || '#000000'),
+              subtext: isSangmoo ? '임원 일정' : `${parsed.department || '개발'} 일정`
             };
 
-            const otherMember = isCurrentUserYoonhee ? {
-              id: 'sangmoo',
-              name: '조상무',
-              role: '상무',
-              avatar: '상무',
-              avatarPic: '/pic3_thumb.png',
-              color: '#000000',
-              subtext: '개발 일정'
-            } : {
-              id: 'yoonhee',
+            const otherMember = isSangmoo ? {
+              id: 'sh',
               name: '정윤희',
               role: '부장',
               avatar: '윤희',
               avatarPic: '/pic1_thumb.png',
-              color: '#4f8ef7',
+              color: '#000000',
               subtext: '기획 일정'
+            } : {
+              id: 'sangmoo',
+              name: '조상무',
+              role: '상무',
+              avatar: '상무',
+              avatarPic: '/pic2_thumb.png',
+              color: '#6366f1',
+              subtext: '임원 일정'
             };
 
             const fullTeamList = [loggedInMember, otherMember, memberDaeum];
@@ -6128,7 +6128,10 @@ export default function App() {
                 const month = now.getMonth() + 1;
                 const dateNum = now.getDate();
                 const lines = msg.text.split('\n');
-                const titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
+                let titleLine = lines[0] || `안녕하세요, ${ME.name}님.`;
+                if (titleLine.includes('안녕하세요')) {
+                  titleLine = `안녕하세요, ${ME.name}님.`;
+                }
                 const subLines = lines.slice(1).join('\n');
 
                 return (
@@ -8997,8 +9000,8 @@ export default function App() {
                             </div>
                           )}
                           <span className="member-role-label" style={{ fontSize: isMemberSelected ? undefined : '11.5px', whiteSpace: 'nowrap' }}>
-                            {member.id === ME.id || member.name === ME.name ? (
-                              <><strong>나</strong> <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>{member.role || '부장'}</span></>
+                            {member.name === ME.name ? (
+                              <><strong>나</strong> <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>{member.role || '팀원'}</span></>
                             ) : (
                               <><strong>{member.name}</strong> <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>{member.role || '팀원'}</span></>
                             )}
@@ -9194,8 +9197,8 @@ export default function App() {
                               )}
                             </div>
                             <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {member.id === ME.id || member.name === ME.name ? (
-                                <><strong style={{ color: '#0f172a' }}>나</strong> <span style={{ fontSize: '10px', color: '#64748b' }}>{member.role || '부장'}</span></>
+                              {member.name === ME.name ? (
+                                <><strong style={{ color: '#0f172a' }}>나</strong> <span style={{ fontSize: '10px', color: '#64748b' }}>{member.role || '팀원'}</span></>
                               ) : (
                                 <><strong style={{ color: '#0f172a' }}>{member.name}</strong> <span style={{ fontSize: '10px', color: '#64748b' }}>{member.role || '팀원'}</span></>
                               )}

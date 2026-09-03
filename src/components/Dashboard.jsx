@@ -1627,9 +1627,9 @@ export default function Dashboard({
                         padding: '8px 10px',
                         borderRadius: '8px',
                         fontSize: '12.5px',
-                        fontWeight: (currentUser?.id || 'sh') === tm.id ? '800' : '600',
-                        color: (currentUser?.id || 'sh') === tm.id ? '#6366f1' : '#334155',
-                        backgroundColor: (currentUser?.id || 'sh') === tm.id ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                        fontWeight: (currentUser?.name || displayUser?.name) === tm.name ? '800' : '600',
+                        color: (currentUser?.name || displayUser?.name) === tm.name ? '#6366f1' : '#334155',
+                        backgroundColor: (currentUser?.name || displayUser?.name) === tm.name ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
@@ -1638,8 +1638,8 @@ export default function Dashboard({
                       }}
                     >
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tm.color || '#6366f1' }}></span>
-                      <span>{(currentUser?.id || 'sh') === tm.id ? `나 (${tm.role || '팀원'})` : `${tm.name} (${tm.role || '팀원'})`}</span>
-                      {(currentUser?.id || 'sh') === tm.id && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
+                      <span>{(currentUser?.name || displayUser?.name) === tm.name ? `나 (${tm.role || '팀원'})` : `${tm.name} (${tm.role || '팀원'})`}</span>
+                      {(currentUser?.name || displayUser?.name) === tm.name && <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '800' }}>✓</span>}
                     </div>
                   ))}
 
@@ -3734,7 +3734,7 @@ export default function Dashboard({
                             <img src={m.avatar} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                           <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#1e293b' }}>
-                            {m.id === (currentUser?.id || 'sh') ? '나' : m.name}{' '}
+                            {m.name === (currentUser?.name || displayUser?.name) ? '나' : m.name}{' '}
                             <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{m.role}</span>
                           </span>
                         </div>

@@ -1612,35 +1612,16 @@ export default function Dashboard({
     >
       
 
-      {/* ──── TOP MORNING COMPOSER AREA (PEEKING BI CHARACTER) ──── */}
+      {/* ──── TOP MORNING COMPOSER AREA ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
         margin: '0 auto',
-        padding: '36px 32px 0 32px',
+        padding: '36px 32px 14px 32px',
         boxSizing: 'border-box',
         position: 'relative',
         zIndex: 20
       }}>
-        {/* Peeking BI Character (zIndex: 1 - behind input box) */}
-        <img
-          src="/bi2.png"
-          alt="잘됨이 BI"
-          style={{
-            position: 'absolute',
-            left: '48px',
-            bottom: '-12px',
-            height: '110px',
-            width: 'auto',
-            objectFit: 'contain',
-            display: 'block',
-            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.06))',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        />
-
         {/* Greeting & Login Info Row (zIndex: 30 - above input box so dropdowns render in front) */}
         <div style={{
           display: 'flex',
@@ -2076,13 +2057,36 @@ export default function Dashboard({
           width: '100%',
           margin: '0 auto',
           padding: '0 32px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          position: 'relative'
         }}>
+          {/* Peeking BI Character (Anchored directly to the Input Box) */}
+          <img
+            src="/bi2.png"
+            alt="잘됨이 BI"
+            style={{
+              position: 'absolute',
+              left: '48px',
+              bottom: 'calc(100% - 25px)',
+              height: '110px',
+              width: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.06))',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              zIndex: 1,
+              opacity: isScrolled ? 0 : 1,
+              transition: 'opacity 0.2s ease'
+            }}
+          />
+
           {/* Middle: Integrated Quick Sync Input Box (Enlarged & Clear Placeholder) */}
           <div 
             onClick={() => !isSubmitting && composerTextareaRef.current?.focus()}
             style={{
               position: 'relative',
+              zIndex: 10,
               display: 'flex',
               alignItems: (isInputFocused || composerText.length > 0) ? 'flex-end' : 'center',
               backgroundColor: '#ffffff',

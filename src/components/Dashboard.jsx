@@ -1283,9 +1283,9 @@ export default function Dashboard({
     return activeItems;
   };
 
-  // Format card registration date/time: if not today, show 'YYYY.MM.DD HH:MM', else show '오후 HH:MM'
-  const getCardTimeDisplay = (item) => {
-    if (!item) return '';
+  // Format card registration date/time parts so clock icon is placed strictly in front of time
+  const getCardTimeParts = (item) => {
+    if (!item) return { dateStr: null, timeStr: '' };
 
     const rawCreated = item.createdAt || item.feed?.createdAt || item.matchedSchedule?.createdAt || item.matchedSchedule?.$createdAt;
     const now = new Date();
@@ -1305,11 +1305,15 @@ export default function Dashboard({
         const minutes = pad(d.getMinutes());
 
         if (!isToday) {
-          // 오늘이 아닌 건: YYYY.MM.DD HH:MM
-          return `${year}.${month}.${date} ${hours}:${minutes}`;
+          return {
+            dateStr: `${year}.${month}.${date}`,
+            timeStr: `${hours}:${minutes}`
+          };
         } else {
-          // 오늘인 건: 오후 05:59 형태
-          return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          return {
+            dateStr: null,
+            timeStr: d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          };
         }
       }
     }
@@ -1325,7 +1329,10 @@ export default function Dashboard({
       if (!isTodaySched) {
         const h = s.startHour !== undefined ? pad(Math.floor(s.startHour)) : '09';
         const m = s.startHour !== undefined && (s.startHour % 1 !== 0) ? '30' : '00';
-        return `${sY}.${pad(sM)}.${pad(sD)} ${h}:${m}`;
+        return {
+          dateStr: `${sY}.${pad(sM)}.${pad(sD)}`,
+          timeStr: `${h}:${m}`
+        };
       }
     }
 
@@ -1340,12 +1347,18 @@ export default function Dashboard({
         const isTodayVac = vY === now.getFullYear() && vM === (now.getMonth() + 1) && vD === now.getDate();
         if (!isTodayVac) {
           const pad = (n) => String(n).padStart(2, '0');
-          return `${vY}.${pad(vM)}.${pad(vD)} 09:00`;
+          return {
+            dateStr: `${vY}.${pad(vM)}.${pad(vD)}`,
+            timeStr: '09:00'
+          };
         }
       }
     }
 
-    return item.timeDisplay || '방금 전';
+    return {
+      dateStr: null,
+      timeStr: item.timeDisplay || '방금 전'
+    };
   };
 
 
@@ -2888,31 +2901,41 @@ export default function Dashboard({
                             {item.authorRole}
                           </span>
                         </div>
-                        <div style={{
-                          fontSize: '11.5px',
-                          color: '#94a3b8',
-                          marginTop: '2px',
-                          fontWeight: '500',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3.5px'
-                        }}>
-                          <svg
-                            width="11"
-                            height="11"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{ flexShrink: 0, opacity: 0.8 }}
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
-                          <span>{getCardTimeDisplay(item)}</span>
-                        </div>
+                        {(() => {
+                          const { dateStr, timeStr } = getCardTimeParts(item);
+                          return (
+                            <div style={{
+                              fontSize: '11.5px',
+                              color: '#94a3b8',
+                              marginTop: '2px',
+                              fontWeight: '500',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}>
+                              {dateStr && (
+                                <span>{dateStr}</span>
+                              )}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                <svg
+                                  width="11"
+                                  height="11"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  style={{ flexShrink: 0, opacity: 0.8 }}
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                <span>{timeStr}</span>
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 

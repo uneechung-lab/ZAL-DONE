@@ -1639,8 +1639,25 @@ export default function App() {
     };
   };
 
-  const parsedUser = user ? parseStoredName(user.name) : { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
-  const isCurrentUserYoonhee = user && parsedUser.name === '정윤희';
+  const isTestAccount = Boolean(
+    (user && user.email && user.email.toLowerCase().includes('test')) ||
+    (user && user.name && user.name.toLowerCase().includes('test')) ||
+    (typeof window !== 'undefined' && localStorage.getItem('zal_last_login_id') === 'test')
+  );
+
+  const parsedUser = (() => {
+    if (isTestAccount) {
+      return {
+        name: '조상무',
+        role: '상무',
+        department: '임원',
+        project: '전체'
+      };
+    }
+    return user ? parseStoredName(user.name) : { name: '정윤희', role: '부장', department: '개발', project: '대신증권 연금 경쟁력 강화' };
+  })();
+
+  const isCurrentUserYoonhee = !isTestAccount && user && parsedUser.name === '정윤희';
 
   const [greetingEmoji] = useState(() => {
     const emojis = ['😊', '😄', '😃', '🥰', '🤩', '🤗', '☺️', '🙋‍♀️', '🙌', '✨'];
@@ -3257,32 +3274,33 @@ export default function App() {
         try {
           let currentUser = await appwriteService.getCurrentUser();
           if (currentUser) {
-            // Auto-sync test account to 조상무
-            if (currentUser.email === 'test@daumit.net' && (!currentUser.name || !currentUser.name.includes('조상무'))) {
-              const sangmooName = '조상무 상무 [임원 / 전체]';
+            const isTestUser = Boolean(
+              (currentUser.email && currentUser.email.toLowerCase().includes('test')) ||
+              (currentUser.name && currentUser.name.toLowerCase().includes('test')) ||
+              (typeof window !== 'undefined' && localStorage.getItem('zal_last_login_id') === 'test')
+            );
+            if (isTestUser) {
+              currentUser = {
+                ...currentUser,
+                name: '조상무 상무 [임원 / 전체]'
+              };
               try {
-                await appwriteService.updateName(sangmooName);
-                currentUser.name = sangmooName;
-              } catch (err) {
-                console.error('Failed to update test user name to 조상무', err);
-                currentUser.name = sangmooName;
+                await appwriteService.updateName('조상무 상무 [임원 / 전체]');
+              } catch (_) {}
+            } else {
+              // Auto-clean check: if Appwrite stored name has duplicate '사원' appended at the end, clean it up!
+              let trimmed = currentUser.name.trim();
+              if (trimmed.includes('[') && trimmed.endsWith('사원')) {
+                trimmed = trimmed.replace(/\s+사원$/, '').trim();
+                try {
+                  await appwriteService.updateName(trimmed);
+                  currentUser = await appwriteService.getCurrentUser();
+                } catch (err) {
+                  console.error('Failed to clean user name', err);
+                }
               }
             }
-
-            // Auto-clean check: if Appwrite stored name has duplicate '사원' appended at the end, clean it up!
-            let trimmed = currentUser.name.trim();
-            if (trimmed.includes('[') && trimmed.endsWith('사원')) {
-              trimmed = trimmed.replace(/\s+사원$/, '').trim();
-              try {
-                await appwriteService.updateName(trimmed);
-                currentUser = await appwriteService.getCurrentUser();
-              } catch (err) {
-                console.error('Failed to clean user name', err);
-              }
-            }
-            if (!user || user.$id !== currentUser.$id || user.name !== currentUser.name) {
-              setUser(currentUser);
-            }
+            setUser({ ...currentUser });
             
             const getDeterministicColor = (str) => {
               const colors = ['#000000', '#4f8ef7', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
@@ -3294,12 +3312,15 @@ export default function App() {
               return colors[index];
             };
 
-            const parsed = parseStoredName(currentUser.name);
+            const parsed = isTestUser
+              ? { name: '조상무', role: '상무', department: '임원', project: '전체' }
+              : parseStoredName(currentUser.name);
+
             if (parsed.project) {
               setHeaderSelectedProject(parsed.project);
             }
             const userColor = getDeterministicColor(parsed.name);
-            const isCurrentUserYoonhee = parsed.name === '정윤희';
+            const isCurrentUserYoonhee = !isTestUser && parsed.name === '정윤희';
 
             const memberYoonhee = {
               id: 'sh',
@@ -3607,26 +3628,30 @@ export default function App() {
       setAuthError('이메일과 비밀번호를 입력해 주세요.');
       return;
     }
+    const enteredId = authEmailId.trim().toLowerCase();
+    try {
+      localStorage.setItem('zal_last_login_id', enteredId);
+    } catch (_) {}
     setAuthLoading(true);
     setAuthError('');
     try {
-      const email = `${authEmailId.trim()}@daumit.net`;
+      const email = `${enteredId}@daumit.net`;
       await appwriteService.login(email, authPassword);
       let currentUser = await appwriteService.getCurrentUser();
       if (!currentUser) {
         currentUser = await appwriteService.getCurrentUser();
       }
       if (currentUser) {
-        if (currentUser.email === 'test@daumit.net' && (!currentUser.name || !currentUser.name.includes('조상무'))) {
-          const sangmooName = '조상무 상무 [임원 / 전체]';
+        if (enteredId === 'test' || (currentUser.email && currentUser.email.toLowerCase().includes('test'))) {
+          currentUser = {
+            ...currentUser,
+            name: '조상무 상무 [임원 / 전체]'
+          };
           try {
-            await appwriteService.updateName(sangmooName);
-            currentUser.name = sangmooName;
-          } catch (err) {
-            currentUser.name = sangmooName;
-          }
+            await appwriteService.updateName('조상무 상무 [임원 / 전체]');
+          } catch (_) {}
         }
-        setUser(currentUser);
+        setUser({ ...currentUser });
       }
     } catch (err) {
       setAuthError(getKoreanErrorMessage(err.message) || '로그인에 실패했습니다.');
@@ -3639,6 +3664,9 @@ export default function App() {
   const handleLogOut = async () => {
     if (isConfigured) {
       setAuthLoading(true);
+      try {
+        localStorage.removeItem('zal_last_login_id');
+      } catch (_) {}
       await appwriteService.logout();
       setUser(null);
       setMessages([]);

@@ -818,6 +818,43 @@ export default function Dashboard({
     return false;
   };
 
+  // Extract accurate registration timestamp from item
+  const getItemTimestamp = (item) => {
+    if (!item) return 0;
+
+    // 1. Direct ISO / parseable timestamp
+    const raw = item.createdAt || item.feed?.createdAt || item.matchedSchedule?.createdAt || item.matchedSchedule?.$createdAt;
+    if (raw) {
+      const t = new Date(raw).getTime();
+      if (!isNaN(t)) return t;
+    }
+
+    // 2. From matchedSchedule date and hours
+    const sched = item.matchedSchedule;
+    if (sched && sched.date) {
+      const now = new Date();
+      const y = sched.year || now.getFullYear();
+      const m = (sched.month ? sched.month - 1 : now.getMonth());
+      const d = Number(sched.date);
+      const h = sched.startHour !== undefined ? Math.floor(sched.startHour) : 9;
+      const min = sched.startHour !== undefined && (sched.startHour % 1 !== 0) ? 30 : 0;
+      const t = new Date(y, m, d, h, min).getTime();
+      if (!isNaN(t)) return t;
+    }
+
+    // 3. From vacationInfo date
+    if (item.vacationInfo && item.vacationInfo.date) {
+      const vDateStr = String(item.vacationInfo.date);
+      const parts = vDateStr.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+      if (parts) {
+        const t = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), 9, 0).getTime();
+        if (!isNaN(t)) return t;
+      }
+    }
+
+    return 0;
+  };
+
   // Granular categorized items when specific category tab or 'all' is selected
   const getCategoryItems = (categoryKey) => {
     const items = [];
@@ -1278,11 +1315,19 @@ export default function Dashboard({
       return isItemOnTimelineDate(item, timelineDate, showAllCreatedToday);
     });
 
+    let resultItems = activeItems;
     if (selectedMemberId && selectedMemberId !== 'all') {
-      return activeItems.filter(item => item.authorId === selectedMemberId);
+      resultItems = resultItems.filter(item => item.authorId === selectedMemberId);
     }
 
-    return activeItems;
+    // Sort all cards strictly by registration time (최신 등록일시순 / Newest first)
+    resultItems.sort((a, b) => {
+      const timeA = getItemTimestamp(a);
+      const timeB = getItemTimestamp(b);
+      return timeB - timeA;
+    });
+
+    return resultItems;
   };
 
   // Format card registration date/time parts so clock icon is placed strictly in front of time

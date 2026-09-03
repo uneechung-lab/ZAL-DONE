@@ -115,6 +115,8 @@ export default function Dashboard({
   const [showAllCreatedToday, setShowAllCreatedToday] = useState(true);
   const [showAllPendingRequests, setShowAllPendingRequests] = useState(true);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const dashboardRootRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -1588,25 +1590,33 @@ export default function Dashboard({
   };
 
   return (
-    <div className="dashboard-root" style={{
-      flex: 1,
-      height: '100%',
-      backgroundColor: '#ffffff',
-      display: 'flex',
-      flexDirection: 'column',
-      overflowY: 'scroll',
-      scrollbarGutter: 'stable',
-      paddingTop: '32px',
-      boxSizing: 'border-box',
-      color: '#0f172a'
-    }}>
+    <div 
+      className="dashboard-root" 
+      ref={dashboardRootRef}
+      onScroll={(e) => {
+        const scrolled = e.currentTarget.scrollTop > 10;
+        if (scrolled !== isScrolled) setIsScrolled(scrolled);
+      }}
+      style={{
+        flex: 1,
+        height: '100%',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'scroll',
+        scrollbarGutter: 'stable',
+        paddingTop: 0,
+        boxSizing: 'border-box',
+        color: '#0f172a'
+      }}
+    >
       
 
       {/* ──── TOP MORNING COMPOSER AREA (PEEKING BI CHARACTER) ──── */}
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '36px auto 0 auto',
+        margin: '20px auto 0 auto',
         padding: '0 32px',
         boxSizing: 'border-box',
         position: 'relative'
@@ -1618,7 +1628,7 @@ export default function Dashboard({
           style={{
             position: 'absolute',
             left: '48px',
-            top: '-27px',
+            top: '-20px',
             height: '110px',
             width: 'auto',
             objectFit: 'contain',
@@ -1636,12 +1646,12 @@ export default function Dashboard({
           alignItems: 'flex-end',
           justifyContent: 'space-between',
           paddingLeft: '112px',
-          marginBottom: '-27px',
+          marginBottom: '0',
           position: 'relative',
           zIndex: 30
         }}>
           {/* Left: Date + Greeting & Chips */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 45px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '0 0 16px 0' }}>
             <span style={{
               fontSize: '13px',
               fontWeight: '600',
@@ -1704,12 +1714,12 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* Right: User Login Info & Project Controls (Lowered slightly with margin 0 0 38px 0, zIndex 30) */}
+          {/* Right: User Login Info & Project Controls (zIndex 40) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            margin: '0 0 38px 0',
+            margin: '0 0 16px 0',
             zIndex: 40
           }}>
             {/* 1. User Profile Trigger & Floating Dropdown */}
@@ -2046,14 +2056,26 @@ export default function Dashboard({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Input Box & Hashtags Area (zIndex: 2, background: #ffffff covers the lower half of the character) */}
+      {/* ──── STICKY HEADER: TEXT INPUT + FILTER TABS ──── */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: '#ffffff',
+        width: '100%',
+        paddingTop: '8px',
+        boxShadow: isScrolled ? '0 4px 16px rgba(15, 23, 42, 0.05)' : 'none',
+        transition: 'box-shadow 0.2s ease'
+      }}>
+        {/* Input Box Area */}
         <div style={{
-          position: 'relative',
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px'
+          maxWidth: '1360px',
+          width: '100%',
+          margin: '0 auto',
+          padding: '0 32px',
+          boxSizing: 'border-box'
         }}>
           {/* Middle: Integrated Quick Sync Input Box (Enlarged & Clear Placeholder) */}
           <div 
@@ -2226,19 +2248,17 @@ export default function Dashboard({
               </div>
             )}
           </div>
-
         </div>
-      </div>
 
-            {/* ──── FULL SCREEN WIDTH FILTER TABS DIVIDER (LEFT-ALIGNED, LARGER FONT) ──── */}
-      <div style={{
-        width: '100%',
-        borderBottom: '1px solid #e2e8f0',
-        margin: '28px 0 0 0',
-        display: 'flex',
-        justifyContent: 'center',
-        boxSizing: 'border-box'
-      }}>
+        {/* ──── FULL SCREEN WIDTH FILTER TABS DIVIDER (LEFT-ALIGNED, LARGER FONT) ──── */}
+        <div style={{
+          width: '100%',
+          borderBottom: '1px solid #e2e8f0',
+          margin: '16px 0 0 0',
+          display: 'flex',
+          justifyContent: 'center',
+          boxSizing: 'border-box'
+        }}>
         <div style={{
           maxWidth: '1360px',
           width: '100%',
@@ -2302,6 +2322,7 @@ export default function Dashboard({
             );
           })}
         </div>
+      </div>
       </div>
 
       {/* ──── FULL WIDTH DATE NAVIGATOR & MEMBER CHIPS HEADER BAR ──── */}

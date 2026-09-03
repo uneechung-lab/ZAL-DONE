@@ -23,6 +23,10 @@ export const appwriteService = {
   async register(email, password, name, prefs = {}) {
     if (!isConfigured) return null;
     try {
+      try {
+        await account.deleteSession('current');
+      } catch (_) {}
+
       // Create user account
       await account.create(ID.unique(), email, password, name);
       // Automatically create a session for the user after registration
@@ -46,6 +50,22 @@ export const appwriteService = {
     try {
       return await account.createEmailPasswordSession(email, password);
     } catch (e) {
+      if (
+        e?.type === 'user_session_already_exists' ||
+        (e?.message && (e.message.includes('session is active') || e.message.includes('Creation of a session is prohibited')))
+      ) {
+        try {
+          try {
+            await account.deleteSession('current');
+          } catch (_) {
+            await account.deleteSessions();
+          }
+          return await account.createEmailPasswordSession(email, password);
+        } catch (retryErr) {
+          console.error('Appwrite retry login failed', retryErr);
+          throw retryErr;
+        }
+      }
       console.error('Appwrite failed to login user', e);
       throw e;
     }

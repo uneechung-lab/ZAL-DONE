@@ -3519,6 +3519,9 @@ export default function App() {
     if (lower.includes('failed to fetch') || lower.includes('network error')) {
       return '서버와 연결할 수 없습니다. 네트워크 연결 상태를 확인하거나 CORS 설정을 확인해 주세요.';
     }
+    if (lower.includes('session is active') || lower.includes('prohibited when a session is active') || lower.includes('session_already_exists')) {
+      return '기존 세션이 감지되어 세션을 정리했습니다. 다시 로그인 버튼을 눌러주세요.';
+    }
     return msg; // Fallback to raw message if translation is unavailable
   };
 
@@ -3586,8 +3589,13 @@ export default function App() {
     try {
       const email = `${authEmailId.trim()}@daumit.net`;
       await appwriteService.login(email, authPassword);
-      const currentUser = await appwriteService.getCurrentUser();
-      setUser(currentUser);
+      let currentUser = await appwriteService.getCurrentUser();
+      if (!currentUser) {
+        currentUser = await appwriteService.getCurrentUser();
+      }
+      if (currentUser) {
+        setUser(currentUser);
+      }
     } catch (err) {
       setAuthError(getKoreanErrorMessage(err.message) || '로그인에 실패했습니다.');
     } finally {
@@ -5350,7 +5358,7 @@ export default function App() {
                     </span>
                   </h2>
                   <p style={{ fontSize: '24px', color: '#64748b', fontWeight: '500', marginTop: '4px', margin: 0, letterSpacing: '-0.5px', lineHeight: '1.25', whiteSpace: 'nowrap' }}>
-                    잘됨이와 스마트한 하루!
+                    잘됨이와 잘되는 하루!
                   </p>
                 </div>
               </div>

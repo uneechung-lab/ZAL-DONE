@@ -875,15 +875,21 @@ export default function Dashboard({
 
       // 2. Requests & Vacations
       if (categoryKey === 'all' || categoryKey === 'vacation') {
+        const matchedSched = findMatchingSchedule(feed);
+        const hasSchedRequest = matchedSched && (
+          matchedSched.status === 'requested' || 
+          matchedSched.isRequested || 
+          matchedSched.assigneeRequestStatus === 'pending'
+        );
+
         let vInfo = feed.vacationInfo;
-        // Auto-detect meeting/work/leave requests in feed content or aiBadges if missing
-        const isLeaveText = /반차|휴가|연차|병가|결재/i.test(feed.content || '') || feed.type === 'vacation' || (feed.aiBadges && feed.aiBadges.some(b => b.category === '휴가' || /반차|휴가|연차/i.test(b.label || '')));
-        const isRequestText = feed.content.includes('요청') || feed.content.includes('신청') || feed.content.includes('부탁') || feed.content.includes('결재') || isLeaveText;
+        const isLeaveText = /반차|휴가|연차|병가/i.test(feed.content || '') || feed.type === 'vacation' || (feed.aiBadges && feed.aiBadges.some(b => b.category === '휴가' || /반차|휴가|연차/i.test(b.label || '')));
+        const isRequestText = feed.content?.includes('요청') || feed.content?.includes('신청') || feed.content?.includes('부탁') || feed.content?.includes('결재') || isLeaveText || hasSchedRequest || !!feed.assigneeChangeRequest;
 
         if (!vInfo && isRequestText) {
-          let targetUserId = isLeaveText ? 'sangmoo' : 'sh';
-          let targetUserName = isLeaveText ? '조상무' : '정윤희';
-          let targetUserRole = isLeaveText ? '상무' : '부장';
+          let targetUserId = isLeaveText ? 'sangmoo' : (matchedSched?.memberId || 'sh');
+          let targetUserName = isLeaveText ? '조상무' : (displayMembers.find(m => m.id === targetUserId)?.name || '정윤희');
+          let targetUserRole = isLeaveText ? '상무' : (displayMembers.find(m => m.id === targetUserId)?.role || '부장');
           if (/반차|휴가|연차/i.test(feed.content) || /조상무|상무/i.test(feed.content)) {
             targetUserId = 'sangmoo';
             targetUserName = '조상무';
@@ -901,7 +907,7 @@ export default function Dashboard({
           vInfo = {
             type: reqType,
             date: getTodayFormatted(),
-            status: 'pending',
+            status: (matchedSched?.status === 'accepted' || matchedSched?.assigneeRequestStatus === 'approved') ? 'approved' : 'pending',
             approverName: targetUserName,
             approverRole: targetUserRole,
             targetUserId: targetUserId,
@@ -911,29 +917,19 @@ export default function Dashboard({
           };
         }
 
-        if (vInfo) {
-          const isVac = vInfo.type?.includes('반차') || vInfo.type?.includes('휴가') || /반차|휴가|연차/i.test(feed.content || '');
-          let approverName = vInfo.approverName;
-          let approverRole = vInfo.approverRole || '';
-          if (/조상무|상무님|조상무님/i.test(feed.content || '')) {
-            approverName = '조상무';
-            approverRole = '상무';
-          } else if (/정윤희|정부장|부장님|윤희/i.test(feed.content || '')) {
-            approverName = '정윤희';
-            approverRole = '부장';
-          } else if (/정다음|정사원|다음/i.test(feed.content || '')) {
-            approverName = '정다음';
-            approverRole = '사원';
+        if (vInfo || hasSchedRequest) {
+          const isVac = isLeaveText || vInfo?.type?.includes('반차') || vInfo?.type?.includes('휴가');
+          
+          // Use original title or schedule title, do not mangle title with redundant approver text
+          let title = matchedSched?.title || getRelevantSnippet(feed.content, '요청') || feed.content;
+          if (isVac && vInfo?.date) {
+            title = `🏖️ ${vInfo.type || '휴가'} 신청 (${vInfo.date})`;
           }
-          const targetStr = `${approverName || '담당자'} ${approverRole || ''}`.trim();
           
-          let title = isVac 
-            ? `🏖️ ${vInfo.type || '휴가'} 신청 (${vInfo.date})` 
-            : `📋 ${vInfo.type} (${targetStr} 수락 요청)`;
-          
-          let badgeText = vInfo.status === 'approved' 
+          const isApproved = vInfo?.status === 'approved' || matchedSched?.status === 'accepted' || matchedSched?.assigneeRequestStatus === 'approved';
+          let badgeText = isApproved 
             ? '✅ 승인완료' 
-            : (isVac ? '🏖️ 결재요청' : '📋 결재요청');
+            : (isVac ? '🏖️ 결재요청' : '📋 업무 요청');
 
           items.push({
             id: `${feed.id}_vacation`,
@@ -949,10 +945,11 @@ export default function Dashboard({
             title: title,
             description: feed.content,
             badgeText: badgeText,
-            badgeColor: vInfo.status === 'approved' ? '#059669' : '#b45309',
-            badgeBg: vInfo.status === 'approved' ? '#ecfdf5' : '#fffbeb',
-            badgeBorder: vInfo.status === 'approved' ? '#a7f3d0' : '#fde68a',
+            badgeColor: isApproved ? '#059669' : '#b45309',
+            badgeBg: isApproved ? '#ecfdf5' : '#fffbeb',
+            badgeBorder: isApproved ? '#a7f3d0' : '#fde68a',
             vacationInfo: vInfo,
+            matchedSchedule: matchedSched,
             feed: feed
           });
         }
@@ -1067,7 +1064,9 @@ export default function Dashboard({
 
       // 5. General / Work (Everything that is not issue, request, meeting, or notice)
       if (categoryKey === 'all' || categoryKey === 'work' || categoryKey === 'general') {
-        const otherBadges = (feed.aiBadges || []).filter(b => 
+        const alreadyAddedForFeed = items.some(it => it.feedId === feed.id);
+        if (!alreadyAddedForFeed) {
+          const otherBadges = (feed.aiBadges || []).filter(b => 
           b.category !== '이슈' && b.category !== '휴가' && b.category !== '요청' && b.category !== '미팅' && b.category !== '회의' && b.category !== '공지' && b.category !== '전사공지' &&
           !b.label?.includes('회의') && !b.label?.includes('미팅') && !b.label?.includes('리뷰') &&
           !b.label?.includes('반차') && !b.label?.includes('휴가') &&
@@ -1117,6 +1116,7 @@ export default function Dashboard({
             feed: feed
           });
         }
+        }
       }
     });
 
@@ -1145,7 +1145,8 @@ export default function Dashboard({
         });
 
         if (!alreadyInItems) {
-          const author = displayMembers.find(m => m.id === s.requesterId || m.id === s.memberId) || { name: '정다음', role: '사원', id: 'daum' };
+          const requesterId = s.assigneeRequesterId || s.requesterId;
+          const author = (requesterId && displayMembers.find(m => m.id === requesterId)) || displayMembers.find(m => m.id === s.memberId) || { name: '정다음', role: '사원', id: 'daum' };
           const approver = displayMembers.find(m => m.id === s.approverId) || (isLeave ? { name: '조상무', role: '상무', id: 'sangmoo' } : { name: '정윤희', role: '부장', id: 'sh' });
           const dateFormatted = `${s.year || timelineDate.getFullYear()}.${String(s.month || (timelineDate.getMonth() + 1)).padStart(2, '0')}.${String(s.date || timelineDate.getDate()).padStart(2, '0')}`;
           
@@ -1177,13 +1178,13 @@ export default function Dashboard({
             badgeBg = '#eef2ff';
             badgeBorder = '#c7d2fe';
             cardTitle = s.title.startsWith('🤝') ? s.title : `🤝 ${s.title}`;
-          } else if (isRequested) {
+          } else if (isRequested || s.assigneeRequestStatus === 'pending') {
             cardCategory = '요청';
-            badgeText = '📋 결재요청';
+            badgeText = (s.status === 'accepted' || s.assigneeRequestStatus === 'approved') ? '✅ 승인완료' : '📋 업무 요청';
             badgeColor = '#b45309';
             badgeBg = '#fffbeb';
             badgeBorder = '#fde68a';
-            cardTitle = `📋 ${s.title} (${approver.name} ${approver.role} 수락 요청)`;
+            cardTitle = s.title;
           }
 
           const syntheticFeed = {
@@ -1203,12 +1204,13 @@ export default function Dashboard({
             comments: []
           };
 
+          const isReqType = isRequested || s.assigneeRequestStatus === 'pending';
           const matchFilter = categoryKey === 'all' ||
             (categoryKey === 'issue' && isIssue) ||
-            (categoryKey === 'vacation' && (isLeave || isRequested)) ||
+            (categoryKey === 'vacation' && (isLeave || isReqType)) ||
             (categoryKey === 'meeting' && isMeeting) ||
-            (categoryKey === 'work' && (!isIssue && !isLeave && !isMeeting && !isRequested)) ||
-            (categoryKey === 'general' && (!isIssue && !isLeave && !isMeeting && !isRequested));
+            (categoryKey === 'work' && (!isIssue && !isLeave && !isMeeting && !isReqType)) ||
+            (categoryKey === 'general' && (!isIssue && !isLeave && !isMeeting && !isReqType));
 
           if (matchFilter) {
             items.push({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 // Default initial feeds is empty so reset completely clears all data
 const INITIAL_FEEDS = [];
@@ -260,7 +260,50 @@ export default function Dashboard({
   }, [feeds]);
 
   // Current logged in user is executive approver (조상무)
-  const isApprover = currentUser?.id === 'sangmoo' || currentUser?.name === '조상무' || currentUser?.role === '상무';
+  const isApprover = currentUser?.id === 'sangmoo' || currentUser?.name === '조상무' || currentUser?.role === '상무' || displayUser?.name === '조상무';
+
+  // Calculate if there are any unprocessed requests awaiting approval by 조상무
+  const hasPendingRequestsForApprover = useMemo(() => {
+    const isCurrentUserSangmoo = currentUser?.id === 'sangmoo' || currentUser?.name === '조상무' || currentUser?.role === '상무' || displayUser?.name === '조상무' || isApprover;
+    if (!isCurrentUserSangmoo) return false;
+
+    // 1. Check schedules for pending requests
+    const pendingSchedule = (schedules || []).some(s => {
+      if (!s || s.status === 'cancelled' || s.isCancelled) return false;
+      const isPending = s.status === 'requested' || (s.isRequested && s.status !== 'accepted');
+      if (!isPending) return false;
+
+      const isLeave = /반차|연차|휴가|병가/i.test(s.title || '') || s.category === '휴가';
+      if (isLeave) return true; // Vacation requests in company are approved by executive (조상무)
+
+      const isTargeted = s.approverId === 'sangmoo' || s.targetUserId === 'sangmoo' ||
+        (s.memberIds && s.memberIds.includes('sangmoo') && s.requesterId !== 'sangmoo') ||
+        (s.memberId === 'sangmoo' && s.requesterId && s.requesterId !== 'sangmoo');
+      if (isTargeted) return true;
+
+      return false;
+    });
+    if (pendingSchedule) return true;
+
+    // 2. Check assignee change requests
+    const pendingAssignee = (schedules || []).some(s => {
+      return s && s.assigneeRequestStatus === 'pending' && (s.assigneeApproverId === 'sangmoo' || s.assigneeTargetUserId === 'sangmoo');
+    });
+    if (pendingAssignee) return true;
+
+    // 3. Check feeds for pending requests
+    const pendingFeed = (feeds || []).some(f => {
+      if (!f || f.status === 'cancelled') return false;
+      if (f.vacationInfo && f.vacationInfo.status === 'pending') {
+        const isVac = f.vacationInfo.type?.includes('반차') || f.vacationInfo.type?.includes('휴가') || /반차|휴가|연차/i.test(f.content || '');
+        if (isVac) return true;
+        if (f.vacationInfo.targetUserId === 'sangmoo' || /조상무/i.test(f.vacationInfo.approverName || '')) return true;
+      }
+      if (f.assigneeChangeRequest && f.assigneeChangeRequest.status === 'pending') return true;
+      return false;
+    });
+    return pendingFeed;
+  }, [currentUser, displayUser, isApprover, schedules, feeds]);
 
   // Handle Quick Composer Post (delegates to the exact same AI schedule processor as Calendar)
   const handleComposerSubmit = async (e) => {
@@ -1218,7 +1261,13 @@ export default function Dashboard({
     });
 
     // Filter cards for the selected timelineDate (and created today if showAllCreatedToday is checked)
-    activeItems = activeItems.filter(item => isItemOnTimelineDate(item, timelineDate, showAllCreatedToday));
+    activeItems = activeItems.filter(item => {
+      if (categoryKey === 'vacation' && (item.category === '요청' || item.category === '휴가')) {
+        const isPending = item.vacationInfo?.status === 'pending' || item.matchedSchedule?.status === 'requested';
+        if (isPending) return true;
+      }
+      return isItemOnTimelineDate(item, timelineDate, showAllCreatedToday);
+    });
 
     if (selectedMemberId && selectedMemberId !== 'all') {
       return activeItems.filter(item => item.authorId === selectedMemberId);
@@ -2070,6 +2119,9 @@ export default function Dashboard({
             { key: 'general', label: '일반' }
           ].map(tab => {
             const isActive = activeFilter === tab.key;
+            const isRequestTab = tab.key === 'vacation';
+            const showRedDot = isRequestTab && hasPendingRequestsForApprover;
+
             return (
               <button
                 key={tab.key}
@@ -2086,10 +2138,27 @@ export default function Dashboard({
                   background: 'transparent',
                   cursor: 'pointer',
                   transition: 'color 0.15s ease',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
                 }}
               >
                 <span>{tab.label}</span>
+                {showRedDot && (
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: '#ef4444',
+                      display: 'inline-block',
+                      boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.25)',
+                      flexShrink: 0
+                    }}
+                    title="미처리된 요청이 있습니다"
+                  />
+                )}
               </button>
             );
           })}

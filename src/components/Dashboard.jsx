@@ -113,6 +113,7 @@ export default function Dashboard({
 
   const [selectedMemberId, setSelectedMemberId] = useState('all');
   const [showAllCreatedToday, setShowAllCreatedToday] = useState(true);
+  const [showAllPendingRequests, setShowAllPendingRequests] = useState(true);
 
   const timelineDayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedTimelineDate = `${timelineDate.getMonth() + 1}월 ${timelineDate.getDate()}일(${timelineDayNames[timelineDate.getDay()]})`;
@@ -1262,6 +1263,12 @@ export default function Dashboard({
 
     // Filter cards for the selected timelineDate (and created today if showAllCreatedToday is checked)
     activeItems = activeItems.filter(item => {
+      // '모든 미처리 요청'이 체크되어 있으면 미결재/미처리 요청은 항상 포함
+      if (showAllPendingRequests) {
+        const isPending = (item.vacationInfo && item.vacationInfo.status === 'pending') ||
+                          (item.matchedSchedule && (item.matchedSchedule.status === 'requested' || (item.matchedSchedule.isRequested && item.matchedSchedule.status !== 'accepted')));
+        if (isPending) return true;
+      }
       if (categoryKey === 'vacation' && (item.category === '요청' || item.category === '휴가')) {
         const isPending = item.vacationInfo?.status === 'pending' || item.matchedSchedule?.status === 'requested';
         if (isPending) return true;
@@ -2283,7 +2290,7 @@ export default function Dashboard({
             </svg>
           </button>
 
-          {/* Checkbox: 오늘 등록된 모든 일정보기 */}
+          {/* Checkbox: 오늘 등록 모든 일정 */}
           <button
             type="button"
             onClick={() => setShowAllCreatedToday(prev => !prev)}
@@ -2309,7 +2316,7 @@ export default function Dashboard({
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = '#e2e8f0';
             }}
-            title="오늘 등록된 모든 일정보기 토글"
+            title="오늘 등록 모든 일정 토글"
           >
             {showAllCreatedToday ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -2322,7 +2329,49 @@ export default function Dashboard({
                 <polyline points="7.5 12 10.5 15 16.5 9" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
-            <span>오늘 등록된 모든 일정보기</span>
+            <span>오늘 등록 모든 일정</span>
+          </button>
+
+          {/* Checkbox: 모든 미처리 요청 (디폴트 체크) */}
+          <button
+            type="button"
+            onClick={() => setShowAllPendingRequests(prev => !prev)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginLeft: '6px',
+              fontSize: '12.5px',
+              fontWeight: showAllPendingRequests ? '600' : '500',
+              color: showAllPendingRequests ? '#0f172a' : '#94a3b8',
+              cursor: 'pointer',
+              userSelect: 'none',
+              background: 'none',
+              border: '1px solid #e2e8f0',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+            title="모든 미처리 요청 토글"
+          >
+            {showAllPendingRequests ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#0f172a" />
+                <polyline points="7.5 12 10.5 15 16.5 9" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" fill="#e2e8f0" />
+                <polyline points="7.5 12 10.5 15 16.5 9" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+            <span>모든 미처리 요청</span>
           </button>
 
           {/* Date Picker Popover */}

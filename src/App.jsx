@@ -1647,12 +1647,20 @@ export default function App() {
     return emojis[Math.floor(Math.random() * emojis.length)];
   });
 
-  const ME = virtualUser || (isConfigured && user ? { id: 'sh', name: parsedUser.name, role: parsedUser.role, avatar: '나', avatarPic: '/pic1_thumb.png', color: '#000000' } : TEAM[0]);
+  const ME = virtualUser || (isConfigured && user ? {
+    id: 'sh',
+    name: parsedUser.name,
+    role: parsedUser.role,
+    avatar: parsedUser.name === '조상무' ? '상무' : '나',
+    avatarPic: parsedUser.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png',
+    color: '#000000'
+  } : TEAM[0]);
   const displayUser = {
     name: ME.name || parsedUser.name,
     role: ME.role || parsedUser.role,
-    department: parsedUser.department || '개발',
-    project: parsedUser.project || '대신증권 연금 경쟁력 강화'
+    department: parsedUser.department || (parsedUser.name === '조상무' ? '임원' : '개발'),
+    project: parsedUser.project || (parsedUser.name === '조상무' ? '전체' : '대신증권 연금 경쟁력 강화'),
+    avatarPic: ME.avatarPic || (parsedUser.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png')
   };
 
   const isApproverForItem = (sched) => {
@@ -3249,6 +3257,18 @@ export default function App() {
         try {
           let currentUser = await appwriteService.getCurrentUser();
           if (currentUser) {
+            // Auto-sync test account to 조상무
+            if (currentUser.email === 'test@daumit.net' && (!currentUser.name || !currentUser.name.includes('조상무'))) {
+              const sangmooName = '조상무 상무 [임원 / 전체]';
+              try {
+                await appwriteService.updateName(sangmooName);
+                currentUser.name = sangmooName;
+              } catch (err) {
+                console.error('Failed to update test user name to 조상무', err);
+                currentUser.name = sangmooName;
+              }
+            }
+
             // Auto-clean check: if Appwrite stored name has duplicate '사원' appended at the end, clean it up!
             let trimmed = currentUser.name.trim();
             if (trimmed.includes('[') && trimmed.endsWith('사원')) {
@@ -3305,10 +3325,10 @@ export default function App() {
               id: 'sh',
               name: parsed.name || '조상무',
               role: parsed.role || '상무',
-              avatar: parsed.name ? parsed.name.slice(0, 2) : '조상무',
-              avatarPic: '/pic1_thumb.png',
+              avatar: parsed.name ? (parsed.name === '조상무' ? '상무' : parsed.name.slice(0, 2)) : '조상무',
+              avatarPic: parsed.name === '조상무' ? '/pic2_thumb.png' : '/pic1_thumb.png',
               color: userColor || '#000000',
-              subtext: `${parsed.department || '개발'} 일정`
+              subtext: `${parsed.department || (parsed.name === '조상무' ? '임원' : '개발')} 일정`
             };
 
             const otherMember = isCurrentUserYoonhee ? {
@@ -3324,7 +3344,7 @@ export default function App() {
               name: '정윤희',
               role: '부장',
               avatar: '윤희',
-              avatarPic: '/pic3_thumb.png',
+              avatarPic: '/pic1_thumb.png',
               color: '#4f8ef7',
               subtext: '기획 일정'
             };
@@ -3594,6 +3614,15 @@ export default function App() {
         currentUser = await appwriteService.getCurrentUser();
       }
       if (currentUser) {
+        if (currentUser.email === 'test@daumit.net' && (!currentUser.name || !currentUser.name.includes('조상무'))) {
+          const sangmooName = '조상무 상무 [임원 / 전체]';
+          try {
+            await appwriteService.updateName(sangmooName);
+            currentUser.name = sangmooName;
+          } catch (err) {
+            currentUser.name = sangmooName;
+          }
+        }
         setUser(currentUser);
       }
     } catch (err) {

@@ -1283,6 +1283,71 @@ export default function Dashboard({
     return activeItems;
   };
 
+  // Format card registration date/time: if not today, show 'YYYY.MM.DD HH:MM', else show '오후 HH:MM'
+  const getCardTimeDisplay = (item) => {
+    if (!item) return '';
+
+    const rawCreated = item.createdAt || item.feed?.createdAt || item.matchedSchedule?.createdAt || item.matchedSchedule?.$createdAt;
+    const now = new Date();
+
+    if (rawCreated) {
+      const d = new Date(rawCreated);
+      if (!isNaN(d.getTime())) {
+        const isToday = d.getFullYear() === now.getFullYear() &&
+                        d.getMonth() === now.getMonth() &&
+                        d.getDate() === now.getDate();
+
+        const pad = (n) => String(n).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const date = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+
+        if (!isToday) {
+          // 오늘이 아닌 건: YYYY.MM.DD HH:MM
+          return `${year}.${month}.${date} ${hours}:${minutes}`;
+        } else {
+          // 오늘인 건: 오후 05:59 형태
+          return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+    }
+
+    // If item has matchedSchedule date that is not today
+    if (item.matchedSchedule && item.matchedSchedule.date) {
+      const s = item.matchedSchedule;
+      const sY = s.year || now.getFullYear();
+      const sM = s.month || (now.getMonth() + 1);
+      const sD = Number(s.date);
+      const isTodaySched = sY === now.getFullYear() && sM === (now.getMonth() + 1) && sD === now.getDate();
+      const pad = (n) => String(n).padStart(2, '0');
+      if (!isTodaySched) {
+        const h = s.startHour !== undefined ? pad(Math.floor(s.startHour)) : '09';
+        const m = s.startHour !== undefined && (s.startHour % 1 !== 0) ? '30' : '00';
+        return `${sY}.${pad(sM)}.${pad(sD)} ${h}:${m}`;
+      }
+    }
+
+    // If item has vacationInfo date that is not today
+    if (item.vacationInfo && item.vacationInfo.date) {
+      const vDateStr = String(item.vacationInfo.date);
+      const parts = vDateStr.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+      if (parts) {
+        const vY = Number(parts[1]);
+        const vM = Number(parts[2]);
+        const vD = Number(parts[3]);
+        const isTodayVac = vY === now.getFullYear() && vM === (now.getMonth() + 1) && vD === now.getDate();
+        if (!isTodayVac) {
+          const pad = (n) => String(n).padStart(2, '0');
+          return `${vY}.${pad(vM)}.${pad(vD)} 09:00`;
+        }
+      }
+    }
+
+    return item.timeDisplay || '방금 전';
+  };
+
 
 
   // Filtered feeds
@@ -2817,14 +2882,14 @@ export default function Dashboard({
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                            {item.authorId === (currentUser?.id || 'sh') ? '나' : item.authorName}
+                            {(item.authorName === (currentUser?.name || displayUser?.name)) ? '나' : item.authorName}
                           </span>
                           <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>
                             {item.authorRole}
                           </span>
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '1px', fontWeight: '500' }}>
-                          {item.timeDisplay}
+                          {getCardTimeDisplay(item)}
                         </div>
                       </div>
                     </div>

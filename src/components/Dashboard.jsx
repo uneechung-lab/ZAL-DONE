@@ -2888,8 +2888,30 @@ export default function Dashboard({
                             {item.authorRole}
                           </span>
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '1px', fontWeight: '500' }}>
-                          {getCardTimeDisplay(item)}
+                        <div style={{
+                          fontSize: '11.5px',
+                          color: '#94a3b8',
+                          marginTop: '2px',
+                          fontWeight: '500',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3.5px'
+                        }}>
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ flexShrink: 0, opacity: 0.8 }}
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          <span>{getCardTimeDisplay(item)}</span>
                         </div>
                       </div>
                     </div>

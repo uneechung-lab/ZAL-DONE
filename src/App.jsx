@@ -3542,6 +3542,9 @@ export default function App() {
     if (lower.includes('session is active') || lower.includes('prohibited when a session is active') || lower.includes('session_already_exists')) {
       return '기존 세션이 감지되어 세션을 정리했습니다. 다시 로그인 버튼을 눌러주세요.';
     }
+    if (lower.includes('rate limit') || lower.includes('exceeded')) {
+      return '보안을 위한 로그인 시도 횟수를 초과했습니다. 잠시 후(약 5~15분) 다시 시도해 주세요.';
+    }
     return msg; // Fallback to raw message if translation is unavailable
   };
 

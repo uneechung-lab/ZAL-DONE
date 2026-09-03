@@ -1616,7 +1616,7 @@ export default function Dashboard({
       <div style={{
         maxWidth: '1360px',
         width: '100%',
-        margin: '20px auto 0 auto',
+        margin: '48px auto 0 auto',
         padding: '0 32px',
         boxSizing: 'border-box',
         position: 'relative'
@@ -1628,7 +1628,7 @@ export default function Dashboard({
           style={{
             position: 'absolute',
             left: '48px',
-            top: '-20px',
+            top: '-27px',
             height: '110px',
             width: 'auto',
             objectFit: 'contain',

@@ -1263,15 +1263,15 @@ export default function Dashboard({
 
     // Filter cards for the selected timelineDate (and created today if showAllCreatedToday is checked)
     activeItems = activeItems.filter(item => {
-      // '모든 미처리 요청'이 체크되어 있으면 미결재/미처리 요청은 항상 포함
+      // 1. '모든 미처리 요청'이 체크되어 있으면 미결재/미처리 요청은 날짜와 무관하게 항상 포함
       if (showAllPendingRequests) {
         const isPending = (item.vacationInfo && item.vacationInfo.status === 'pending') ||
                           (item.matchedSchedule && (item.matchedSchedule.status === 'requested' || (item.matchedSchedule.isRequested && item.matchedSchedule.status !== 'accepted')));
         if (isPending) return true;
       }
-      if (categoryKey === 'vacation' && (item.category === '요청' || item.category === '휴가')) {
-        const isPending = item.vacationInfo?.status === 'pending' || item.matchedSchedule?.status === 'requested';
-        if (isPending) return true;
+      // 2. '모든 미처리 요청'이 해제되어 있으면: 요청 탭 또는 요청 카드는 현재 선택된 날짜와 일치하는 것만 표시
+      if (!showAllPendingRequests && (categoryKey === 'vacation' || item.category === '요청' || item.category === '휴가')) {
+        return isItemOnTimelineDate(item, timelineDate, false);
       }
       return isItemOnTimelineDate(item, timelineDate, showAllCreatedToday);
     });

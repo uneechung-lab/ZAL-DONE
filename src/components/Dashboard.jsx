@@ -1816,7 +1816,7 @@ export default function Dashboard({
                   whiteSpace: 'nowrap',
                   lineHeight: '1'
                 }}>
-                  {headerSelectedProject === '전체' ? (parsedUser?.project || '대신증권 연금 경쟁력 강화') : headerSelectedProject}
+                  {headerSelectedProject || '전체'}
                 </span>
 
                 <svg
@@ -1867,7 +1867,7 @@ export default function Dashboard({
                     '다음 D-RPS 고도화',
                     '해당없음'
                   ].map((projOption) => {
-                    const isSelected = headerSelectedProject === projOption || (headerSelectedProject === '전체' && projOption === '대신증권 연금 경쟁력 강화');
+                    const isSelected = headerSelectedProject === projOption;
                     return (
                       <div
                         key={projOption}
